@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --blauw: #1a3a5c;
+  --blauw-mid: #2d5f8a;
+  --blauw-licht: #e8f0f8;
+  --accent: #c8a84b;
+  --bg: #f5f4f0;
+  --wit: #ffffff;
+  --tekst: #1a1a1a;
+  --tekst-zacht: #5a5a5a;
+  --rand: #ddd9d0;
+  --groen: #2d7a4f;
+  --rood: #c0392b;
+}
+
+body {
+  font-family: Georgia, 'Times New Roman', serif;
+  background-color: var(--bg);
+  color: var(--tekst);
+}
+
+@layer utilities {
+  .font-sans-ui {
+    font-family: Arial, Helvetica, sans-serif;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+  .print-full {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 16px !important;
+  }
+}
