@@ -60,6 +60,7 @@ export interface ApiDocument {
   titel: string
   doc_nummer: string
   publicatiedatum: string
+  sorteerdatum?: string
   status?: string
   afgedaan?: string
   indieners?: string

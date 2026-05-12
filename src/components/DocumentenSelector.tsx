@@ -1,172 +1,206 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ApiDocument } from '@/lib/types'
+import { haalRaadsmededelingen, haalAfgedaaneVragen, DEMO_RM, DEMO_VRAGEN } from '@/lib/api'
+import { formatDatumKort } from '@/lib/datum'
 
 interface DocumentenSelectorProps {
-  documenten: ApiDocument[]
-  onToevoegen: (geselecteerd: ApiDocument[]) => void
-  onSyncNu: () => void
-  laden: boolean
+  onVoegRMToe: (docs: ApiDocument[]) => void
+  onVoegVragenToe: (docs: ApiDocument[]) => void
 }
 
-const TYPE_LABEL: Record<string, { label: string; bg: string; kleur: string; rand: string }> = {
-  raadsmededelingen: { label: 'RM', bg: '#e8f0f8', kleur: '#1a3a5c', rand: '#a0c0e0' },
-  technische_vragen: { label: 'TQ', bg: '#f0e8f8', kleur: '#5a3a8a', rand: '#c0a0d8' },
-  schriftelijke_vragen: { label: 'SQ', bg: '#f8f0e8', kleur: '#8a6020', rand: '#d8c0a0' },
-}
+export default function DocumentenSelector({ onVoegRMToe, onVoegVragenToe }: DocumentenSelectorProps) {
+  const [actief, setActief] = useState<'rm' | 'vragen'>('rm')
+  const [rmDocs, setRmDocs] = useState<ApiDocument[]>([])
+  const [vragenDocs, setVragenDocs] = useState<ApiDocument[]>([])
+  const [ladenRM, setLadenRM] = useState(false)
+  const [ladenVragen, setLadenVragen] = useState(false)
+  const [geselecteerdRM, setGeselecteerdRM] = useState<Set<string>>(new Set())
+  const [geselecteerdVragen, setGeselecteerdVragen] = useState<Set<string>>(new Set())
+  const [foutRM, setFoutRM] = useState(false)
+  const [foutVragen, setFoutVragen] = useState(false)
 
-export default function DocumentenSelector({ documenten, onToevoegen, onSyncNu, laden }: DocumentenSelectorProps) {
-  const [geselecteerd, setGeselecteerd] = useState<Set<string>>(new Set())
-
-  const toggle = (id: string) => {
-    const nieuw = new Set(geselecteerd)
-    if (nieuw.has(id)) nieuw.delete(id)
-    else nieuw.add(id)
-    setGeselecteerd(nieuw)
+  const laadRM = async () => {
+    setLadenRM(true)
+    setFoutRM(false)
+    try {
+      const docs = await haalRaadsmededelingen()
+      setRmDocs(docs.length > 0 ? docs : DEMO_RM)
+      if (docs.length === 0) setFoutRM(true)
+    } catch {
+      setRmDocs(DEMO_RM)
+      setFoutRM(true)
+    }
+    setLadenRM(false)
   }
 
-  const alles = () => setGeselecteerd(new Set(documenten.map(d => d.id)))
-  const niets = () => setGeselecteerd(new Set())
-
-  const voegToe = () => {
-    const sel = documenten.filter(d => geselecteerd.has(d.id))
-    onToevoegen(sel)
-    setGeselecteerd(new Set())
+  const laadVragen = async () => {
+    setLadenVragen(true)
+    setFoutVragen(false)
+    try {
+      const docs = await haalAfgedaaneVragen()
+      setVragenDocs(docs.length > 0 ? docs : DEMO_VRAGEN)
+      if (docs.length === 0) setFoutVragen(true)
+    } catch {
+      setVragenDocs(DEMO_VRAGEN)
+      setFoutVragen(true)
+    }
+    setLadenVragen(false)
   }
 
-  if (documenten.length === 0) {
-    return (
-      <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--tekst-zacht)', fontFamily: 'Arial, sans-serif' }}>
-        <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔍</div>
-        <p style={{ marginBottom: '16px' }}>Klik op &quot;Documenten vernieuwen&quot; op het agenda-tabblad om nieuwe documenten op te halen.</p>
-        <button
-          onClick={onSyncNu}
-          disabled={laden}
-          style={{
-            background: 'var(--blauw)',
-            color: 'white',
-            border: 'none',
-            padding: '10px 20px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontFamily: 'Arial, sans-serif',
-          }}
-        >
-          {laden ? '↻ Bezig...' : '↻ Documenten ophalen'}
-        </button>
-      </div>
-    )
+  useEffect(() => { laadRM() }, [])
+  useEffect(() => { if (actief === 'vragen' && vragenDocs.length === 0) laadVragen() }, [actief])
+
+  const toggleRM = (id: string) => setGeselecteerdRM(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const toggleVraag = (id: string) => setGeselecteerdVragen(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+
+  const handleVoegRMToe = () => {
+    onVoegRMToe(rmDocs.filter(d => geselecteerdRM.has(d.id)))
+    setGeselecteerdRM(new Set())
+  }
+  const handleVoegVragenToe = () => {
+    onVoegVragenToe(vragenDocs.filter(d => geselecteerdVragen.has(d.id)))
+    setGeselecteerdVragen(new Set())
   }
 
   return (
     <div>
-      <p style={{ fontSize: '13px', color: 'var(--tekst-zacht)', fontFamily: 'Arial, sans-serif', marginBottom: '16px' }}>
-        {documenten.length} document(en) gevonden. Selecteer welke toe te voegen aan de agenda.
-      </p>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+        <TabKnop actief={actief === 'rm'} onClick={() => setActief('rm')} kleur="#4a1a5c">
+          📋 Raadsmededelingen {rmDocs.length > 0 && `(${rmDocs.length})`}
+        </TabKnop>
+        <TabKnop actief={actief === 'vragen'} onClick={() => setActief('vragen')} kleur="#5a3a8a">
+          ❓ Technische & schriftelijke vragen {vragenDocs.length > 0 && `(${vragenDocs.length})`}
+        </TabKnop>
+      </div>
 
-      {documenten.map(doc => {
-        const badge = TYPE_LABEL[doc.type] || TYPE_LABEL.raadsmededelingen
-        const sel = geselecteerd.has(doc.id)
-        return (
-          <div
-            key={doc.id}
-            onClick={() => toggle(doc.id)}
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '10px',
-              padding: '10px',
-              border: `1px solid ${sel ? 'var(--blauw)' : 'var(--rand)'}`,
-              borderRadius: '8px',
-              marginBottom: '8px',
-              background: sel ? 'var(--blauw-licht)' : 'white',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={sel}
-              onChange={() => toggle(doc.id)}
-              onClick={e => e.stopPropagation()}
-              style={{ marginTop: '2px' }}
-            />
-            <span style={{
-              fontSize: '10px',
-              padding: '2px 6px',
-              borderRadius: '3px',
-              fontFamily: 'Arial, sans-serif',
-              whiteSpace: 'nowrap',
-              background: badge.bg,
-              color: badge.kleur,
-              border: `1px solid ${badge.rand}`,
-              flexShrink: 0,
-            }}>
-              {badge.label}
-            </span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '13px' }}>{doc.titel}</div>
-              <div style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial, sans-serif', marginTop: '2px' }}>
-                {(doc.publicatiedatum || doc.gevonden_op) && (
-                  <span style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', marginRight: '6px' }}>
-                    {doc.publicatiedatum || doc.gevonden_op?.split('T')[0]}
-                  </span>
-                )}
-                {doc.indieners}
-                {doc.fracties && ` (${doc.fracties})`}
-                {doc.afgedaan === 'Afgedaan' && (
-                  <span style={{
-                    fontSize: '10px',
-                    background: '#e8f5ed',
-                    color: '#2d7a4f',
-                    border: '1px solid #a8d8b5',
-                    padding: '1px 5px',
-                    borderRadius: '3px',
-                    marginLeft: '6px',
-                  }}>
-                    Afgedaan
-                  </span>
-                )}
-              </div>
+      {/* Raadsmededelingen */}
+      {actief === 'rm' && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', margin: 0 }}>
+              {foutRM ? '⚠️ Demodata — API niet bereikbaar' : `${rmDocs.length} raadsmededelingen, nieuwste eerst`}
+            </p>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button onClick={() => setGeselecteerdRM(new Set(rmDocs.map(d => d.id)))} style={knopStijl}>Alles</button>
+              <button onClick={() => setGeselecteerdRM(new Set())} style={knopStijl}>Niets</button>
+              <button onClick={laadRM} disabled={ladenRM} style={knopStijl}>{ladenRM ? '↻' : '↻ Vernieuwen'}</button>
             </div>
           </div>
-        )
-      })}
 
-      <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-        <button
-          onClick={voegToe}
-          disabled={geselecteerd.size === 0}
-          style={{
-            background: 'var(--blauw)',
-            color: 'white',
-            border: 'none',
-            padding: '9px 18px',
-            borderRadius: '8px',
-            cursor: geselecteerd.size === 0 ? 'not-allowed' : 'pointer',
-            fontSize: '13px',
-            fontFamily: 'Arial, sans-serif',
-            opacity: geselecteerd.size === 0 ? 0.5 : 1,
-          }}
-        >
-          + {geselecteerd.size} geselecteerd toevoegen
-        </button>
-        <button onClick={alles} style={btnStijl}>Alles selecteren</button>
-        <button onClick={niets} style={btnStijl}>Niets</button>
-      </div>
+          {ladenRM ? <Laden /> : rmDocs.map(doc => {
+            const sel = geselecteerdRM.has(doc.id)
+            return (
+              <div key={doc.id} onClick={() => toggleRM(doc.id)} style={{ ...docKaart, borderColor: sel ? '#4a1a5c' : 'var(--rand)', background: sel ? '#f5eeff' : 'white' }}>
+                <input type="checkbox" checked={sel} onChange={() => toggleRM(doc.id)} onClick={e => e.stopPropagation()} style={{ flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '14px', fontFamily: 'Arial', color: sel ? '#4a1a5c' : 'var(--tekst)', fontWeight: sel ? '600' : 'normal' }}>
+                    {doc.titel}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', marginTop: '3px', display: 'flex', gap: '10px' }}>
+                    {doc.publicatiedatum && <span>📅 {formatDatumKort(doc.publicatiedatum)}</span>}
+                    {doc.url && <a href={doc.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#4a1a5c', textDecoration: 'underline' }}>↗ bekijk</a>}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+
+          {geselecteerdRM.size > 0 && (
+            <button onClick={handleVoegRMToe} style={toevoegKnop('#4a1a5c')}>
+              + {geselecteerdRM.size} raadsmededeling(en) toevoegen aan agenda
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Vragen */}
+      {actief === 'vragen' && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', margin: 0 }}>
+              {foutVragen ? '⚠️ Demodata — API niet bereikbaar' : `${vragenDocs.length} beantwoorde vragen, nieuwste eerst`}
+            </p>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button onClick={() => setGeselecteerdVragen(new Set(vragenDocs.map(d => d.id)))} style={knopStijl}>Alles</button>
+              <button onClick={() => setGeselecteerdVragen(new Set())} style={knopStijl}>Niets</button>
+              <button onClick={laadVragen} disabled={ladenVragen} style={knopStijl}>{ladenVragen ? '↻' : '↻ Vernieuwen'}</button>
+            </div>
+          </div>
+
+          {ladenVragen ? <Laden /> : vragenDocs.map(doc => {
+            const sel = geselecteerdVragen.has(doc.id)
+            const isTQ = doc.type === 'technische_vragen'
+            return (
+              <div key={doc.id} onClick={() => toggleVraag(doc.id)} style={{ ...docKaart, borderColor: sel ? '#5a3a8a' : 'var(--rand)', background: sel ? '#f0eef8' : 'white' }}>
+                <input type="checkbox" checked={sel} onChange={() => toggleVraag(doc.id)} onClick={e => e.stopPropagation()} style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '3px', fontFamily: 'Arial', whiteSpace: 'nowrap', flexShrink: 0, background: isTQ ? '#e8f0f8' : '#f0e8f8', color: isTQ ? '#1a4a7a' : '#5a1a8a', border: `1px solid ${isTQ ? '#a0c0e0' : '#c0a0e0'}` }}>
+                  {isTQ ? 'TQ' : 'SQ'}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '14px', fontFamily: 'Arial', color: sel ? '#5a3a8a' : 'var(--tekst)', fontWeight: sel ? '600' : 'normal' }}>
+                    {doc.titel}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', marginTop: '3px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {doc.indieners && <span>👤 {doc.indieners}</span>}
+                    {doc.fracties && <span>🏛 {doc.fracties}</span>}
+                    {doc.afgedaan && <span style={{ color: '#2d7a4f', fontWeight: '600' }}>✓ Afgedaan: {formatDatumKort(doc.afgedaan)}</span>}
+                    {doc.url && <a href={doc.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#5a3a8a', textDecoration: 'underline' }}>↗ bekijk</a>}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+
+          {geselecteerdVragen.size > 0 && (
+            <button onClick={handleVoegVragenToe} style={toevoegKnop('#5a3a8a')}>
+              + {geselecteerdVragen.size} vraag/vragen toevoegen aan agenda
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
-const btnStijl: React.CSSProperties = {
-  background: 'white',
-  color: 'var(--blauw)',
-  border: '1px solid var(--blauw)',
-  padding: '9px 14px',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  fontSize: '13px',
-  fontFamily: 'Arial, sans-serif',
+function Laden() {
+  return (
+    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>
+      <div style={{ fontSize: '24px', marginBottom: '8px' }}>⏳</div>
+      Documenten ophalen...
+    </div>
+  )
 }
+
+function TabKnop({ actief, onClick, kleur, children }: { actief: boolean; onClick: () => void; kleur: string; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick} style={{
+      padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial',
+      background: actief ? kleur : 'white',
+      color: actief ? 'white' : kleur,
+      border: `1px solid ${kleur}`,
+      fontWeight: actief ? '600' : 'normal',
+      transition: 'all 0.15s',
+    }}>
+      {children}
+    </button>
+  )
+}
+
+const docKaart: React.CSSProperties = {
+  display: 'flex', alignItems: 'flex-start', gap: '10px',
+  padding: '10px 12px', border: '1px solid', borderRadius: '8px',
+  marginBottom: '6px', cursor: 'pointer', transition: 'all 0.15s',
+}
+
+const knopStijl: React.CSSProperties = {
+  background: 'white', color: 'var(--tekst-zacht)', border: '1px solid var(--rand)',
+  padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial',
+}
+
+const toevoegKnop = (kleur: string): React.CSSProperties => ({
+  marginTop: '12px', width: '100%', background: kleur, color: 'white', border: 'none',
+  padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial', fontWeight: '600',
+})

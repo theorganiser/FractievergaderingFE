@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useVergaderingen } from '@/hooks/useVergaderingen'
 import { useAuth } from '@/hooks/useAuth'
 import { ApiDocument } from '@/lib/types'
-import { startSync, haalNieuweDocumenten, DEMO_DOCUMENTEN } from '@/lib/api'
-import { vandaag } from '@/lib/datum'
 import AgendaEditor from '@/components/AgendaEditor'
 import DocumentenSelector from '@/components/DocumentenSelector'
 import Leesweergave from '@/components/Leesweergave'
@@ -32,8 +30,6 @@ export default function VergaderingEditorPagina({ params }: Props) {
 
   const [tabblad, setTabblad] = useState<Tabblad>('details')
   const [melding, setMelding] = useState<{ type: 'succes' | 'info' | 'fout'; tekst: string } | null>(null)
-  const [ladenSync, setLadenSync] = useState(false)
-  const [nieuweDocs, setNieuweDocs] = useState<ApiDocument[]>([])
 
   if (!geladen) return <div style={{ textAlign: 'center', padding: '80px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>⏳ Laden...</div>
   if (!isAdmin) { router.push('/login'); return null }
@@ -50,30 +46,11 @@ export default function VergaderingEditorPagina({ params }: Props) {
     })
   }
 
-  const syncDocumenten = async () => {
-    setLadenSync(true)
-    setMelding({ type: 'info', tekst: 'Scraper gestart, documenten worden opgehaald...' })
-    try {
-      await startSync()
-      await new Promise(r => setTimeout(r, 2000))
-      const docs = await haalNieuweDocumenten(v.datum || vandaag())
-      setNieuweDocs(docs)
-      setMelding({ type: 'succes', tekst: `${docs.length} nieuw document(en) gevonden.` })
-      setTabblad('documenten')
-    } catch {
-      setNieuweDocs(DEMO_DOCUMENTEN)
-      setMelding({ type: 'info', tekst: 'Demogegevens geladen (API niet bereikbaar).' })
-      setTabblad('documenten')
-    }
-    setLadenSync(false)
-  }
-
-  const voegDocsDirectToe = async (geselecteerd: ApiDocument[]) => {
+  const voegDocsDirectToe = async (geselecteerd: ApiDocument[], doelType: 'raadsmededelingen' | 'vragen') => {
     const nieuwePunten = JSON.parse(JSON.stringify(v.punten))
     geselecteerd.forEach(doc => {
-      const isRM = doc.type === 'raadsmededelingen'
       const puntIndex = nieuwePunten.findIndex((p: { apiType?: string }) =>
-        isRM ? p.apiType === 'raadsmededelingen' : p.apiType === 'vragen'
+        doelType === 'raadsmededelingen' ? p.apiType === 'raadsmededelingen' : p.apiType === 'vragen'
       )
       if (puntIndex >= 0) {
         const punt = nieuwePunten[puntIndex]
@@ -81,8 +58,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
       }
     })
     await update(id, { punten: nieuwePunten })
-    setNieuweDocs([])
-    setMelding({ type: 'succes', tekst: `${geselecteerd.length} document(en) toegevoegd.` })
+    setMelding({ type: 'succes', tekst: `${geselecteerd.length} document(en) toegevoegd aan de agenda.` })
     setTabblad('agenda')
   }
 
@@ -91,7 +67,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
     { key: 'agenda', label: 'Agenda' },
     { key: 'acties', label: 'Actielijst', badge: v.actielijst?.filter(a => !a.afgedaan).length },
     { key: 'kalender', label: 'Kalender', badge: v.kalender?.length },
-    { key: 'documenten', label: 'Documenten', badge: nieuweDocs.length || undefined },
+    { key: 'documenten', label: 'Documenten' },
     { key: 'stemlijst', label: '⚖️ Stemlijst', badge: v.heeftRaadsvergadering ? undefined : undefined },
     { key: 'lees', label: 'Leesweergave' },
   ]
@@ -143,7 +119,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
           onVoegSubpuntToe={(pi) => voegSubpuntToe(id, pi)}
           onVerwijderSubpunt={(pi, si) => verwijderSubpunt(id, pi, si)}
           onUpdateSubpunt={(pi, si, w) => updateSubpunt(id, pi, si, w)}
-          onSyncDocumenten={syncDocumenten} ladenSync={ladenSync}
+          onSyncDocumenten={() => setTabblad('documenten')} ladenSync={false}
         />
       )}
       {tabblad === 'acties' && (
@@ -169,7 +145,10 @@ export default function VergaderingEditorPagina({ params }: Props) {
         <Stemlijst punten={v.punten} rvDatum={v.raadsvergaderingDatum} />
       )}
       {tabblad === 'documenten' && (
-        <DocumentenSelector documenten={nieuweDocs} onToevoegen={voegDocsDirectToe} onSyncNu={syncDocumenten} laden={ladenSync} />
+        <DocumentenSelector
+          onVoegRMToe={(docs) => voegDocsDirectToe(docs, 'raadsmededelingen')}
+          onVoegVragenToe={(docs) => voegDocsDirectToe(docs, 'vragen')}
+        />
       )}
       {tabblad === 'lees' && (
         <div style={{ maxWidth: '680px' }}>

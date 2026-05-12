@@ -42,7 +42,7 @@ export default function AgendaEditor({
           {ladenSync ? (
             <><span className="spinner-wit" /> Bezig...</>
           ) : (
-            '↻ Documenten vernieuwen'
+            '📋 Documenten selecteren'
           )}
         </button>
       </div>

@@ -4,14 +4,14 @@
 
 :root {
   /* GDP kleuren gebaseerd op gooisdemocratischplatform.nl */
-  --blauw: #0d2b4e;
-  --blauw-mid: #1a4a7a;
-  --blauw-licht: #e8f0f8;
-  --accent: #e8c84a;       /* GDP geel */
-  --accent-donker: #c9a830;
+  --blauw: #4a1a5c;
+  --blauw-mid: #6a2a8a;
+  --blauw-licht: #f5eeff;
+  --accent: #a89060;       /* GDP goud */
+  --accent-donker: #8a7040;
   --bg: #f4f6f9;
   --wit: #ffffff;
-  --tekst: #1a1a2e;
+  --tekst: #1a0a2e;
   --tekst-zacht: #5a6478;
   --rand: #dde3ed;
   --groen: #2d7a4f;
@@ -36,3 +36,5 @@ body.presentatie-modus {
   body { background: white; }
   .print-full { max-width: 100% !important; margin: 0 !important; padding: 16px !important; }
 }
+
+@keyframes spin { to { transform: rotate(360deg); } }

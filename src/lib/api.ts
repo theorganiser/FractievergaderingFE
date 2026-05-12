@@ -2,29 +2,50 @@ import { ApiDocument } from './types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://datascraperraad.onrender.com'
 
-export async function haalDocumentenOp(type?: string): Promise<ApiDocument[]> {
-  const url = type ? `${API_URL}/documenten?type=${type}` : `${API_URL}/documenten`
-  const resp = await fetch(url)
+export interface SyncLogItem {
+  timestamp: string
+  status: string
+  nieuw?: number
+  bijgewerkt?: number
+  per_type?: Record<string, { nieuw: number; bijgewerkt: number }>
+  [key: string]: unknown
+}
+
+// Raadsmededelingen — alle, nieuwste eerst
+export async function haalRaadsmededelingen(): Promise<ApiDocument[]> {
+  const resp = await fetch(`${API_URL}/documenten?type=raadsmededelingen`)
   if (!resp.ok) throw new Error(`API fout: ${resp.status}`)
   const data = await resp.json()
   return Array.isArray(data) ? data : (data.documenten || [])
 }
 
-export async function haalNieuweDocumenten(sindsDatum: string): Promise<ApiDocument[]> {
-  const resp = await fetch(`${API_URL}/documenten/nieuw?sinds_vergadering=${sindsDatum}`)
-  if (!resp.ok) throw new Error(`API fout: ${resp.status}`)
-  const data = await resp.json()
-  return Array.isArray(data) ? data : (data.documenten || [])
+// Vragen — alleen afgedaan, beide types
+export async function haalAfgedaaneVragen(): Promise<ApiDocument[]> {
+  const [tq, sq] = await Promise.all([
+    fetch(`${API_URL}/documenten?type=technische_vragen&alleen_afgedaan=true`).then(r => r.json()).catch(() => []),
+    fetch(`${API_URL}/documenten?type=schriftelijke_vragen&alleen_afgedaan=true`).then(r => r.json()).catch(() => []),
+  ])
+  const tqDocs: ApiDocument[] = Array.isArray(tq) ? tq : (tq.documenten || [])
+  const sqDocs: ApiDocument[] = Array.isArray(sq) ? sq : (sq.documenten || [])
+  // Combineer en sorteer op afgedaan-datum nieuwste eerst
+  return [...tqDocs, ...sqDocs].sort((a, b) =>
+    (b.afgedaan || '').localeCompare(a.afgedaan || '')
+  )
 }
 
-export async function startSync(): Promise<void> {
+// Sync starten + log ophalen
+export async function startSyncEnWacht(): Promise<SyncLogItem[]> {
   await fetch(`${API_URL}/sync/nu`, { method: 'POST' })
+  // Wacht even zodat de backend klaar is
+  await new Promise(r => setTimeout(r, 3000))
+  return haalSyncLog()
 }
 
-export async function haalSyncLog(): Promise<unknown[]> {
+export async function haalSyncLog(): Promise<SyncLogItem[]> {
   const resp = await fetch(`${API_URL}/sync/log`)
   if (!resp.ok) throw new Error(`API fout: ${resp.status}`)
-  return resp.json()
+  const data = await resp.json()
+  return Array.isArray(data) ? data : []
 }
 
 export async function testVerbinding(): Promise<boolean> {
@@ -36,47 +57,55 @@ export async function testVerbinding(): Promise<boolean> {
   }
 }
 
-// Demo data voor als de API niet bereikbaar is
-export const DEMO_DOCUMENTEN: ApiDocument[] = [
+// Demo data
+export const DEMO_RM: ApiDocument[] = [
   {
-    id: 'demo1',
+    id: 'demo_rm1',
     type: 'raadsmededelingen',
-    titel: '1521110 RM Treasurystatuut',
-    doc_nummer: '1521110',
-    publicatiedatum: '06-05-2026',
-    indieners: 'Richard de Rooy',
-    fracties: 'Hart Voor Gooise Meren',
-    url: 'https://bestuur.gooisemeren.nl/Documenten/Raadsmededelingen/1521110',
-  },
-  {
-    id: 'demo2',
-    type: 'raadsmededelingen',
-    titel: '1520768 RM Deelfietsensysteem',
-    doc_nummer: '1520768',
-    publicatiedatum: '04-05-2026',
+    titel: '1522394 RM Treasurystatuut',
+    doc_nummer: '1522394',
+    publicatiedatum: '2026-04-21',
+    sorteerdatum: '2026-04-21',
     indieners: '',
     fracties: '',
-    url: 'https://bestuur.gooisemeren.nl/Documenten/Raadsmededelingen/1520768',
+    url: 'https://bestuur.gooisemeren.nl/Documenten/raadsinstrumenten/1522394-RM-Treasurystatuut/',
   },
   {
-    id: 'demo3',
+    id: 'demo_rm2',
+    type: 'raadsmededelingen',
+    titel: '1520113 RM Uitspraak Rechtbank MN',
+    doc_nummer: '1520113',
+    publicatiedatum: '2026-04-10',
+    sorteerdatum: '2026-04-10',
+    indieners: '',
+    fracties: '',
+    url: 'https://bestuur.gooisemeren.nl/Documenten/raadsinstrumenten/1520113-RM-Uitspraak-Rechtbank/',
+  },
+]
+
+export const DEMO_VRAGEN: ApiDocument[] = [
+  {
+    id: 'demo_tq1',
     type: 'technische_vragen',
-    titel: 'Beantwoording technische vragen grondstoffenbeleid',
+    titel: 'Beantwoording technische vragen – Grondstoffenbeleid',
     doc_nummer: '1519900',
-    publicatiedatum: '02-05-2026',
+    publicatiedatum: '2026-03-15',
+    sorteerdatum: '2026-04-01',
+    afgedaan: '2026-04-01',
     indieners: 'Vera Kraaij',
-    fracties: 'D66',
-    url: 'https://bestuur.gooisemeren.nl/Documenten/Vragen/1519900',
-    afgedaan: 'Afgedaan',
+    fracties: 'GDP',
+    url: 'https://bestuur.gooisemeren.nl/Documenten/raadsinstrumenten/1519900-TQ-Grondstoffenbeleid/',
   },
   {
-    id: 'demo4',
+    id: 'demo_sq1',
     type: 'schriftelijke_vragen',
-    titel: 'Schriftelijke vragen over parkeerbeleid Bussum',
-    doc_nummer: '1519750',
-    publicatiedatum: '01-05-2026',
-    indieners: 'Marga Streefland',
-    fracties: 'VVD',
-    url: 'https://bestuur.gooisemeren.nl/Documenten/Vragen/1519750',
+    titel: 'Schriftelijke vragen GDP – Herinrichting Muiderberg en warmtenet',
+    doc_nummer: '1518500',
+    publicatiedatum: '2026-02-20',
+    sorteerdatum: '2026-03-31',
+    afgedaan: '2026-03-31',
+    indieners: 'Pieter Knecht',
+    fracties: 'GDP',
+    url: 'https://bestuur.gooisemeren.nl/Documenten/raadsinstrumenten/1518500-SQ-Muiderberg/',
   },
 ]
