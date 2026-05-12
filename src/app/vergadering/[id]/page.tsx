@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useVergaderingen } from '@/hooks/useVergaderingen'
 import { useAuth } from '@/hooks/useAuth'
-import { ApiDocument, Subpunt } from '@/lib/types'
+import { ApiDocument } from '@/lib/types'
 import { startSync, haalNieuweDocumenten, DEMO_DOCUMENTEN } from '@/lib/api'
 import { vandaag } from '@/lib/datum'
 import AgendaEditor from '@/components/AgendaEditor'
@@ -23,7 +23,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
   const router = useRouter()
   const { isAdmin } = useAuth()
   const {
-    vergaderingen, geladen,
+    vergaderingen, geladen, opslaan,
     update, updatePunt, verwijderPunt, voegPuntToe,
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
   } = useVergaderingen()
@@ -33,11 +33,19 @@ export default function VergaderingEditorPagina({ params }: Props) {
   const [ladenSync, setLadenSync] = useState(false)
   const [nieuweDocs, setNieuweDocs] = useState<ApiDocument[]>([])
 
-  if (!geladen) return <div style={{ fontFamily: 'Arial', color: 'var(--tekst-zacht)', padding: '40px' }}>Laden...</div>
+  if (!geladen) return (
+    <div style={{ textAlign: 'center', padding: '80px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>
+      ⏳ Laden...
+    </div>
+  )
   if (!isAdmin) { router.push('/login'); return null }
 
   const v = vergaderingen.find(x => x.id === id)
-  if (!v) return <div style={{ fontFamily: 'Arial', padding: '40px', color: 'var(--rood)' }}>Vergadering niet gevonden.</div>
+  if (!v) return (
+    <div style={{ fontFamily: 'Arial', padding: '40px', color: 'var(--rood)' }}>
+      Vergadering niet gevonden.
+    </div>
+  )
 
   const kopieerDeellink = () => {
     const url = `${window.location.origin}/lees/${v.deeltoken}`
@@ -66,32 +74,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
     setLadenSync(false)
   }
 
-  const voegDocsToeBekijkAl = (geselecteerd: ApiDocument[]) => {
-    geselecteerd.forEach(doc => {
-      const isRM = doc.type === 'raadsmededelingen'
-      const puntnr = isRM ? 6 : 7
-      const puntIndex = v.punten.findIndex(p => p.id === puntnr)
-      if (puntIndex >= 0) {
-        const punt = v.punten[puntIndex]
-        const nieuweSubpunt: Subpunt = {
-          id: String.fromCharCode(97 + punt.subpunten.length),
-          titel: doc.titel,
-          url: doc.url,
-          afgedaan: doc.afgedaan === 'Afgedaan',
-        }
-        updateSubpunt(id, puntIndex, punt.subpunten.length, nieuweSubpunt)
-        voegSubpuntToe(id, puntIndex)
-        // Correctie: direct de subpunt data schrijven ipv voegSubpuntToe aanroepen
-      }
-    })
-    // Alternatieve implementatie: batch update
-    voegDocsDirectToe(geselecteerd)
-    setNieuweDocs([])
-    setMelding({ type: 'succes', tekst: `${geselecteerd.length} document(en) toegevoegd aan de agenda.` })
-    setTabblad('agenda')
-  }
-
-  const voegDocsDirectToe = (geselecteerd: ApiDocument[]) => {
+  const voegDocsDirectToe = async (geselecteerd: ApiDocument[]) => {
     const nieuwePunten = JSON.parse(JSON.stringify(v.punten))
     geselecteerd.forEach(doc => {
       const isRM = doc.type === 'raadsmededelingen'
@@ -107,7 +90,10 @@ export default function VergaderingEditorPagina({ params }: Props) {
         })
       }
     })
-    update(id, { punten: nieuwePunten })
+    await update(id, { punten: nieuwePunten })
+    setNieuweDocs([])
+    setMelding({ type: 'succes', tekst: `${geselecteerd.length} document(en) toegevoegd aan de agenda.` })
+    setTabblad('agenda')
   }
 
   const TABS: { key: Tabblad; label: string }[] = [
@@ -121,17 +107,17 @@ export default function VergaderingEditorPagina({ params }: Props) {
     <div>
       {/* Bovenste balk */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-        <button
-          onClick={() => router.push('/')}
-          style={{ background: 'white', color: 'var(--blauw)', border: '1px solid var(--blauw)', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial, sans-serif' }}
-        >
-          ← Terug
-        </button>
+        <button onClick={() => router.push('/')} style={btnOutline}>← Terug</button>
         <h1 style={{ fontSize: '20px', color: 'var(--blauw)', fontWeight: 'normal', flex: 1, margin: 0 }}>
           {v.titel || 'Vergadering bewerken'}
         </h1>
-        <button onClick={kopieerDeellink} style={btnStijlOutline}>🔗 Kopieer deellink</button>
-        <button onClick={() => router.push(`/lees/${v.deeltoken}`)} style={btnStijlAccent}>👁 Leesweergave</button>
+        {opslaan && (
+          <span style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>
+            💾 Opslaan...
+          </span>
+        )}
+        <button onClick={kopieerDeellink} style={btnOutline}>🔗 Kopieer deellink</button>
+        <button onClick={() => router.push(`/lees/${v.deeltoken}`)} style={btnAccent}>👁 Leesweergave</button>
       </div>
 
       {melding && <Melding type={melding.type} tekst={melding.tekst} onSluit={() => setMelding(null)} />}
@@ -139,22 +125,13 @@ export default function VergaderingEditorPagina({ params }: Props) {
       {/* Tabbladen */}
       <div style={{ display: 'flex', gap: '2px', borderBottom: '1px solid var(--rand)', marginBottom: '24px' }}>
         {TABS.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTabblad(t.key)}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: '10px 18px',
-              fontSize: '13px',
-              fontFamily: 'Arial, sans-serif',
-              cursor: 'pointer',
-              color: tabblad === t.key ? 'var(--blauw)' : 'var(--tekst-zacht)',
-              borderBottom: tabblad === t.key ? '2px solid var(--blauw)' : '2px solid transparent',
-              marginBottom: '-1px',
-              fontWeight: tabblad === t.key ? 'bold' : 'normal',
-            }}
-          >
+          <button key={t.key} onClick={() => setTabblad(t.key)} style={{
+            background: 'none', border: 'none', padding: '10px 18px', fontSize: '13px',
+            fontFamily: 'Arial, sans-serif', cursor: 'pointer',
+            color: tabblad === t.key ? 'var(--blauw)' : 'var(--tekst-zacht)',
+            borderBottom: tabblad === t.key ? '2px solid var(--blauw)' : '2px solid transparent',
+            marginBottom: '-1px', fontWeight: tabblad === t.key ? 'bold' : 'normal',
+          }}>
             {t.label}
             {t.key === 'documenten' && nieuweDocs.length > 0 && (
               <span style={{ marginLeft: '6px', background: 'var(--accent)', color: 'var(--blauw)', fontSize: '10px', padding: '1px 5px', borderRadius: '8px', fontWeight: 'bold' }}>
@@ -165,9 +142,13 @@ export default function VergaderingEditorPagina({ params }: Props) {
         ))}
       </div>
 
-      {/* Inhoud per tabblad */}
+      {/* Tabblad inhoud */}
       {tabblad === 'details' && (
-        <DetailsTab vergadering={v} onUpdate={(w) => update(id, w)} onNaarAgenda={() => setTabblad('agenda')} />
+        <DetailsTab
+          vergadering={v}
+          onUpdate={(w) => update(id, w)}
+          onNaarAgenda={() => setTabblad('agenda')}
+        />
       )}
       {tabblad === 'agenda' && (
         <AgendaEditor
@@ -200,26 +181,23 @@ export default function VergaderingEditorPagina({ params }: Props) {
   )
 }
 
-// Details tab component
-function DetailsTab({
-  vergadering: v,
-  onUpdate,
-  onNaarAgenda,
-}: {
-  vergadering: ReturnType<typeof useVergaderingen>['vergaderingen'][0]
-  onUpdate: (w: Partial<typeof v>) => void
+// ── Details tab ────────────────────────────────────────────────
+
+type VergaderingUpdate = Partial<{
+  titel: string; datum: string; aanvang: string; locatie: string;
+  aanwezig: string; online: string; afwezig: string;
+}>
+
+function DetailsTab({ vergadering: v, onUpdate, onNaarAgenda }: {
+  vergadering: { titel: string; datum: string; aanvang: string; locatie: string; aanwezig: string; online: string; afwezig: string }
+  onUpdate: (w: VergaderingUpdate) => void
   onNaarAgenda: () => void
 }) {
   return (
     <div style={{ maxWidth: '560px' }}>
       <Invoerveld label="Titel vergadering">
-        <input
-          style={invoerStijl}
-          value={v.titel || ''}
-          onChange={e => onUpdate({ titel: e.target.value })}
-        />
+        <input style={invoerStijl} value={v.titel || ''} onChange={e => onUpdate({ titel: e.target.value })} />
       </Invoerveld>
-
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         <Invoerveld label="Datum">
           <input type="date" style={invoerStijl} value={v.datum || ''} onChange={e => onUpdate({ datum: e.target.value })} />
@@ -228,7 +206,6 @@ function DetailsTab({
           <input type="time" style={invoerStijl} value={v.aanvang || '20:00'} onChange={e => onUpdate({ aanvang: e.target.value })} />
         </Invoerveld>
       </div>
-
       <Invoerveld label="Locatie">
         <input style={invoerStijl} value={v.locatie || ''} onChange={e => onUpdate({ locatie: e.target.value })} />
       </Invoerveld>
@@ -251,10 +228,7 @@ function DetailsTab({
           </div>
         ))}
       </div>
-
-      <button onClick={onNaarAgenda} style={btnStijlOutline}>
-        Naar agenda bewerken →
-      </button>
+      <button onClick={onNaarAgenda} style={btnOutline}>Naar agenda bewerken →</button>
     </div>
   )
 }
@@ -271,36 +245,19 @@ function Invoerveld({ label, children }: { label: string; children: React.ReactN
 }
 
 const invoerStijl: React.CSSProperties = {
-  width: '100%',
-  padding: '9px 12px',
-  border: '1px solid var(--rand)',
-  borderRadius: '8px',
-  fontSize: '14px',
-  fontFamily: 'Arial, sans-serif',
-  background: 'white',
-  color: 'var(--tekst)',
-  outline: 'none',
+  width: '100%', padding: '9px 12px', border: '1px solid var(--rand)',
+  borderRadius: '8px', fontSize: '14px', fontFamily: 'Arial, sans-serif',
+  background: 'white', color: 'var(--tekst)', outline: 'none',
 }
 
-const btnStijlOutline: React.CSSProperties = {
-  background: 'white',
-  color: 'var(--blauw)',
-  border: '1px solid var(--blauw)',
-  padding: '8px 16px',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  fontSize: '13px',
-  fontFamily: 'Arial, sans-serif',
+const btnOutline: React.CSSProperties = {
+  background: 'white', color: 'var(--blauw)', border: '1px solid var(--blauw)',
+  padding: '7px 14px', borderRadius: '8px', cursor: 'pointer',
+  fontSize: '12px', fontFamily: 'Arial, sans-serif',
 }
 
-const btnStijlAccent: React.CSSProperties = {
-  background: 'var(--accent)',
-  color: 'var(--blauw)',
-  border: '1px solid var(--accent)',
-  padding: '8px 16px',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  fontSize: '13px',
-  fontFamily: 'Arial, sans-serif',
-  fontWeight: 'bold',
+const btnAccent: React.CSSProperties = {
+  background: 'var(--accent)', color: 'var(--blauw)', border: '1px solid var(--accent)',
+  padding: '7px 14px', borderRadius: '8px', cursor: 'pointer',
+  fontSize: '12px', fontFamily: 'Arial, sans-serif', fontWeight: 'bold',
 }

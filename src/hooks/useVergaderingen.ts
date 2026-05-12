@@ -2,24 +2,42 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Vergadering, Agendapunt, Subpunt } from '@/lib/types'
-import { laadVergaderingen, slaVergaderingenOp, nieuweId, nieuwToken } from '@/lib/storage'
+import {
+  laadVergaderingen as dbLaad,
+  laadVergaderingOpToken as dbLaadOpToken,
+  slaVergaderingOp,
+  verwijderVergaderingDb,
+  nieuweId,
+  nieuwToken,
+} from '@/lib/storage'
 import { TEMPLATE_PUNTEN } from '@/lib/template'
 
 export function useVergaderingen() {
   const [vergaderingen, setVergaderingen] = useState<Vergadering[]>([])
   const [geladen, setGeladen] = useState(false)
+  const [opslaan, setOpslaan] = useState(false)
 
+  // Laad alle vergaderingen bij mount
   useEffect(() => {
-    setVergaderingen(laadVergaderingen())
-    setGeladen(true)
+    dbLaad().then(data => {
+      setVergaderingen(data)
+      setGeladen(true)
+    })
   }, [])
 
-  const sla = useCallback((nieuw: Vergadering[]) => {
-    setVergaderingen(nieuw)
-    slaVergaderingenOp(nieuw)
+  // Helper: sla op in Supabase en update lokale state
+  const slaOp = useCallback(async (vergadering: Vergadering) => {
+    setOpslaan(true)
+    await slaVergaderingOp(vergadering)
+    setVergaderingen(huidig =>
+      huidig.some(v => v.id === vergadering.id)
+        ? huidig.map(v => v.id === vergadering.id ? vergadering : v)
+        : [vergadering, ...huidig]
+    )
+    setOpslaan(false)
   }, [])
 
-  const maakNieuwe = useCallback((vanTemplate: boolean): Vergadering => {
+  const maakNieuwe = useCallback(async (vanTemplate: boolean): Promise<Vergadering> => {
     const v: Vergadering = {
       id: nieuweId(),
       titel: 'Nieuwe vergadering',
@@ -34,11 +52,11 @@ export function useVergaderingen() {
       aangemaakt: new Date().toISOString(),
       bijgewerkt: new Date().toISOString(),
     }
-    sla([v, ...vergaderingen])
+    await slaOp(v)
     return v
-  }, [vergaderingen, sla])
+  }, [slaOp])
 
-  const kopieer = useCallback((id: string): Vergadering | null => {
+  const kopieer = useCallback(async (id: string): Promise<Vergadering | null> => {
     const orig = vergaderingen.find(v => v.id === id)
     if (!orig) return null
     const kop: Vergadering = {
@@ -50,25 +68,27 @@ export function useVergaderingen() {
       aangemaakt: new Date().toISOString(),
       bijgewerkt: new Date().toISOString(),
     }
-    sla([kop, ...vergaderingen])
+    await slaOp(kop)
     return kop
-  }, [vergaderingen, sla])
+  }, [vergaderingen, slaOp])
 
-  const verwijder = useCallback((id: string) => {
-    sla(vergaderingen.filter(v => v.id !== id))
-  }, [vergaderingen, sla])
+  const verwijder = useCallback(async (id: string) => {
+    await verwijderVergaderingDb(id)
+    setVergaderingen(huidig => huidig.filter(v => v.id !== id))
+  }, [])
 
-  const update = useCallback((id: string, wijzigingen: Partial<Vergadering>) => {
-    sla(vergaderingen.map(v =>
-      v.id === id ? { ...v, ...wijzigingen, bijgewerkt: new Date().toISOString() } : v
-    ))
-  }, [vergaderingen, sla])
+  const update = useCallback(async (id: string, wijzigingen: Partial<Vergadering>) => {
+    const v = vergaderingen.find(x => x.id === id)
+    if (!v) return
+    const bijgewerkt = { ...v, ...wijzigingen, bijgewerkt: new Date().toISOString() }
+    await slaOp(bijgewerkt)
+  }, [vergaderingen, slaOp])
 
-  const updatePunten = useCallback((id: string, punten: Agendapunt[]) => {
-    update(id, { punten })
+  const updatePunten = useCallback(async (id: string, punten: Agendapunt[]) => {
+    await update(id, { punten })
   }, [update])
 
-  const voegPuntToe = useCallback((vergaderingId: string) => {
+  const voegPuntToe = useCallback(async (vergaderingId: string) => {
     const v = vergaderingen.find(x => x.id === vergaderingId)
     if (!v) return
     const nieuwPunt: Agendapunt = {
@@ -77,18 +97,18 @@ export function useVergaderingen() {
       toelichting: '',
       subpunten: [],
     }
-    updatePunten(vergaderingId, [...v.punten, nieuwPunt])
+    await updatePunten(vergaderingId, [...v.punten, nieuwPunt])
   }, [vergaderingen, updatePunten])
 
-  const verwijderPunt = useCallback((vergaderingId: string, puntIndex: number) => {
+  const verwijderPunt = useCallback(async (vergaderingId: string, puntIndex: number) => {
     const v = vergaderingen.find(x => x.id === vergaderingId)
     if (!v) return
     const nieuw = v.punten.filter((_, i) => i !== puntIndex)
     nieuw.forEach((p, i) => { p.id = i + 1 })
-    updatePunten(vergaderingId, nieuw)
+    await updatePunten(vergaderingId, nieuw)
   }, [vergaderingen, updatePunten])
 
-  const updatePunt = useCallback((
+  const updatePunt = useCallback(async (
     vergaderingId: string,
     puntIndex: number,
     wijzigingen: Partial<Agendapunt>
@@ -98,10 +118,10 @@ export function useVergaderingen() {
     const nieuw = v.punten.map((p, i) =>
       i === puntIndex ? { ...p, ...wijzigingen } : p
     )
-    updatePunten(vergaderingId, nieuw)
+    await updatePunten(vergaderingId, nieuw)
   }, [vergaderingen, updatePunten])
 
-  const voegSubpuntToe = useCallback((vergaderingId: string, puntIndex: number) => {
+  const voegSubpuntToe = useCallback(async (vergaderingId: string, puntIndex: number) => {
     const v = vergaderingen.find(x => x.id === vergaderingId)
     if (!v) return
     const punt = v.punten[puntIndex]
@@ -111,12 +131,12 @@ export function useVergaderingen() {
       url: '',
       afgedaan: false,
     }
-    updatePunt(vergaderingId, puntIndex, {
+    await updatePunt(vergaderingId, puntIndex, {
       subpunten: [...punt.subpunten, nieuwSubpunt],
     })
   }, [vergaderingen, updatePunt])
 
-  const verwijderSubpunt = useCallback((
+  const verwijderSubpunt = useCallback(async (
     vergaderingId: string,
     puntIndex: number,
     subIndex: number
@@ -125,10 +145,10 @@ export function useVergaderingen() {
     if (!v) return
     const nieuweSubs = v.punten[puntIndex].subpunten.filter((_, i) => i !== subIndex)
     nieuweSubs.forEach((s, i) => { s.id = String.fromCharCode(97 + i) })
-    updatePunt(vergaderingId, puntIndex, { subpunten: nieuweSubs })
+    await updatePunt(vergaderingId, puntIndex, { subpunten: nieuweSubs })
   }, [vergaderingen, updatePunt])
 
-  const updateSubpunt = useCallback((
+  const updateSubpunt = useCallback(async (
     vergaderingId: string,
     puntIndex: number,
     subIndex: number,
@@ -139,7 +159,7 @@ export function useVergaderingen() {
     const nieuweSubs = v.punten[puntIndex].subpunten.map((s, i) =>
       i === subIndex ? { ...s, ...wijzigingen } : s
     )
-    updatePunt(vergaderingId, puntIndex, { subpunten: nieuweSubs })
+    await updatePunt(vergaderingId, puntIndex, { subpunten: nieuweSubs })
   }, [vergaderingen, updatePunt])
 
   const vindOpToken = useCallback((token: string): Vergadering | undefined => {
@@ -149,6 +169,7 @@ export function useVergaderingen() {
   return {
     vergaderingen,
     geladen,
+    opslaan,
     maakNieuwe,
     kopieer,
     verwijder,
@@ -162,4 +183,20 @@ export function useVergaderingen() {
     updateSubpunt,
     vindOpToken,
   }
+}
+
+// Aparte hook voor de leespagina: laad één vergadering op token
+export function useVergaderingOpToken(token: string) {
+  const [vergadering, setVergadering] = useState<Vergadering | null>(null)
+  const [geladen, setGeladen] = useState(false)
+
+  useEffect(() => {
+    if (!token) return
+    dbLaadOpToken(token).then(data => {
+      setVergadering(data)
+      setGeladen(true)
+    })
+  }, [token])
+
+  return { vergadering, geladen }
 }

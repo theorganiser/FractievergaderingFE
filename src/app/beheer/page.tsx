@@ -39,7 +39,7 @@ export default function BeheerPagina() {
   const wisAllesOp = () => {
     if (confirm('Weet je zeker dat je ALLE vergaderingen wilt verwijderen? Dit is niet ongedaan te maken.')) {
       localStorage.clear()
-      window.location.href = '/'
+      router.push('/')
     }
   }
 
@@ -108,7 +108,7 @@ export default function BeheerPagina() {
       <Kaart titel="Over deze applicatie">
         <p style={tekststijl}>
           <strong>MVP versie</strong> — data wordt opgeslagen in de browser (localStorage).
-          Voor productie: vervangen door een echte database (bijv. Supabase, PlanetScale of Vercel KV).
+          Vergaderingen zijn beschikbaar op alle apparaten via de deellink.
         </p>
         <p style={{ ...tekststijl, marginTop: '8px' }}>
           Wachtwoord instellen via de omgevingsvariabele <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>NEXT_PUBLIC_ADMIN_PASSWORD</code> in Vercel of in <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>.env.local</code>.

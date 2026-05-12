@@ -1,134 +1,71 @@
 # Vergaderagenda – Gooise Meren
 
-Een webapplicatie voor het aanmaken en delen van vergaderagenda's voor de commissie van Gooise Meren.
+Een webapplicatie voor het aanmaken en delen van vergaderagenda's. Data wordt opgeslagen in Supabase.
 
-## 🚀 Snel aan de slag
+## 🗄 Stap 1 – Supabase database instellen
 
-### 1. Repository instellen
+1. Ga naar [supabase.com](https://supabase.com) → jouw project **vergaderagenda**
+2. Klik op **SQL Editor** in het linkermenu
+3. Plak de inhoud van `supabase-setup.sql` en klik **Run**
+4. Je ziet: `Tabel vergaderingen aangemaakt ✓`
+
+## 🚀 Stap 2 – Lokaal starten
 
 ```bash
-# Clone of download dit project
-cd vergaderagenda-gooise-meren
-
-# Installeer dependencies
 npm install
-
-# Maak env bestand aan
 cp .env.local.example .env.local
-```
-
-### 2. Omgevingsvariabelen instellen
-
-Bewerk `.env.local`:
-
-```
-NEXT_PUBLIC_ADMIN_PASSWORD=kiesEenSterkWachtwoord
-NEXT_PUBLIC_API_URL=https://datascraperraad.onrender.com
-```
-
-### 3. Lokaal starten
-
-```bash
+# Vul .env.local in (of gebruik het meegeleverde .env.local)
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
 
----
+## ☁️ Stap 3 – Deployen op Vercel
 
-## 📦 Deployen op Vercel via GitHub
+1. Push naar GitHub
+2. Importeer op [vercel.com](https://vercel.com)
+3. Voeg deze omgevingsvariabelen toe in Vercel:
 
-### Stap 1 – GitHub repository aanmaken
+| Variabele | Waarde |
+|-----------|--------|
+| `NEXT_PUBLIC_ADMIN_PASSWORD` | jouw wachtwoord |
+| `NEXT_PUBLIC_SUPABASE_URL` | https://bchzfcnxtgiqplwqouhy.supabase.co |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | jouw anon key |
+| `NEXT_PUBLIC_API_URL` | https://datascraperraad.onrender.com |
 
-1. Ga naar [github.com/new](https://github.com/new)
-2. Maak een nieuwe repository aan (bijv. `vergaderagenda`)
-3. Upload alle bestanden of gebruik git:
-
-```bash
-git init
-git add .
-git commit -m "Eerste versie vergaderagenda"
-git remote add origin https://github.com/JOUWGEBRUIKERSNAAM/vergaderagenda.git
-git push -u origin main
-```
-
-### Stap 2 – Vercel koppelen
-
-1. Ga naar [vercel.com](https://vercel.com) en log in
-2. Klik **Add New → Project**
-3. Importeer je GitHub repository
-4. Voeg omgevingsvariabelen toe:
-   - `NEXT_PUBLIC_ADMIN_PASSWORD` → jouw wachtwoord
-   - `NEXT_PUBLIC_API_URL` → https://datascraperraad.onrender.com
-5. Klik **Deploy**
-
----
-
-## 🏗 Projectstructuur
+## 📁 Projectstructuur
 
 ```
 src/
 ├── app/
-│   ├── layout.tsx          # Root layout met topbalk
-│   ├── page.tsx            # Overzichtspagina vergaderingen
-│   ├── login/page.tsx      # Beheerder inlogpagina
-│   ├── lees/[token]/       # Openbare leesweergave (via deellink)
-│   ├── vergadering/[id]/   # Editor voor beheerders
-│   └── beheer/page.tsx     # Beheer & API-status
+│   ├── page.tsx                  # Overzicht vergaderingen
+│   ├── login/page.tsx            # Beheerder inloggen
+│   ├── lees/[token]/page.tsx     # Openbare leesweergave
+│   ├── vergadering/[id]/page.tsx # Editor
+│   └── beheer/page.tsx           # Beheer & API-status
 ├── components/
-│   ├── Topbalk.tsx         # Navigatiebalk
-│   ├── Leesweergave.tsx    # Alleen-lezen agendaweergave
-│   ├── AgendaEditor.tsx    # Agenda bewerken
-│   ├── DocumentenSelector.tsx # API-documenten selecteren
-│   └── Melding.tsx         # Notificaties
+│   ├── Topbalk.tsx
+│   ├── Leesweergave.tsx
+│   ├── AgendaEditor.tsx
+│   ├── DocumentenSelector.tsx
+│   └── Melding.tsx
 ├── hooks/
-│   ├── useVergaderingen.ts # State management
-│   └── useAuth.ts          # Authenticatie
+│   ├── useVergaderingen.ts       # State + Supabase calls
+│   └── useAuth.ts
 └── lib/
-    ├── types.ts            # TypeScript types
-    ├── api.ts              # Backend API client
-    ├── storage.ts          # localStorage helpers
-    ├── datum.ts            # Datum opmaak
-    └── template.ts         # Standaard agenda template
+    ├── supabase.ts               # Supabase client
+    ├── storage.ts                # CRUD functies (Supabase)
+    ├── api.ts                    # Backend scraper API
+    ├── types.ts
+    ├── datum.ts
+    └── template.ts
 ```
 
----
+## 🔐 Authenticatie
 
-## ✨ Functies
-
-- **Overzicht** – Alle vergaderingen gesorteerd op datum
-- **Template** – Standaard 9-punten agenda in één klik
-- **Editor** – Punten en subpunten bewerken, toelichting, links
-- **Documenten vernieuwen** – Roept de API aan en toont nieuwe raadsmededelingen/vragen
-- **Deellink** – Unieke link per vergadering, geen login nodig voor lezers
-- **Leesweergave** – Nette opmaak met klikbare links en afdrukfunctie
-- **Authenticatie** – Eenvoudige wachtwoordbeveiliging voor beheerders
-
----
-
-## 🔧 Toekomstige verbeteringen
-
-- [ ] Database (bijv. Supabase) in plaats van localStorage
-- [ ] Betere authenticatie (bijv. NextAuth)
-- [ ] Versiegeschiedenis per vergadering
-- [ ] E-mailnotificaties bij nieuwe documenten
-- [ ] Exporteren naar Word/PDF
-- [ ] Meerdere beheerders met aparte accounts
-
----
-
-## 🌐 API Backend
-
-De backend draait op: `https://datascraperraad.onrender.com`
-
-| Methode | Pad | Beschrijving |
-|---------|-----|--------------|
-| GET | `/documenten` | Alle documenten |
-| GET | `/documenten?type=raadsmededelingen` | Filter op type |
-| GET | `/documenten/nieuw?sinds_vergadering=YYYY-MM-DD` | Nieuw sinds datum |
-| GET | `/documenten/per-type` | Samenvatting per type |
-| GET | `/sync/log` | Sync geschiedenis |
-| POST | `/sync/nu` | Scraper handmatig starten |
+Beheerders loggen in met het wachtwoord uit `NEXT_PUBLIC_ADMIN_PASSWORD`.  
+De inlogstatus wordt bewaard in `sessionStorage` (verdwijnt bij sluiten browser).  
+Lezers hebben geen account nodig — zij openen de unieke deellink.
 
 ---
 

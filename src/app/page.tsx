@@ -12,24 +12,27 @@ export default function OverzichtPagina() {
   const { vergaderingen, geladen, maakNieuwe, kopieer, verwijder } = useVergaderingen()
   const { isAdmin } = useAuth()
   const [melding, setMelding] = useState<{ type: 'succes' | 'info'; tekst: string } | null>(null)
+  const [bezig, setBezig] = useState(false)
 
-  if (!geladen) return <div style={{ fontFamily: 'Arial', color: 'var(--tekst-zacht)', padding: '40px' }}>Laden...</div>
+  if (!geladen) return <Laden />
 
   const gesorteerd = [...vergaderingen].sort(sorteerOpDatum)
 
-  const handleNieuw = (vanTemplate: boolean) => {
-    const v = maakNieuwe(vanTemplate)
+  const handleNieuw = async (vanTemplate: boolean) => {
+    setBezig(true)
+    const v = await maakNieuwe(vanTemplate)
     router.push(`/vergadering/${v.id}`)
   }
 
-  const handleKopieer = (id: string) => {
-    const kop = kopieer(id)
+  const handleKopieer = async (id: string) => {
+    setBezig(true)
+    const kop = await kopieer(id)
     if (kop) router.push(`/vergadering/${kop.id}`)
   }
 
-  const handleVerwijder = (id: string) => {
+  const handleVerwijder = async (id: string) => {
     if (confirm('Weet je zeker dat je deze vergadering wilt verwijderen?')) {
-      verwijder(id)
+      await verwijder(id)
     }
   }
 
@@ -47,8 +50,10 @@ export default function OverzichtPagina() {
         <h1 style={{ fontSize: '22px', color: 'var(--blauw)', fontWeight: 'normal' }}>Vergaderingen</h1>
         {isAdmin && (
           <div style={{ display: 'flex', gap: '8px' }}>
-            <Knop variant="outline" onClick={() => handleNieuw(false)}>+ Leeg</Knop>
-            <Knop variant="primair" onClick={() => handleNieuw(true)}>+ Nieuw vanuit template</Knop>
+            <Knop variant="outline" onClick={() => handleNieuw(false)} disabled={bezig}>+ Leeg</Knop>
+            <Knop variant="primair" onClick={() => handleNieuw(true)} disabled={bezig}>
+              {bezig ? '⏳ Bezig...' : '+ Nieuw vanuit template'}
+            </Knop>
           </div>
         )}
       </div>
@@ -56,9 +61,7 @@ export default function OverzichtPagina() {
         Vergadering- en agendabeheer voor Gooise Meren
       </p>
 
-      {melding && (
-        <Melding type={melding.type} tekst={melding.tekst} onSluit={() => setMelding(null)} />
-      )}
+      {melding && <Melding type={melding.type} tekst={melding.tekst} onSluit={() => setMelding(null)} />}
 
       {gesorteerd.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--tekst-zacht)', fontFamily: 'Arial, sans-serif' }}>
@@ -101,16 +104,7 @@ export default function OverzichtPagina() {
                   <Knop variant="outline" klein onClick={() => handleKopieer(v.id)}>⧉ Kopiëren</Knop>
                   <button
                     onClick={() => kopieerDeellink(v.deeltoken)}
-                    style={{
-                      fontSize: '11px',
-                      background: '#e8f5ed',
-                      border: '1px solid #a8d8b5',
-                      color: '#2d7a4f',
-                      padding: '4px 10px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontFamily: 'Arial, sans-serif',
-                    }}
+                    style={{ fontSize: '11px', background: '#e8f5ed', border: '1px solid #a8d8b5', color: '#2d7a4f', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'Arial, sans-serif' }}
                   >
                     🔗 Deel
                   </button>
@@ -125,13 +119,16 @@ export default function OverzichtPagina() {
   )
 }
 
-function Knop({
-  variant,
-  klein,
-  onClick,
-  children,
-  disabled,
-}: {
+function Laden() {
+  return (
+    <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--tekst-zacht)', fontFamily: 'Arial, sans-serif' }}>
+      <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
+      <p>Vergaderingen laden...</p>
+    </div>
+  )
+}
+
+function Knop({ variant, klein, onClick, children, disabled }: {
   variant: 'primair' | 'outline' | 'gevaar'
   klein?: boolean
   onClick?: () => void
@@ -139,22 +136,16 @@ function Knop({
   disabled?: boolean
 }) {
   const basis: React.CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
+    display: 'inline-flex', alignItems: 'center', gap: '6px',
     padding: klein ? '5px 10px' : '8px 16px',
-    borderRadius: '8px',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    fontSize: klein ? '12px' : '13px',
-    fontFamily: 'Arial, sans-serif',
-    border: '1px solid transparent',
-    transition: 'all 0.15s',
-    opacity: disabled ? 0.5 : 1,
+    borderRadius: '8px', cursor: disabled ? 'not-allowed' : 'pointer',
+    fontSize: klein ? '12px' : '13px', fontFamily: 'Arial, sans-serif',
+    border: '1px solid transparent', transition: 'all 0.15s', opacity: disabled ? 0.5 : 1,
   }
   const stijlen: Record<string, React.CSSProperties> = {
     primair: { ...basis, background: 'var(--blauw)', color: 'white', borderColor: 'var(--blauw)' },
     outline: { ...basis, background: 'white', color: 'var(--blauw)', borderColor: 'var(--blauw)' },
-    gevaar: { ...basis, background: 'white', color: 'var(--rood)', borderColor: 'var(--rood)' },
+    gevaar:  { ...basis, background: 'white', color: 'var(--rood)', borderColor: 'var(--rood)' },
   }
   return <button style={stijlen[variant]} onClick={onClick} disabled={disabled}>{children}</button>
 }

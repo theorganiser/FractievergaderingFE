@@ -1,7 +1,6 @@
 'use client'
 
-
-import { useVergaderingen } from '@/hooks/useVergaderingen'
+import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
 import Leesweergave from '@/components/Leesweergave'
 
 interface Props {
@@ -10,17 +9,16 @@ interface Props {
 
 export default function LeesPagina({ params }: Props) {
   const { token } = params
-  const { vindOpToken, geladen } = useVergaderingen()
+  const { vergadering, geladen } = useVergaderingOpToken(token)
 
   if (!geladen) {
     return (
-      <div style={{ fontFamily: 'Arial', color: 'var(--tekst-zacht)', padding: '40px', textAlign: 'center' }}>
-        Laden...
+      <div style={{ textAlign: 'center', padding: '80px 20px', fontFamily: 'Arial, sans-serif', color: 'var(--tekst-zacht)' }}>
+        <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
+        <p>Agenda laden...</p>
       </div>
     )
   }
-
-  const vergadering = vindOpToken(token)
 
   if (!vergadering) {
     return (
