@@ -45,9 +45,10 @@ export function useVergaderingen() {
     rvDatum: string
     rvUrl: string
   }): Promise<Vergadering> => {
-    const vandaag = new Date()
-    const datumStr = opties.vergaderingDatum || vandaag.toISOString().split('T')[0]
-    const datumNL = vandaag.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const datumStr = opties.vergaderingDatum || new Date().toISOString().split('T')[0]
+    // Zet ISO datum (2026-05-18) om naar NL formaat (18-05-2026) voor de titel
+    const [jaar, maand, dag] = datumStr.split('-')
+    const datumNL = `${dag}-${maand}-${jaar}`
 
     const punten = opties.vanTemplate
       ? bouwPuntenMetOpties(opties.heeftPA, opties.paDatum, opties.paUrl, opties.heeftRV, opties.rvDatum, opties.rvUrl)

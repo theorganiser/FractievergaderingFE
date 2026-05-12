@@ -3,12 +3,14 @@
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
 import { LeesweergaveVolledig } from '@/components/Leesweergave'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/hooks/useAuth'
 
 interface Props { params: { token: string } }
 
 export default function LeesPagina({ params }: Props) {
   const { token } = params
   const { vergadering, geladen } = useVergaderingOpToken(token)
+  const { isAdmin } = useAuth()
   const { isAdmin } = useAuth()
 
   if (!geladen) return (

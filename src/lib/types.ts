@@ -10,6 +10,7 @@ export interface Agendapunt {
   id: number
   titel: string
   toelichting?: string
+  url?: string  // optionele link op het punt zelf (bijv. PA of RV agenda)
   subpunten: Subpunt[]
   apiType?: 'raadsmededelingen' | 'vragen'
   type?: 'normaal' | 'actielijst' | 'kalender'

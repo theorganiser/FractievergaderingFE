@@ -1,24 +1,23 @@
 import type { Metadata } from 'next'
 import Topbalk from '@/components/Topbalk'
+import Toegangspoort from '@/components/Toegangspoort'
 import '../app/globals.css'
 
 export const metadata: Metadata = {
-  title: 'Vergaderagenda – Gooise Meren',
-  description: 'Vergaderagenda voor de commissie van Gooise Meren',
+  title: 'Fractie Vergaderagenda — GDP',
+  description: 'Vergaderagenda voor de fractie van Goois Democratisch Platform',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="nl">
       <body>
-        <Topbalk />
-        <main style={{ maxWidth: '960px', margin: '0 auto', padding: '28px 20px' }}>
-          {children}
-        </main>
+        <Toegangspoort>
+          <Topbalk />
+          <main style={{ maxWidth: '960px', margin: '0 auto', padding: '28px 20px' }}>
+            {children}
+          </main>
+        </Toegangspoort>
       </body>
     </html>
   )

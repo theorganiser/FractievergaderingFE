@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import IngekomenStukkenInvoer from './IngekomentukkenInvoer'
 import { Agendapunt, Subpunt } from '@/lib/types'
 
 interface AgendaEditorProps {
@@ -187,14 +188,22 @@ function PuntEditor({ punt, puntIndex, onUpdate, onVerwijder, onVoegSubToe, onVe
 
       {!ingeklapt && (
         <>
-          {/* Toelichting */}
-          <div style={{ padding: '6px 14px', background: '#fafaf8', borderBottom: '1px solid var(--rand)' }}>
+          {/* Toelichting + optionele URL op het punt */}
+          <div style={{ padding: '6px 14px', background: '#fafaf8', borderBottom: '1px solid var(--rand)', display: 'flex', gap: '8px' }}>
             <input
               className="invoer-inline"
-              style={{ fontSize: '12px', fontStyle: 'italic', color: 'var(--tekst-zacht)' }}
+              style={{ fontSize: '12px', fontStyle: 'italic', color: 'var(--tekst-zacht)', flex: 1 }}
               value={punt.toelichting || ''}
               onChange={e => onUpdate({ toelichting: e.target.value })}
               placeholder="Toelichting (optioneel)..."
+            />
+            <input
+              className="invoer-inline"
+              style={{ fontSize: '12px', width: '200px', flexShrink: 0 }}
+              value={(punt as { url?: string }).url || ''}
+              onChange={e => onUpdate({ url: e.target.value } as { url: string })}
+              placeholder="🔗 Link agenda (optioneel)"
+              type="url"
             />
           </div>
 
@@ -209,21 +218,33 @@ function PuntEditor({ punt, puntIndex, onUpdate, onVerwijder, onVoegSubToe, onVe
             />
           ))}
 
-          {punt.subpunten.length === 0 && (
+          {punt.titel.toLowerCase().includes('ingekomen') ? (
+            <div style={{ padding: '10px 14px' }}>
+              <IngekomenStukkenInvoer
+                subpunten={punt.subpunten}
+                onVoegToe={(sub) => {
+                  const letter = String.fromCharCode(97 + punt.subpunten.length)
+                  onUpdate({ subpunten: [...punt.subpunten, { ...sub, id: letter }] })
+                }}
+                onVerwijder={(idx) => {
+                  const nieuw = punt.subpunten.filter((_, i) => i !== idx)
+                  nieuw.forEach((s, i) => { s.id = String.fromCharCode(97 + i) })
+                  onUpdate({ subpunten: nieuw })
+                }}
+                onUpdate={(idx, w) => {
+                  const nieuw = punt.subpunten.map((s, i) => i === idx ? { ...s, ...w } : s)
+                  onUpdate({ subpunten: nieuw })
+                }}
+              />
+            </div>
+          ) : punt.subpunten.length === 0 ? (
             <div
-              style={{
-                padding: '10px 14px',
-                fontSize: '12px',
-                color: 'var(--tekst-zacht)',
-                fontFamily: 'Arial, sans-serif',
-                fontStyle: 'italic',
-                cursor: 'pointer',
-              }}
+              style={{ padding: '10px 14px', fontSize: '12px', color: 'var(--tekst-zacht)', fontFamily: 'Arial, sans-serif', fontStyle: 'italic', cursor: 'pointer' }}
               onClick={onVoegSubToe}
             >
               + Klik om een subpunt toe te voegen
             </div>
-          )}
+          ) : null}
         </>
       )}
     </div>

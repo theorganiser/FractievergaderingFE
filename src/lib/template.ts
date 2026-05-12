@@ -87,14 +87,16 @@ export const POLITIEKE_AVOND_PUNT = (datum: string, url: string): Agendapunt => 
   id: 0, // wordt hernummerd
   titel: `Politieke Avond ${datum}`,
   toelichting: '',
-  subpunten: url ? [{ id: 'a', titel: 'Agenda politieke avond', url }] : [],
+  url: url || undefined,  // link zit op het punt zelf
+  subpunten: [],
 })
 
 export const RAADSVERGADERING_PUNT = (datum: string, url: string): Agendapunt => ({
   id: 0, // wordt hernummerd
   titel: `Raadsvergadering ${datum}`,
   toelichting: '',
-  subpunten: url ? [{ id: 'a', titel: 'Agenda raadsvergadering', url }] : [],
+  url: url || undefined,  // link zit op het punt zelf
+  subpunten: [],
 })
 
 export function bouwPuntenMetOpties(

@@ -70,7 +70,11 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false }: 
             </span>
             <div style={{ flex: 1 }}>
               <span style={{ fontSize: '15px' }}>
-                {punt.titel}
+                {punt.url ? (
+                  <a href={punt.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blauw)', textDecoration: 'none', borderBottom: '1px solid currentColor' }}>
+                    {punt.titel}
+                  </a>
+                ) : punt.titel}
                 {punt.toelichting && (
                   <span style={{ fontSize: '13px', color: 'var(--tekst-zacht)', fontStyle: 'italic', marginLeft: '6px' }}>
                     {punt.toelichting}
