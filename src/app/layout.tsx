@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import './globals.css'
 import Topbalk from '@/components/Topbalk'
+import '../app/globals.css'
 
 export const metadata: Metadata = {
   title: 'Vergaderagenda – Gooise Meren',

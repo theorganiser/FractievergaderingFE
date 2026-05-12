@@ -109,7 +109,11 @@ export default function DocumentenSelector({ documenten, onToevoegen, onSyncNu, 
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '13px' }}>{doc.titel}</div>
               <div style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial, sans-serif', marginTop: '2px' }}>
-                {doc.publicatiedatum && `${doc.publicatiedatum} · `}
+                {(doc.publicatiedatum || doc.gevonden_op) && (
+                  <span style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', marginRight: '6px' }}>
+                    {doc.publicatiedatum || doc.gevonden_op?.split('T')[0]}
+                  </span>
+                )}
                 {doc.indieners}
                 {doc.fracties && ` (${doc.fracties})`}
                 {doc.afgedaan === 'Afgedaan' && (

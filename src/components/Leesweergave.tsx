@@ -148,3 +148,43 @@ function MetaRij({ label, waarde }: { label: string; waarde: string }) {
     </div>
   )
 }
+
+// Exporteer ook een versie met acties en kalender voor de volledige leesweergave
+export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop }: { vergadering: import('@/lib/types').Vergadering, toonPrintKnop?: boolean }) {
+  return (
+    <div>
+      <Leesweergave vergadering={v} toonPrintKnop={toonPrintKnop} />
+      
+      {/* Actielijst */}
+      {v.actielijst && v.actielijst.length > 0 && (
+        <div style={{ marginTop: '32px', borderTop: '2px solid var(--blauw)', paddingTop: '20px' }}>
+          <h2 style={{ fontSize: '16px', color: 'var(--blauw)', marginBottom: '12px', fontWeight: 'bold' }}>✓ Actielijst</h2>
+          {v.actielijst.map(a => (
+            <div key={a.id} style={{ display: 'flex', gap: '12px', padding: '6px 0', borderBottom: '1px solid #f0ede8', fontSize: '14px' }}>
+              <span style={{ minWidth: '16px' }}>{a.afgedaan ? '✅' : '⬜'}</span>
+              <span style={{ fontWeight: 'bold', minWidth: '100px', textDecoration: a.afgedaan ? 'line-through' : 'none', opacity: a.afgedaan ? 0.5 : 1 }}>{a.naam}</span>
+              <span style={{ flex: 1, textDecoration: a.afgedaan ? 'line-through' : 'none', opacity: a.afgedaan ? 0.5 : 1 }}>{a.actie}</span>
+              {a.datum && <span style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>{a.datum}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Kalender */}
+      {v.kalender && v.kalender.length > 0 && (
+        <div style={{ marginTop: '28px', borderTop: '1px solid var(--rand)', paddingTop: '16px' }}>
+          <h2 style={{ fontSize: '16px', color: 'var(--blauw)', marginBottom: '12px', fontWeight: 'bold' }}>📅 Algemene agendapunten</h2>
+          {[...v.kalender].sort((a, b) => a.datum.localeCompare(b.datum)).map(item => (
+            <div key={item.id} style={{ display: 'flex', gap: '16px', padding: '5px 0', fontSize: '14px' }}>
+              <span style={{ minWidth: '80px', fontFamily: 'Arial', fontWeight: 'bold', color: 'var(--blauw)', fontSize: '13px' }}>
+                {item.datum ? new Date(item.datum + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : ''}
+              </span>
+              <span style={{ flex: 1 }}>{item.omschrijving}</span>
+              {item.personen && <span style={{ fontSize: '13px', color: 'var(--tekst-zacht)', fontStyle: 'italic' }}>{item.personen}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

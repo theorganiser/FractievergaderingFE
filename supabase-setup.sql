@@ -62,3 +62,19 @@ CREATE POLICY "Iedereen kan vergaderingen verwijderen"
 
 -- Klaar!
 SELECT 'Tabel vergaderingen aangemaakt ✓' as status;
+
+-- ============================================================
+-- Update v2: nieuwe kolommen voor actielijst, kalender, versie
+-- Voer dit uit als je de tabel al hebt aangemaakt
+-- ============================================================
+ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS versie INTEGER DEFAULT 1;
+ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS actielijst JSONB DEFAULT '[]';
+ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS kalender JSONB DEFAULT '[]';
+ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS heeft_politieke_avond BOOLEAN DEFAULT false;
+ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS politieke_avond_datum TEXT DEFAULT '';
+ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS politieke_avond_url TEXT DEFAULT '';
+ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS heeft_raadsvergadering BOOLEAN DEFAULT false;
+ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS raadsvergadering_datum TEXT DEFAULT '';
+ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS raadsvergadering_url TEXT DEFAULT '';
+
+SELECT 'Update v2 uitgevoerd ✓' as status;
