@@ -37,6 +37,7 @@ export function useVergaderingen() {
 
   const maakNieuwe = useCallback(async (opties: {
     vanTemplate: boolean
+    vergaderingDatum?: string
     heeftPA: boolean
     paDatum: string
     paUrl: string
@@ -45,7 +46,7 @@ export function useVergaderingen() {
     rvUrl: string
   }): Promise<Vergadering> => {
     const vandaag = new Date()
-    const datumStr = vandaag.toISOString().split('T')[0]
+    const datumStr = opties.vergaderingDatum || vandaag.toISOString().split('T')[0]
     const datumNL = vandaag.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
     const punten = opties.vanTemplate

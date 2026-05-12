@@ -3,41 +3,36 @@
 @tailwind utilities;
 
 :root {
-  --blauw: #1a3a5c;
-  --blauw-mid: #2d5f8a;
+  /* GDP kleuren gebaseerd op gooisdemocratischplatform.nl */
+  --blauw: #0d2b4e;
+  --blauw-mid: #1a4a7a;
   --blauw-licht: #e8f0f8;
-  --accent: #c8a84b;
-  --bg: #f5f4f0;
+  --accent: #e8c84a;       /* GDP geel */
+  --accent-donker: #c9a830;
+  --bg: #f4f6f9;
   --wit: #ffffff;
-  --tekst: #1a1a1a;
-  --tekst-zacht: #5a5a5a;
-  --rand: #ddd9d0;
+  --tekst: #1a1a2e;
+  --tekst-zacht: #5a6478;
+  --rand: #dde3ed;
   --groen: #2d7a4f;
   --rood: #c0392b;
+  --oranje: #e67e22;
+  --radius: 8px;
 }
 
 body {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
   background-color: var(--bg);
   color: var(--tekst);
 }
 
-@layer utilities {
-  .font-sans-ui {
-    font-family: Arial, Helvetica, sans-serif;
-  }
+/* Presentatiemodus grotere tekst */
+body.presentatie-modus {
+  font-size: 18px;
 }
 
 @media print {
-  .no-print {
-    display: none !important;
-  }
-  body {
-    background: white;
-  }
-  .print-full {
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 16px !important;
-  }
+  .no-print { display: none !important; }
+  body { background: white; }
+  .print-full { max-width: 100% !important; margin: 0 !important; padding: 16px !important; }
 }

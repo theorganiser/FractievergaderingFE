@@ -12,10 +12,11 @@ import DocumentenSelector from '@/components/DocumentenSelector'
 import Leesweergave from '@/components/Leesweergave'
 import Melding from '@/components/Melding'
 import Actielijst from '@/components/Actielijst'
+import Stemlijst from '@/components/Stemlijst'
 import Kalender from '@/components/Kalender'
 
 interface Props { params: { id: string } }
-type Tabblad = 'details' | 'agenda' | 'acties' | 'kalender' | 'documenten' | 'lees'
+type Tabblad = 'details' | 'agenda' | 'acties' | 'kalender' | 'stemlijst' | 'documenten' | 'lees'
 
 export default function VergaderingEditorPagina({ params }: Props) {
   const { id } = params
@@ -91,6 +92,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
     { key: 'acties', label: 'Actielijst', badge: v.actielijst?.filter(a => !a.afgedaan).length },
     { key: 'kalender', label: 'Kalender', badge: v.kalender?.length },
     { key: 'documenten', label: 'Documenten', badge: nieuweDocs.length || undefined },
+    { key: 'stemlijst', label: '⚖️ Stemlijst', badge: v.heeftRaadsvergadering ? undefined : undefined },
     { key: 'lees', label: 'Leesweergave' },
   ]
 
@@ -107,6 +109,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
         {opslaan && <span style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>💾 Opslaan...</span>}
         <button onClick={kopieerDeellink} style={btnOutline}>🔗 Deel</button>
         <button onClick={() => router.push(`/lees/${v.deeltoken}`)} style={btnAccent}>👁 Bekijken</button>
+        <button onClick={() => window.open(`/presentatie/${v.deeltoken}`, '_blank')} style={{ ...btnOutline, background: '#1a3a5c', color: '#e8c84a', borderColor: '#e8c84a' }}>📺 Presenteren</button>
       </div>
 
       {melding && <Melding type={melding.type} tekst={melding.tekst} onSluit={() => setMelding(null)} />}
@@ -161,6 +164,9 @@ export default function VergaderingEditorPagina({ params }: Props) {
           onVerwijder={(itemId) => verwijderKalenderItem(id, itemId)}
           onUpdate={(itemId, w) => updateKalenderItem(id, itemId, w)}
         />
+      )}
+      {tabblad === 'stemlijst' && (
+        <Stemlijst punten={v.punten} rvDatum={v.raadsvergaderingDatum} />
       )}
       {tabblad === 'documenten' && (
         <DocumentenSelector documenten={nieuweDocs} onToevoegen={voegDocsDirectToe} onSyncNu={syncDocumenten} laden={ladenSync} />
