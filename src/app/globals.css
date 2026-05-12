@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* GDP kleuren gebaseerd op gooisdemocratischplatform.nl */
+  --blauw: #4a1a5c;
+  --blauw-mid: #6a2a8a;
+  --blauw-licht: #f5eeff;
+  --accent: #a89060;       /* GDP goud */
+  --accent-donker: #8a7040;
+  --bg: #f4f6f9;
+  --wit: #ffffff;
+  --tekst: #1a0a2e;
+  --tekst-zacht: #5a6478;
+  --rand: #dde3ed;
+  --groen: #2d7a4f;
+  --rood: #c0392b;
+  --oranje: #e67e22;
+  --radius: 8px;
+}
+
+body {
+  font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  color: var(--tekst);
+}
+
+/* Presentatiemodus grotere tekst */
+body.presentatie-modus {
+  font-size: 18px;
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+  .print-full { max-width: 100% !important; margin: 0 !important; padding: 16px !important; }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
