@@ -1,7 +1,7 @@
 'use client'
 
 import { Vergadering } from '@/lib/types'
-import { formatDatum } from '@/lib/datum'
+import { formatDatum, formatDatumNL } from '@/lib/datum'
 
 interface LeesweergaveProps {
   vergadering: Vergadering
@@ -87,35 +87,38 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false }: 
                     {String.fromCharCode(97 + si)}.
                   </span>
                   <div>
-                    {sub.url ? (
-                      <a
-                        href={sub.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: 'var(--blauw-mid)', textDecoration: 'none', fontSize: '14px' }}
-                      >
-                        {sub.titel}
-                      </a>
-                    ) : (
-                      <span style={{ fontSize: '14px' }}>{sub.titel}</span>
-                    )}
-                    {sub.afgedaan && (
-                      <span style={{
-                        fontSize: '10px',
-                        background: '#e8f5ed',
-                        color: '#2d7a4f',
-                        border: '1px solid #a8d8b5',
-                        padding: '1px 6px',
-                        borderRadius: '3px',
-                        fontFamily: 'Arial, sans-serif',
-                        marginLeft: '8px',
-                        verticalAlign: 'middle',
-                      }}>
-                        Afgedaan
-                      </span>
-                    )}
-                    {sub.toelichting && (
-                      <div style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontStyle: 'italic', marginTop: '2px' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                      {sub.url ? (
+                        <a
+                          href={sub.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: 'var(--blauw-mid)', textDecoration: 'none', fontSize: '14px' }}
+                        >
+                          {sub.titel}
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: '14px' }}>{sub.titel}</span>
+                      )}
+                      {sub.afgedaan && (
+                        <span style={{
+                          fontSize: '10px',
+                          background: '#e8f5ed',
+                          color: '#2d7a4f',
+                          border: '1px solid #a8d8b5',
+                          padding: '1px 6px',
+                          borderRadius: '3px',
+                          fontFamily: 'Arial, sans-serif',
+                          verticalAlign: 'middle',
+                        }}>
+                          Afgedaan
+                        </span>
+                      )}
+                    </div>
+                    {(sub.toelichting || (sub as {publicatiedatum?: string}).publicatiedatum) && (
+                      <div style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontStyle: 'italic', marginTop: '2px', fontFamily: 'Arial, sans-serif' }}>
+                        {(sub as {publicatiedatum?: string}).publicatiedatum && formatDatumNL((sub as {publicatiedatum?: string}).publicatiedatum!)}
+                        {(sub as {publicatiedatum?: string}).publicatiedatum && sub.toelichting && ' — '}
                         {sub.toelichting}
                       </div>
                     )}
