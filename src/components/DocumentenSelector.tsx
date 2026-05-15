@@ -50,7 +50,9 @@ export default function DocumentenSelector({ onVoegRMToe, onVoegVragenToe }: Doc
   }
 
   useEffect(() => { laadRM() }, [])
-  useEffect(() => { if (actief === 'vragen' && vragenDocs.length === 0) laadVragen() }, [actief])
+  useEffect(() => { 
+    if (actief === 'vragen') laadVragen() 
+  }, [actief])
 
   const toggleRM = (id: string) => setGeselecteerdRM(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const toggleVraag = (id: string) => setGeselecteerdVragen(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
