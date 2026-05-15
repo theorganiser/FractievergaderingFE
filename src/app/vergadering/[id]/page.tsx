@@ -24,6 +24,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
     vergaderingen, geladen, opslaan, update,
     updatePunt, verwijderPunt, voegPuntToe,
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
+    herorden,
     voegActieToe, toggleActie, verwijderActie, neemActiesOver,
     voegKalenderItemToe, verwijderKalenderItem, updateKalenderItem,
   } = useVergaderingen()
@@ -127,6 +128,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
           onVerwijderSubpunt={(pi, si) => verwijderSubpunt(id, pi, si)}
           onUpdateSubpunt={(pi, si, w) => updateSubpunt(id, pi, si, w)}
           onSyncDocumenten={() => setTabblad('documenten')} ladenSync={false}
+          onHerorden={(nieuw) => herorden(id, nieuw)}
         />
       )}
       {tabblad === 'acties' && (
