@@ -111,7 +111,7 @@ export default function Topbalk() {
           </div>
         )}
 
-        {/* Sync knop — alleen voor beheerder */}}
+        {/* Sync knop — alleen voor beheerder */}
         {isAdmin && (
           <button
             onClick={handleSync}
