@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Vergadering, Agendapunt, Subpunt, ActieItem, KalenderItem } from '@/lib/types'
 import {
   laadVergaderingen as dbLaad,
@@ -16,22 +16,27 @@ export function useVergaderingen() {
   const [vergaderingen, setVergaderingen] = useState<Vergadering[]>([])
   const [geladen, setGeladen] = useState(false)
   const [opslaan, setOpslaan] = useState(false)
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     dbLaad().then(data => { setVergaderingen(data); setGeladen(true) })
   }, [])
 
-  const slaOp = useCallback(async (vergadering: Vergadering) => {
-    setOpslaan(true)
-    // Verhoog versienummer bij elke opslaan
+  const slaOp = useCallback((vergadering: Vergadering) => {
     const bijgewerkt = { ...vergadering, versie: (vergadering.versie || 1) + 1, bijgewerkt: new Date().toISOString() }
-    await slaVergaderingOp(bijgewerkt)
+    // Update lokale state meteen voor snelle UI
     setVergaderingen(huidig =>
       huidig.some(v => v.id === bijgewerkt.id)
         ? huidig.map(v => v.id === bijgewerkt.id ? bijgewerkt : v)
         : [bijgewerkt, ...huidig]
     )
-    setOpslaan(false)
+    // Debounce: wacht 3 seconden voor Supabase opslaan
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    setOpslaan(true)
+    debounceTimer.current = setTimeout(async () => {
+      await slaVergaderingOp(bijgewerkt)
+      setOpslaan(false)
+    }, 3000)
     return bijgewerkt
   }, [])
 
@@ -108,11 +113,15 @@ export function useVergaderingen() {
   const update = useCallback(async (id: string, wijzigingen: Partial<Vergadering>) => {
     const v = vergaderingen.find(x => x.id === id)
     if (!v) return
-    await slaOp({ ...v, ...wijzigingen })
+    slaOp({ ...v, ...wijzigingen })
   }, [vergaderingen, slaOp])
 
   const updatePunten = useCallback(async (id: string, punten: Agendapunt[]) => {
     await update(id, { punten })
+  }, [update])
+
+  const herorden = useCallback(async (vergaderingId: string, nieuwePunten: Agendapunt[]) => {
+    await update(vergaderingId, { punten: nieuwePunten })
   }, [update])
 
   const voegPuntToe = useCallback(async (vergaderingId: string) => {
@@ -225,6 +234,7 @@ export function useVergaderingen() {
     maakNieuwe, kopieer, verwijder, update, updatePunten,
     voegPuntToe, verwijderPunt, updatePunt,
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
+    herorden,
     voegActieToe, toggleActie, verwijderActie, neemActiesOver,
     voegKalenderItemToe, verwijderKalenderItem, updateKalenderItem,
     vindOpToken,

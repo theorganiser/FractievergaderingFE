@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ApiDocument } from '@/lib/types'
 import { haalRaadsmededelingen, haalAfgedaaneVragen, DEMO_RM, DEMO_VRAGEN } from '@/lib/api'
-import { formatDatumKort } from '@/lib/datum'
+import { formatDatumKort, formatDatumNL } from '@/lib/datum'
 
 interface DocumentenSelectorProps {
   onVoegRMToe: (docs: ApiDocument[]) => void
@@ -50,7 +50,9 @@ export default function DocumentenSelector({ onVoegRMToe, onVoegVragenToe }: Doc
   }
 
   useEffect(() => { laadRM() }, [])
-  useEffect(() => { if (actief === 'vragen' && vragenDocs.length === 0) laadVragen() }, [actief])
+  useEffect(() => { 
+    if (actief === 'vragen') laadVragen() 
+  }, [actief])
 
   const toggleRM = (id: string) => setGeselecteerdRM(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const toggleVraag = (id: string) => setGeselecteerdVragen(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
@@ -100,7 +102,7 @@ export default function DocumentenSelector({ onVoegRMToe, onVoegVragenToe }: Doc
                     {doc.titel}
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', marginTop: '3px', display: 'flex', gap: '10px' }}>
-                    {doc.publicatiedatum && <span>📅 {formatDatumKort(doc.publicatiedatum)}</span>}
+                    {doc.publicatiedatum && <span>📅 {formatDatumNL(doc.publicatiedatum)}</span>}
                     {doc.url && <a href={doc.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#4a1a5c', textDecoration: 'underline' }}>↗ bekijk</a>}
                   </div>
                 </div>
@@ -146,7 +148,7 @@ export default function DocumentenSelector({ onVoegRMToe, onVoegVragenToe }: Doc
                   <div style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', marginTop: '3px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     {doc.indieners && <span>👤 {doc.indieners}</span>}
                     {doc.fracties && <span>🏛 {doc.fracties}</span>}
-                    {doc.afgedaan && <span style={{ color: '#2d7a4f', fontWeight: '600' }}>✓ Afgedaan: {formatDatumKort(doc.afgedaan)}</span>}
+                    {doc.afgedaan && <span style={{ color: '#2d7a4f', fontWeight: '600' }}>✓ Afgedaan: {formatDatumNL(doc.afgedaan)}</span>}
                     {doc.url && <a href={doc.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#5a3a8a', textDecoration: 'underline' }}>↗ bekijk</a>}
                   </div>
                 </div>

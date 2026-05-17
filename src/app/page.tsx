@@ -20,6 +20,7 @@ export default function OverzichtPagina() {
   const [melding, setMelding] = useState<{ type: 'succes' | 'info'; tekst: string } | null>(null)
   const [bezig, setBezig] = useState(false)
   const [toonDialoog, setToonDialoog] = useState(false)
+  const [zoek, setZoek] = useState('')
   const [opties, setOpties] = useState<NieuweOpties>({
     heeftPA: false, paDatum: '', paUrl: '',
     heeftRV: false, rvDatum: '', rvUrl: '',
@@ -36,7 +37,13 @@ export default function OverzichtPagina() {
 
   if (!geladen) return <div style={{ textAlign: 'center', padding: '80px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>⏳ Laden...</div>
 
-  const gesorteerd = [...vergaderingen].sort(sorteerOpDatum)
+  const gesorteerd = [...vergaderingen]
+    .filter(v => !zoek || 
+      v.titel.toLowerCase().includes(zoek.toLowerCase()) ||
+      (v.datum && v.datum.includes(zoek)) ||
+      (v.locatie || '').toLowerCase().includes(zoek.toLowerCase())
+    )
+    .sort(sorteerOpDatum)
 
   const handleNieuw = (vanTemplate: boolean) => {
     if (vanTemplate) { setToonDialoog(true); return }
@@ -82,7 +89,19 @@ export default function OverzichtPagina() {
         )}
       </div>
 
-      <div style={{ height: '1px', background: 'linear-gradient(to right, var(--accent), transparent)', margin: '12px 0 20px' }} />
+      <div style={{ height: '1px', background: 'linear-gradient(to right, var(--accent), transparent)', margin: '12px 0 16px' }} />
+
+      {/* Zoekbalk */}
+      <div style={{ position: 'relative', marginBottom: '16px' }}>
+        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--tekst-zacht)', fontSize: '14px' }}>🔍</span>
+        <input
+          value={zoek}
+          onChange={e => setZoek(e.target.value)}
+          placeholder="Zoeken op titel, datum of locatie..."
+          style={{ width: '100%', padding: '9px 12px 9px 36px', border: '1px solid var(--rand)', borderRadius: '8px', fontSize: '13px', fontFamily: 'Arial', outline: 'none', boxSizing: 'border-box' }}
+        />
+        {zoek && <button onClick={() => setZoek('')} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--tekst-zacht)', fontSize: '16px' }}>×</button>}
+      </div>
 
       {melding && <Melding type={melding.type} tekst={melding.tekst} onSluit={() => setMelding(null)} />}
 

@@ -3,11 +3,10 @@
 @tailwind utilities;
 
 :root {
-  /* GDP kleuren gebaseerd op gooisdemocratischplatform.nl */
   --blauw: #4a1a5c;
   --blauw-mid: #6a2a8a;
   --blauw-licht: #f5eeff;
-  --accent: #a89060;       /* GDP goud */
+  --accent: #a89060;
   --accent-donker: #8a7040;
   --bg: #f4f6f9;
   --wit: #ffffff;
@@ -26,15 +25,48 @@ body {
   color: var(--tekst);
 }
 
-/* Presentatiemodus grotere tekst */
-body.presentatie-modus {
-  font-size: 18px;
-}
-
-@media print {
-  .no-print { display: none !important; }
-  body { background: white; }
-  .print-full { max-width: 100% !important; margin: 0 !important; padding: 16px !important; }
-}
-
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== PRINT STIJLEN - A4 GDP huisstijl ===== */
+@media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .no-print { display: none !important; }
+
+  body {
+    background: white !important;
+    font-size: 11pt;
+    color: #1a0a2e;
+  }
+
+  main {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-full {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .leesweergave-container {
+    font-size: 11pt;
+    line-height: 1.6;
+  }
+
+  .print-only { display: block !important; }
+
+  @page {
+    size: A4;
+    margin: 20mm 18mm 20mm 18mm;
+  }
+
+  .leesweergave-container > div { page-break-inside: avoid; }
+
+  a[href]::after { content: none; }
+
+  .leesweergave-container + div { page-break-before: auto; }
+
+  .print-header { border-bottom: 2pt solid #4a1a5c !important; }
+}

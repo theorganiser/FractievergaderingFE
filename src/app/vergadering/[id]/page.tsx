@@ -24,6 +24,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
     vergaderingen, geladen, opslaan, update,
     updatePunt, verwijderPunt, voegPuntToe,
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
+    herorden,
     voegActieToe, toggleActie, verwijderActie, neemActiesOver,
     voegKalenderItemToe, verwijderKalenderItem, updateKalenderItem,
   } = useVergaderingen()
@@ -54,7 +55,14 @@ export default function VergaderingEditorPagina({ params }: Props) {
       )
       if (puntIndex >= 0) {
         const punt = nieuwePunten[puntIndex]
-        punt.subpunten.push({ id: String.fromCharCode(97 + punt.subpunten.length), titel: doc.titel, url: doc.url, afgedaan: doc.afgedaan === 'Afgedaan' })
+        punt.subpunten.push({ 
+                  id: String.fromCharCode(97 + punt.subpunten.length), 
+                  titel: doc.titel, 
+                  url: doc.url, 
+                  afgedaan: !!(doc.afgedaan && doc.afgedaan !== ''),
+                  publicatiedatum: doc.publicatiedatum || doc.afgedaan || '',
+                  toelichting: doc.afgedaan && doc.afgedaan !== 'Afgedaan' ? `Afgedaan: ${doc.afgedaan}` : '',
+                })
       }
     })
     await update(id, { punten: nieuwePunten })
@@ -120,6 +128,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
           onVerwijderSubpunt={(pi, si) => verwijderSubpunt(id, pi, si)}
           onUpdateSubpunt={(pi, si, w) => updateSubpunt(id, pi, si, w)}
           onSyncDocumenten={() => setTabblad('documenten')} ladenSync={false}
+          onHerorden={(nieuw) => herorden(id, nieuw)}
         />
       )}
       {tabblad === 'acties' && (

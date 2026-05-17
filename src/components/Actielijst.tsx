@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ActieItem } from '@/lib/types'
+import { formatDatumNL } from '@/lib/datum'
 
 interface ActielijstProps {
   acties: ActieItem[]
@@ -145,7 +146,7 @@ function ActieRij({ actie: a, onToggle, onVerwijder, isLeesweergave }: {
         {a.actie}
       </span>
       {a.datum && (
-        <span style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', flexShrink: 0 }}>{a.datum}</span>
+        <span style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', flexShrink: 0 }}>{formatDatumNL(a.datum)}</span>
       )}
       {!isLeesweergave && (
         <button onClick={onVerwijder} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--tekst-zacht)', fontSize: '14px', flexShrink: 0, padding: '0 4px' }}>✕</button>

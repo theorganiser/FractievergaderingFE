@@ -67,3 +67,13 @@ export function eersteVolgendeMaandag(): string {
   maandag.setDate(nu.getDate() + dagenTotMaandag)
   return maandag.toISOString().split('T')[0]
 }
+
+export function formatDatumNL(datum: string): string {
+  if (!datum) return ''
+  const d = parseDatum(datum)
+  if (!d) return datum
+  const dag = String(d.getDate()).padStart(2, '0')
+  const maand = String(d.getMonth() + 1).padStart(2, '0')
+  const jaar = d.getFullYear()
+  return `${dag}-${maand}-${jaar}`
+}
