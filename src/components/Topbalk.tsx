@@ -1,15 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { startSyncEnWacht, SyncLogItem } from '@/lib/api'
+import { getSprekerNaam, setSprekerNaam } from '@/components/Toegangspoort'
 
 export default function Topbalk() {
   const pathname = usePathname()
   const { isAdmin, logout } = useAuth()
   const [syncBezig, setSyncBezig] = useState(false)
+  const [sprekerNaam, setSprekerNaamState] = useState('')
+  const [naamBewerken, setNaamBewerken] = useState(false)
+  const [naamInvoer, setNaamInvoer] = useState('')
+
+  useEffect(() => {
+    setSprekerNaamState(getSprekerNaam())
+  }, [])
+
+  const slaaNaamOp = () => {
+    if (!naamInvoer.trim()) return
+    setSprekerNaam(naamInvoer.trim())
+    setSprekerNaamState(naamInvoer.trim())
+    setNaamBewerken(false)
+  }
   const [syncResultaat, setSyncResultaat] = useState<SyncLogItem | null>(null)
   const [toonResultaat, setToonResultaat] = useState(false)
 
@@ -68,7 +83,35 @@ export default function Topbalk() {
 
         <div style={{ flex: 1 }} />
 
-        {/* Sync knop — alleen voor beheerder */}
+        {/* Naam weergave */}
+        {!isAdmin && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {naamBewerken ? (
+              <>
+                <input
+                  value={naamInvoer}
+                  onChange={e => setNaamInvoer(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') slaaNaamOp(); if (e.key === 'Escape') setNaamBewerken(false) }}
+                  autoFocus
+                  placeholder="Jouw naam..."
+                  style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '4px 10px', borderRadius: '5px', fontSize: '13px', fontFamily: 'Arial', outline: 'none', width: '140px' }}
+                />
+                <button onClick={slaaNaamOp} style={{ background: '#a89060', border: 'none', color: '#2d0a40', padding: '4px 10px', borderRadius: '5px', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial', fontWeight: 'bold' }}>✓</button>
+                <button onClick={() => setNaamBewerken(false)} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', padding: '4px 8px', borderRadius: '5px', cursor: 'pointer', fontSize: '12px' }}>✕</button>
+              </>
+            ) : (
+              <button
+                onClick={() => { setNaamInvoer(sprekerNaam); setNaamBewerken(true) }}
+                style={{ background: 'rgba(168,144,96,0.2)', border: '1px solid rgba(168,144,96,0.4)', color: '#d4b880', padding: '4px 12px', borderRadius: '5px', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial', display: 'flex', alignItems: 'center', gap: '6px' }}
+                title="Naam wijzigen"
+              >
+                👤 {sprekerNaam || 'Naam instellen'} ✎
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Sync knop — alleen voor beheerder */}}
         {isAdmin && (
           <button
             onClick={handleSync}

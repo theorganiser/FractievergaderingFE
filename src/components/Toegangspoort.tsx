@@ -2,49 +2,69 @@
 
 import { useState, useEffect } from 'react'
 
-const OPSLAG_SLEUTEL = 'gdp_toegang_verleend'
+const TOEGANG_SLEUTEL = 'gdp_toegang_verleend'
+const NAAM_SLEUTEL = 'gdp_spreker_naam'
 const READER_PW = process.env.NEXT_PUBLIC_READER_PASSWORD || 'fractie2026'
 
 export function heeftToegang(): boolean {
   if (typeof window === 'undefined') return false
-  return sessionStorage.getItem(OPSLAG_SLEUTEL) === 'true'
+  return sessionStorage.getItem(TOEGANG_SLEUTEL) === 'true'
 }
 
 export function verleenToegang(): void {
   if (typeof window === 'undefined') return
-  sessionStorage.setItem(OPSLAG_SLEUTEL, 'true')
+  sessionStorage.setItem(TOEGANG_SLEUTEL, 'true')
 }
 
-interface ToegangspoortProps {
-  children: React.ReactNode
+export function getSprekerNaam(): string {
+  if (typeof window === 'undefined') return ''
+  return localStorage.getItem(NAAM_SLEUTEL) || ''
 }
 
-export default function Toegangspoort({ children }: ToegangspoortProps) {
+export function setSprekerNaam(naam: string): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(NAAM_SLEUTEL, naam)
+}
+
+export default function Toegangspoort({ children }: { children: React.ReactNode }) {
   const [toegang, setToegang] = useState<boolean | null>(null)
+  const [naam, setNaam] = useState('')
   const [code, setCode] = useState('')
-  const [fout, setFout] = useState(false)
+  const [fout, setFout] = useState<'naam' | 'code' | null>(null)
   const [schudden, setSchudden] = useState(false)
 
   useEffect(() => {
-    setToegang(heeftToegang())
+    const heeftAl = heeftToegang()
+    if (heeftAl) {
+      setToegang(true)
+    } else {
+      // Vul naam alvast in als die al bekend is
+      const bekendNaam = getSprekerNaam()
+      if (bekendNaam) setNaam(bekendNaam)
+      setToegang(false)
+    }
   }, [])
 
-  // Nog aan het checken
   if (toegang === null) return null
-
-  // Toegang verleend
   if (toegang) return <>{children}</>
 
   const handleLogin = () => {
-    if (code === READER_PW) {
-      verleenToegang()
-      setToegang(true)
-    } else {
-      setFout(true)
+    if (!naam.trim()) {
+      setFout('naam')
+      setSchudden(true)
+      setTimeout(() => setSchudden(false), 500)
+      return
+    }
+    if (code !== READER_PW) {
+      setFout('code')
       setSchudden(true)
       setCode('')
       setTimeout(() => setSchudden(false), 500)
+      return
     }
+    setSprekerNaam(naam.trim())
+    verleenToegang()
+    setToegang(true)
   }
 
   return (
@@ -60,7 +80,7 @@ export default function Toegangspoort({ children }: ToegangspoortProps) {
         background: 'white',
         borderRadius: '16px',
         padding: '40px 36px',
-        width: '380px',
+        width: '400px',
         maxWidth: '100%',
         boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
         animation: schudden ? 'schud 0.4s ease' : 'none',
@@ -68,19 +88,10 @@ export default function Toegangspoort({ children }: ToegangspoortProps) {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: '#4a1a5c',
-            color: '#a89060',
-            fontWeight: '900',
-            fontSize: '22px',
-            width: '60px',
-            height: '60px',
-            borderRadius: '12px',
-            fontFamily: 'Arial Black, Arial',
-            marginBottom: '12px',
-            letterSpacing: '1px',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            background: '#4a1a5c', color: '#a89060', fontWeight: '900', fontSize: '22px',
+            width: '60px', height: '60px', borderRadius: '12px',
+            fontFamily: 'Arial Black, Arial', marginBottom: '12px', letterSpacing: '1px',
           }}>GDP</div>
           <h1 style={{ fontSize: '20px', color: '#4a1a5c', fontWeight: '700', margin: '0 0 4px', fontFamily: 'Arial' }}>
             Fractie Vergaderagenda
@@ -90,51 +101,52 @@ export default function Toegangspoort({ children }: ToegangspoortProps) {
           </p>
         </div>
 
-        {/* Formulier */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', fontSize: '12px', color: '#666', fontFamily: 'Arial', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Toegangscode
-          </label>
+        {/* Naam veld */}
+        <div style={{ marginBottom: '16px' }}>
+          <label style={labelStijl}>Jouw naam</label>
+          <input
+            type="text"
+            value={naam}
+            onChange={e => { setNaam(e.target.value); setFout(null) }}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            autoFocus
+            placeholder="Voornaam of volledige naam..."
+            style={{
+              ...invoerStijl,
+              borderColor: fout === 'naam' ? '#c0392b' : '#dde3ed',
+            }}
+          />
+          {fout === 'naam' && (
+            <p style={foutStijl}>Vul je naam in om door te gaan.</p>
+          )}
+        </div>
+
+        {/* Code veld */}
+        <div style={{ marginBottom: '24px' }}>
+          <label style={labelStijl}>Toegangscode</label>
           <input
             type="password"
             value={code}
-            onChange={e => { setCode(e.target.value); setFout(false) }}
+            onChange={e => { setCode(e.target.value); setFout(null) }}
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            autoFocus
             placeholder="Voer de code in..."
             style={{
-              width: '100%',
-              padding: '12px 14px',
-              border: `2px solid ${fout ? '#c0392b' : '#dde3ed'}`,
-              borderRadius: '8px',
-              fontSize: '15px',
-              fontFamily: 'Arial',
-              outline: 'none',
-              transition: 'border-color 0.2s',
-              boxSizing: 'border-box',
+              ...invoerStijl,
+              borderColor: fout === 'code' ? '#c0392b' : '#dde3ed',
             }}
           />
-          {fout && (
-            <p style={{ fontSize: '12px', color: '#c0392b', fontFamily: 'Arial', marginTop: '6px', margin: '6px 0 0' }}>
-              Onjuiste code. Probeer opnieuw.
-            </p>
+          {fout === 'code' && (
+            <p style={foutStijl}>Onjuiste code. Probeer opnieuw.</p>
           )}
         </div>
 
         <button
           onClick={handleLogin}
           style={{
-            width: '100%',
-            background: '#4a1a5c',
-            color: 'white',
-            border: 'none',
-            padding: '13px',
-            borderRadius: '8px',
-            fontSize: '15px',
-            fontFamily: 'Arial',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'background 0.2s',
+            width: '100%', background: '#4a1a5c', color: 'white',
+            border: 'none', padding: '13px', borderRadius: '8px',
+            fontSize: '15px', fontFamily: 'Arial', fontWeight: '600',
+            cursor: 'pointer', transition: 'background 0.2s',
           }}
           onMouseOver={e => (e.currentTarget.style.background = '#6a2a8a')}
           onMouseOut={e => (e.currentTarget.style.background = '#4a1a5c')}
@@ -142,7 +154,7 @@ export default function Toegangspoort({ children }: ToegangspoortProps) {
           Toegang →
         </button>
 
-        <p style={{ fontSize: '11px', color: '#bbb', fontFamily: 'Arial', textAlign: 'center', marginTop: '20px', margin: '20px 0 0' }}>
+        <p style={{ fontSize: '11px', color: '#bbb', fontFamily: 'Arial', textAlign: 'center', marginTop: '16px' }}>
           Neem contact op met de fractie voor de toegangscode.
         </p>
       </div>
@@ -158,4 +170,19 @@ export default function Toegangspoort({ children }: ToegangspoortProps) {
       `}</style>
     </div>
   )
+}
+
+const labelStijl: React.CSSProperties = {
+  display: 'block', fontSize: '12px', color: '#666', fontFamily: 'Arial',
+  marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px',
+}
+
+const invoerStijl: React.CSSProperties = {
+  width: '100%', padding: '12px 14px', border: '2px solid #dde3ed',
+  borderRadius: '8px', fontSize: '15px', fontFamily: 'Arial',
+  outline: 'none', transition: 'border-color 0.2s', boxSizing: 'border-box',
+}
+
+const foutStijl: React.CSSProperties = {
+  fontSize: '12px', color: '#c0392b', fontFamily: 'Arial', marginTop: '5px',
 }
