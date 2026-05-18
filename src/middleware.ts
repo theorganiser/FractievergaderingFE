@@ -1,43 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifieerToken, COOKIE_LEZER, COOKIE_ADMIN } from '@/lib/auth'
 
-// Paden die altijd toegankelijk zijn (geen auth nodig)
+// Cookie namen
+const COOKIE_LEZER = 'gdp_toegang'
+const COOKIE_ADMIN = 'gdp_admin'
+
 const OPENBARE_PADEN = [
   '/inloggen',
   '/api/login',
   '/api/admin-login',
   '/api/logout',
+  '/api/check-auth',
   '/_next',
   '/favicon',
 ]
 
-export async function middleware(req: NextRequest) {
+// Middleware doet alleen een simpele cookie aanwezigheidscheck
+// De echte JWT verificatie gebeurt in /api/check-auth
+export function middleware(req: NextRequest) {
   const pad = req.nextUrl.pathname
 
-  // Openbare paden altijd doorlaten
   if (OPENBARE_PADEN.some(p => pad.startsWith(p))) {
     return NextResponse.next()
   }
 
-  // Check lezer cookie
-  const lezerToken = req.cookies.get(COOKIE_LEZER)?.value
-  const lezerPayload = lezerToken ? await verifieerToken(lezerToken) : null
+  // Check of lezer cookie aanwezig is (niet geverifieerd - dat doet check-auth)
+  const heeftLezerCookie = !!req.cookies.get(COOKIE_LEZER)?.value
 
-  if (!lezerPayload) {
-    // Geen geldige cookie — redirect naar inlogpagina
+  if (!heeftLezerCookie) {
     const url = req.nextUrl.clone()
     url.pathname = '/inloggen'
     url.searchParams.set('terug', pad)
     return NextResponse.redirect(url)
   }
 
-  // Check admin voor beveiligde beheer-paden
+  // Check admin cookie voor beveiligde paden
   const adminPaden = ['/vergadering', '/beheer']
   if (adminPaden.some(p => pad.startsWith(p))) {
-    const adminToken = req.cookies.get(COOKIE_ADMIN)?.value
-    const adminPayload = adminToken ? await verifieerToken(adminToken) : null
+    const heeftAdminCookie = !!req.cookies.get(COOKIE_ADMIN)?.value
 
-    if (!adminPayload) {
+    if (!heeftAdminCookie) {
       const url = req.nextUrl.clone()
       url.pathname = '/inloggen'
       url.searchParams.set('terug', pad)
@@ -50,7 +51,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }
