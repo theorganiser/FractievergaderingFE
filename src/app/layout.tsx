@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import Topbalk from '@/components/Topbalk'
-import Toegangspoort from '@/components/Toegangspoort'
 import BackendPing from '@/components/BackendPing'
 import '../app/globals.css'
 
@@ -13,14 +12,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="nl">
       <body>
-        {/* Ping de backend wakker zodra de pagina laadt - nog vóór de toegangspoort */}
         <BackendPing />
-        <Toegangspoort>
-          <Topbalk />
-          <main style={{ maxWidth: '960px', margin: '0 auto', padding: '28px 20px' }}>
-            {children}
-          </main>
-        </Toegangspoort>
+        <Topbalk />
+        <main style={{ maxWidth: '960px', margin: '0 auto', padding: '28px 20px' }}>
+          {children}
+        </main>
       </body>
     </html>
   )

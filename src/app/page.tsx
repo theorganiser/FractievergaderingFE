@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { formatDatum, sorteerOpDatum, eersteVolgendeMaandag, vandaag } from '@/lib/datum'
 import { getSprekerNaam } from '@/components/Toegangspoort'
 import Melding from '@/components/Melding'
+import SupabaseFout, { OpslaanFoutBanner } from '@/components/SupabaseFout'
 import { Vergadering } from '@/lib/types'
 
 const MAX_WOORDEN = 15
@@ -19,7 +20,7 @@ interface NieuweOpties {
 
 export default function OverzichtPagina() {
   const router = useRouter()
-  const { vergaderingen, geladen, maakNieuwe, kopieer, verwijder, update } = useVergaderingen()
+  const { vergaderingen, geladen, maakNieuwe, kopieer, verwijder, update, supabaseFout, opslaanFout, herlaad, sluitOpslaanFout } = useVergaderingen()
   const { isAdmin } = useAuth()
   const [melding, setMelding] = useState<{ type: 'succes' | 'info'; tekst: string } | null>(null)
   const [bezig, setBezig] = useState(false)
@@ -47,6 +48,7 @@ export default function OverzichtPagina() {
   }, [toonDialoog])
 
   if (!geladen) return <div style={{ textAlign: 'center', padding: '80px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>⏳ Laden...</div>
+  if (supabaseFout) return <SupabaseFout opnieuw={herlaad} />
 
   const gesorteerd = [...vergaderingen]
     .filter(v => !zoek ||
@@ -56,7 +58,7 @@ export default function OverzichtPagina() {
     )
     .sort(sorteerOpDatum)
 
-  const isToekomstig = (datum: string) => datum > vandaag()
+  const isToekomstig = (datum: string) => datum >= vandaag()
 
   const aantalWoorden = (tekst: string) => tekst.trim().split(/\s+/).filter(Boolean).length
 
@@ -309,6 +311,7 @@ export default function OverzichtPagina() {
           </div>
         )
       })}
+      {opslaanFout && <OpslaanFoutBanner onSluit={sluitOpslaanFout} />}
     </div>
   )
 }

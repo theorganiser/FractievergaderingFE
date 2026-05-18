@@ -10,6 +10,7 @@ import DocumentenSelector from '@/components/DocumentenSelector'
 import Leesweergave from '@/components/Leesweergave'
 import Melding from '@/components/Melding'
 import Actielijst from '@/components/Actielijst'
+import SupabaseFout, { OpslaanFoutBanner } from '@/components/SupabaseFout'
 import Stemlijst from '@/components/Stemlijst'
 import Kalender from '@/components/Kalender'
 
@@ -21,7 +22,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
   const router = useRouter()
   const { isAdmin } = useAuth()
   const {
-    vergaderingen, geladen, opslaan, update,
+    vergaderingen, geladen, opslaan, supabaseFout, opslaanFout, herlaad, sluitOpslaanFout, update,
     updatePunt, verwijderPunt, voegPuntToe,
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
     herorden,
@@ -164,6 +165,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
           <Leesweergave vergadering={v} toonPrintKnop />
         </div>
       )}
+      {opslaanFout && <OpslaanFoutBanner onSluit={sluitOpslaanFout} />}
     </div>
   )
 }

@@ -111,7 +111,7 @@ export default function BeheerPagina() {
           Vergaderingen zijn beschikbaar op alle apparaten via de deellink.
         </p>
         <p style={{ ...tekststijl, marginTop: '8px' }}>
-          Wachtwoord instellen via de omgevingsvariabele <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>NEXT_PUBLIC_ADMIN_PASSWORD</code> in Vercel of in <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>.env.local</code>.
+          Wachtwoord instellen via de omgevingsvariabelen <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>READER_PASSWORD</code> en <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>ADMIN_PASSWORD</code> in Vercel (zonder NEXT_PUBLIC_ prefix).
         </p>
         <p style={{ ...tekststijl, marginTop: '8px', color: 'var(--rood)' }}>
           ⚠️ Let op: NEXT_PUBLIC_ variabelen zijn zichtbaar in de browser. Gebruik een sterk wachtwoord.

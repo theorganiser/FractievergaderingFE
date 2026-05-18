@@ -5,30 +5,25 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { startSyncEnWacht, SyncLogItem } from '@/lib/api'
-import { getSprekerNaam, setSprekerNaam } from '@/components/Toegangspoort'
 
 export default function Topbalk() {
   const pathname = usePathname()
-  const { isAdmin, logout } = useAuth()
+  const { isAdmin, logout, naam: _naam } = useAuth()
   const [syncBezig, setSyncBezig] = useState(false)
-  const [sprekerNaam, setSprekerNaamState] = useState('')
   const [naamBewerken, setNaamBewerken] = useState(false)
   const [naamInvoer, setNaamInvoer] = useState('')
-
-  useEffect(() => {
-    setSprekerNaamState(getSprekerNaam())
-  }, [])
+  const { naam: sprekerNaam } = useAuth()
 
   const slaaNaamOp = () => {
     if (!naamInvoer.trim()) return
-    setSprekerNaam(naamInvoer.trim())
-    setSprekerNaamState(naamInvoer.trim())
+    localStorage.setItem('gdp_spreker_naam', naamInvoer.trim())
     setNaamBewerken(false)
+    window.location.reload()
   }
   const [syncResultaat, setSyncResultaat] = useState<SyncLogItem | null>(null)
   const [toonResultaat, setToonResultaat] = useState(false)
 
-  if (pathname.startsWith('/presentatie/')) return null
+  if (pathname.startsWith('/presentatie/') || pathname.startsWith('/inloggen')) return null
 
   const handleSync = async () => {
     setSyncBezig(true)

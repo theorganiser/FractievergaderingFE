@@ -1,31 +1,34 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { isBeheerder, setBeheerder } from '@/lib/storage'
 
-export function useAuth() {
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [geladen, setGeladen] = useState(false)
+interface AuthStatus {
+  heeftToegang: boolean
+  isAdmin: boolean
+  naam: string
+  geladen: boolean
+}
+
+export function useAuth(): AuthStatus & { logout: () => Promise<void> } {
+  const [status, setStatus] = useState<AuthStatus>({
+    heeftToegang: false,
+    isAdmin: false,
+    naam: '',
+    geladen: false,
+  })
 
   useEffect(() => {
-    setIsAdmin(isBeheerder())
-    setGeladen(true)
+    // Haal auth status op via API (leest cookies server-side)
+    fetch('/api/check-auth')
+      .then(r => r.json())
+      .then(data => setStatus({ ...data, geladen: true }))
+      .catch(() => setStatus({ heeftToegang: false, isAdmin: false, naam: '', geladen: true }))
   }, [])
 
-  const login = (wachtwoord: string): boolean => {
-    const correct = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123'
-    if (wachtwoord === correct) {
-      setBeheerder(true)
-      setIsAdmin(true)
-      return true
-    }
-    return false
+  const logout = async () => {
+    await fetch('/api/logout', { method: 'POST' })
+    window.location.href = '/inloggen'
   }
 
-  const logout = () => {
-    setBeheerder(false)
-    setIsAdmin(false)
-  }
-
-  return { isAdmin, geladen, login, logout }
+  return { ...status, logout }
 }
