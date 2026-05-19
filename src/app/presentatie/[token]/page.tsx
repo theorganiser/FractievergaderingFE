@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
-import { formatDatum } from '@/lib/datum'
+import { formatDatum, formatDatumNL } from '@/lib/datum'
 import { Vergadering } from '@/lib/types'
 
 interface Props { params: { token: string } }
@@ -33,6 +33,11 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
 
   const toggleIngeklapt = (id: number) => setIngeklapt(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const toggleAfgehandeld = (id: number) => { setAfgehandeld(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n }); setHuidig(id) }
+
+  // Normaliseer arrays zodat Supabase data nooit undefined geeft
+  const punten = (v.punten || []).map(p => ({ ...p, subpunten: Array.isArray(p.subpunten) ? p.subpunten : [] }))
+  const actielijst = Array.isArray(v.actielijst) ? v.actielijst : []
+  const kalender = Array.isArray(v.kalender) ? v.kalender : []
 
   // GDP kleuren
   const PAARS = '#4a1a5c'
@@ -81,7 +86,7 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
         </div>
 
         {/* Agendapunten */}
-        {v.punten.map((punt) => {
+        {punten.map((punt) => {
           const isDone = afgehandeld.has(punt.id)
           const isActive = huidig === punt.id && !isDone
           const isKlapt = ingeklapt.has(punt.id)
@@ -168,6 +173,51 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
           )
         })}
         <div style={{ height: '40px' }} />
+
+        {/* Actielijst */}
+        {actielijst.length > 0 && (
+          <div style={{ maxWidth: '860px', margin: '0 auto', padding: '0 20px 20px' }}>
+            <div style={{ borderTop: `1px solid ${kaartRand}`, paddingTop: '20px', marginTop: '8px' }}>
+              <h2 style={{ fontSize: '15px', color: GOUD, fontFamily: 'Arial', fontWeight: 'bold', marginBottom: '12px' }}>
+                ✓ Actielijst
+              </h2>
+              {actielijst.map(a => (
+                <div key={a.id} style={{ display: 'flex', gap: '12px', padding: '8px 0', borderBottom: `1px solid ${donkerModus ? 'rgba(255,255,255,0.06)' : '#f0ede8'}`, alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '16px', flexShrink: 0 }}>{a.afgedaan ? '✅' : '⬜'}</span>
+                  <span style={{ fontWeight: 'bold', minWidth: '100px', maxWidth: '120px', fontSize: basisFs, fontFamily: 'Arial', color: a.afgedaan ? '#6dbb80' : GOUD_LICHT, textDecoration: a.afgedaan ? 'line-through' : 'none', opacity: a.afgedaan ? 0.6 : 1, flexShrink: 0 }}>
+                    {a.naam}
+                  </span>
+                  <span style={{ flex: 1, fontSize: `calc(${basisFs} - 2px)`, fontFamily: 'Arial', color: donkerModus ? '#e0d0f0' : '#1a0a2e', textDecoration: a.afgedaan ? 'line-through' : 'none', opacity: a.afgedaan ? 0.6 : 1 }}>
+                    {a.actie}
+                  </span>
+                  {a.datum && <span style={{ fontSize: '12px', color: donkerModus ? 'rgba(255,255,255,0.4)' : '#888', fontFamily: 'Arial', flexShrink: 0 }}>{formatDatumNL(a.datum)}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Kalender */}
+        {kalender.length > 0 && (
+          <div style={{ maxWidth: '860px', margin: '0 auto', padding: '0 20px 40px' }}>
+            <div style={{ borderTop: `1px solid ${kaartRand}`, paddingTop: '20px' }}>
+              <h2 style={{ fontSize: '15px', color: GOUD, fontFamily: 'Arial', fontWeight: 'bold', marginBottom: '12px' }}>
+                📅 Algemene agendapunten
+              </h2>
+              {[...kalender].sort((a, b) => a.datum.localeCompare(b.datum)).map(item => (
+                <div key={item.id} style={{ display: 'flex', gap: '16px', padding: '6px 0', borderBottom: `1px solid ${donkerModus ? 'rgba(255,255,255,0.06)' : '#f0ede8'}`, alignItems: 'baseline' }}>
+                  <span style={{ minWidth: '80px', fontFamily: 'Arial', fontWeight: 'bold', color: GOUD_LICHT, fontSize: '13px', flexShrink: 0 }}>
+                    {item.datum ? new Date(item.datum + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : ''}
+                  </span>
+                  <span style={{ flex: 1, fontSize: `calc(${basisFs} - 2px)`, fontFamily: 'Arial', color: donkerModus ? '#e0d0f0' : '#1a0a2e' }}>
+                    {item.omschrijving}
+                  </span>
+                  {item.personen && <span style={{ fontSize: '12px', color: donkerModus ? 'rgba(255,255,255,0.5)' : '#888', fontStyle: 'italic', fontFamily: 'Arial', flexShrink: 0 }}>{item.personen}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

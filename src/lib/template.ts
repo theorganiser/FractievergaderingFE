@@ -3,19 +3,19 @@ import { Agendapunt } from './types'
 export const TEMPLATE_PUNTEN: Agendapunt[] = [
   {
     id: 1,
-    titel: 'Opening en vaststellen agenda',
-    toelichting: '(besluitenlijst / notulist / opname band)',
-    subpunten: [],
-  },
-  {
-    id: 2,
-    titel: 'Goedkeuring en behandeling besluitenlijst',
+    titel: 'Opening en check-in',
     toelichting: '',
     subpunten: [],
   },
   {
+    id: 2,
+    titel: 'Vaststellen agenda',
+    toelichting: '(notulist / opname band)',
+    subpunten: [],
+  },
+  {
     id: 3,
-    titel: 'Check-in',
+    titel: 'Openstaande taken / vaststellen besluitenlijst',
     toelichting: '',
     subpunten: [],
   },
@@ -36,7 +36,6 @@ export const TEMPLATE_PUNTEN: Agendapunt[] = [
     toelichting: '',
     subpunten: [],
   },
-  // Politieke Avond en Raadsvergadering worden optioneel ingevoegd (id 6 en 7 worden dan verschoven)
   {
     id: 6,
     titel: 'Actualiteiten',
@@ -84,18 +83,18 @@ export const TEMPLATE_PUNTEN: Agendapunt[] = [
 ]
 
 export const POLITIEKE_AVOND_PUNT = (datum: string, url: string): Agendapunt => ({
-  id: 0, // wordt hernummerd
+  id: 0,
   titel: `Politieke Avond ${datum}`,
   toelichting: '',
-  url: url || undefined,  // link zit op het punt zelf
+  url: url || undefined,
   subpunten: [],
 })
 
 export const RAADSVERGADERING_PUNT = (datum: string, url: string): Agendapunt => ({
-  id: 0, // wordt hernummerd
+  id: 0,
   titel: `Raadsvergadering ${datum}`,
   toelichting: '',
-  url: url || undefined,  // link zit op het punt zelf
+  url: url || undefined,
   subpunten: [],
 })
 
@@ -110,19 +109,17 @@ export function bouwPuntenMetOpties(
   if (heeftRV) extra.push(RAADSVERGADERING_PUNT(rvDatum, rvUrl))
 
   if (extra.length === 0) {
-    // Hernummer
     basis.forEach((p, i) => { p.id = i + 1 })
     return basis
   }
 
-  // Voeg PA en RV in na "Te bespreken" (index 4, na punt 5)
+  // Voeg PA en RV in na "Te bespreken" (punt 5)
   const invoegIndex = basis.findIndex(p => p.titel === 'Te bespreken') + 1
   const resultaat = [
     ...basis.slice(0, invoegIndex),
     ...extra,
     ...basis.slice(invoegIndex),
   ]
-  // Hernummer alles
   resultaat.forEach((p, i) => { p.id = i + 1 })
   return resultaat
 }

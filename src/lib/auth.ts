@@ -1,11 +1,7 @@
-// auth.ts — Edge-compatible JWT via jose
-// jose ondersteunt zowel Node.js als Edge runtime
-
 import { SignJWT, jwtVerify } from 'jose'
 
 export const COOKIE_LEZER = 'gdp_toegang'
 export const COOKIE_ADMIN = 'gdp_admin'
-const COOKIE_OPTIES = 'HttpOnly; Path=/; SameSite=Strict'
 
 function getSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET
@@ -35,23 +31,26 @@ export async function verifieerToken(
   }
 }
 
+function cookieOpties(maxAge: number): string {
+  // SameSite=Lax werkt beter dan Strict bij redirects
+  // Secure alleen in productie
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
+  return `Max-Age=${maxAge}; Path=/; HttpOnly; SameSite=Lax${secure}`
+}
+
 export async function maakLezerCookie(naam: string): Promise<string> {
   const token = await maakToken({ rol: 'lezer', naam }, '7d')
-  const maxAge = 7 * 24 * 60 * 60
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
-  return `${COOKIE_LEZER}=${token}; Max-Age=${maxAge}; ${COOKIE_OPTIES}${secure}`
+  return `${COOKIE_LEZER}=${token}; ${cookieOpties(7 * 24 * 60 * 60)}`
 }
 
 export async function maakAdminCookie(): Promise<string> {
   const token = await maakToken({ rol: 'admin' }, '8h')
-  const maxAge = 8 * 60 * 60
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
-  return `${COOKIE_ADMIN}=${token}; Max-Age=${maxAge}; ${COOKIE_OPTIES}${secure}`
+  return `${COOKIE_ADMIN}=${token}; ${cookieOpties(8 * 60 * 60)}`
 }
 
 export function verwijderCookies(): string[] {
   return [
-    `${COOKIE_LEZER}=; Max-Age=0; ${COOKIE_OPTIES}`,
-    `${COOKIE_ADMIN}=; Max-Age=0; ${COOKIE_OPTIES}`,
+    `${COOKIE_LEZER}=; Max-Age=0; Path=/; HttpOnly`,
+    `${COOKIE_ADMIN}=; Max-Age=0; Path=/; HttpOnly`,
   ]
 }

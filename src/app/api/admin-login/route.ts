@@ -13,7 +13,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ fout: 'Onjuist wachtwoord.' }, { status: 401 })
   }
 
-  // Geef zowel admin als lezer cookie mee
   const adminCookie = await maakAdminCookie()
   const lezerCookie = await maakLezerCookie(naam || 'Beheerder')
 

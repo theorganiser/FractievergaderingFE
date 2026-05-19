@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
+// Oude loginpagina - redirect naar nieuwe /inloggen pagina
 export default function OudLoginPagina() {
   const router = useRouter()
 
