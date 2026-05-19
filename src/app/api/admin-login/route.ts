@@ -17,7 +17,10 @@ export async function POST(req: NextRequest) {
   const lezerCookie = await maakLezerCookie(naam || 'Beheerder')
 
   const response = NextResponse.json({ ok: true })
+  
+  // Gebruik twee aparte Set-Cookie headers
   response.headers.append('Set-Cookie', adminCookie)
   response.headers.append('Set-Cookie', lezerCookie)
+  
   return response
 }

@@ -54,8 +54,9 @@ function InloggenFormulier() {
       } else {
         // Naam opslaan in localStorage
         if (naam.trim()) localStorage.setItem(NAAM_SLEUTEL, naam.trim())
-        router.push(terugPad)
-        router.refresh()
+        // Gebruik window.location voor volledige browser navigatie
+        // zodat de cookie zeker wordt meegestuurd naar middleware
+        window.location.href = terugPad
       }
     } catch {
       setFout('Verbindingsfout. Probeer opnieuw.')
