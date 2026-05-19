@@ -8,14 +8,14 @@ import { testVerbinding, haalSyncLog } from '@/lib/api'
 import Melding from '@/components/Melding'
 
 export default function BeheerPagina() {
-  const { isAdmin, geladen } = useAuth()
+  const { isAdmin, geladen: authGeladen } = useAuth()
   const router = useRouter()
   const { vergaderingen } = useVergaderingen()
   const [apiStatus, setApiStatus] = useState<'idle' | 'laden' | 'ok' | 'fout'>('idle')
   const [syncLog, setSyncLog] = useState<unknown[]>([])
   const [melding, setMelding] = useState<{ type: 'succes' | 'fout'; tekst: string } | null>(null)
 
-  if (geladen && !isAdmin) {
+  if (authGeladen && !isAdmin) {
     router.push('/login')
     return null
   }
