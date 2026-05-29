@@ -16,9 +16,10 @@ import Actielijst from '@/components/Actielijst'
 import SupabaseFout, { OpslaanFoutBanner } from '@/components/SupabaseFout'
 import Stemlijst from '@/components/Stemlijst'
 import KalenderTab from '@/components/KalenderTab'
+import Kalender from '@/components/Kalender'
 
 interface Props { params: { id: string } }
-type Tabblad = 'details' | 'agenda' | 'acties' | 'kalender' | 'stemlijst' | 'documenten' | 'lees'
+type Tabblad = 'details' | 'agenda' | 'acties' | 'kalender' | 'vergkalender' | 'stemlijst' | 'documenten' | 'lees'
 
 export default function VergaderingEditorPagina({ params }: Props) {
   const { id } = params
@@ -30,6 +31,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
     herorden,
     voegActieToe, toggleActie, verwijderActie, neemActiesOver,
+    voegKalenderItemToe, verwijderKalenderItem, updateKalenderItem,
   } = useVergaderingen()
 
   const [tabblad, setTabblad] = useState<Tabblad>('details')
@@ -73,11 +75,32 @@ export default function VergaderingEditorPagina({ params }: Props) {
     setTabblad('agenda')
   }
 
+  // Kalenderitem toevoegen als bespreekpunt onder "Te bespreken"
+  const voegKalenderItemToeAanAgenda = async (item: CentraalKalenderItem) => {
+    const nieuwePunten = JSON.parse(JSON.stringify(v.punten))
+    const teBespreken = nieuwePunten.find((p: { titel: string }) =>
+      p.titel.toLowerCase().includes('te bespreken')
+    )
+    if (teBespreken) {
+      const letter = String.fromCharCode(97 + teBespreken.subpunten.length)
+      const datumNL = new Date(item.datum + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })
+      teBespreken.subpunten.push({
+        id: letter,
+        titel: `${item.omschrijving}${item.locatie ? ` — ${item.locatie}` : ''} (${datumNL})`,
+        url: '', afgedaan: false,
+      })
+    }
+    await update(id, { punten: nieuwePunten })
+    setMelding({ type: 'succes', tekst: `"${item.omschrijving}" toegevoegd aan Te bespreken` })
+    setTimeout(() => setMelding(null), 3000)
+  }
+
   const TABS: { key: Tabblad; label: string; badge?: number }[] = [
     { key: 'details', label: 'Gegevens' },
     { key: 'agenda', label: 'Agenda' },
     { key: 'acties', label: 'Actielijst', badge: v.actielijst?.filter(a => !a.afgedaan).length },
-    { key: 'kalender', label: '📅 Kalender' },
+    { key: 'kalender', label: '📅 Fract.kalender' },
+    { key: 'vergkalender', label: '📋 Verg.kalender', badge: v.kalender?.length },
     { key: 'documenten', label: 'Documenten' },
     { key: 'stemlijst', label: '⚖️ Stemlijst', badge: v.heeftRaadsvergadering ? undefined : undefined },
     { key: 'lees', label: 'Leesweergave' },
@@ -147,6 +170,14 @@ export default function VergaderingEditorPagina({ params }: Props) {
       )}
       {tabblad === 'kalender' && (
         <KalenderTab onVoegToeAanAgenda={voegKalenderItemToeAanAgenda} />
+      )}
+      {tabblad === 'vergkalender' && (
+        <Kalender
+          items={v.kalender || []}
+          onVoegToe={(item) => voegKalenderItemToe(id, item)}
+          onVerwijder={(itemId) => verwijderKalenderItem(id, itemId)}
+          onUpdate={(itemId, w) => updateKalenderItem(id, itemId, w)}
+        />
       )}
       {tabblad === 'stemlijst' && (
         <Stemlijst punten={v.punten} rvDatum={v.raadsvergaderingDatum} />

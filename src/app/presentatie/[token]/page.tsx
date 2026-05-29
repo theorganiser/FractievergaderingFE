@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
 import { formatDatum, formatDatumNL } from '@/lib/datum'
 import { Vergadering } from '@/lib/types'
@@ -230,27 +230,44 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
           </div>
         )}
 
-        {/* Kalender */}
-        {kalender.length > 0 && (
-          <div style={{ maxWidth: '860px', margin: '0 auto', padding: '0 20px 40px' }}>
-            <div style={{ borderTop: `1px solid ${kaartRand}`, paddingTop: '20px' }}>
-              <h2 style={{ fontSize: '15px', color: GOUD, fontFamily: 'Arial', fontWeight: 'bold', marginBottom: '12px' }}>
-                📅 Algemene agendapunten
-              </h2>
-              {[...kalender].sort((a, b) => a.datum.localeCompare(b.datum)).map(item => (
-                <div key={item.id} style={{ display: 'flex', gap: '16px', padding: '6px 0', borderBottom: `1px solid ${donkerModus ? 'rgba(255,255,255,0.06)' : '#f0ede8'}`, alignItems: 'baseline' }}>
-                  <span style={{ minWidth: '80px', fontFamily: 'Arial', fontWeight: 'bold', color: GOUD_LICHT, fontSize: '13px', flexShrink: 0 }}>
-                    {item.datum ? new Date(item.datum + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : ''}
-                  </span>
-                  <span style={{ flex: 1, fontSize: `calc(${basisFs} - 2px)`, fontFamily: 'Arial', color: donkerModus ? '#e0d0f0' : '#1a0a2e' }}>
-                    {item.omschrijving}
-                  </span>
-                  {item.personen && <span style={{ fontSize: '12px', color: donkerModus ? 'rgba(255,255,255,0.5)' : '#888', fontStyle: 'italic', fontFamily: 'Arial', flexShrink: 0 }}>{item.personen}</span>}
-                </div>
-              ))}
-            </div>
+        {/* Centrale Fractiekalender */}
+        <CentraleKalenderSectie donkerModus={donkerModus} kaartRand={kaartRand} basisFs={basisFs} GOUD={GOUD} GOUD_LICHT={GOUD_LICHT} />
+      </div>
+    </div>
+  )
+}
+
+function CentraleKalenderSectie({ donkerModus, kaartRand, basisFs, GOUD, GOUD_LICHT }: {
+  donkerModus: boolean; kaartRand: string; basisFs: string; GOUD: string; GOUD_LICHT: string
+}) {
+  const [items, setItems] = useState<{ id: string; datum: string; omschrijving: string; locatie: string; personen: string }[]>([])
+
+  useEffect(() => {
+    import('@/lib/kalender').then(({ haalKalenderItems }) => {
+      haalKalenderItems(true).then(data => setItems(data)).catch(() => {})
+    })
+  }, [])
+
+  if (items.length === 0) return null
+
+  return (
+    <div style={{ maxWidth: '860px', margin: '0 auto', padding: '0 20px 40px' }}>
+      <div style={{ borderTop: `1px solid ${kaartRand}`, paddingTop: '20px' }}>
+        <h2 style={{ fontSize: '15px', color: GOUD, fontFamily: 'Arial', fontWeight: 'bold', marginBottom: '12px' }}>
+          📅 Fractiekalender — aankomende evenementen
+        </h2>
+        {items.map(item => (
+          <div key={item.id} style={{ display: 'flex', gap: '16px', padding: '6px 0', borderBottom: `1px solid ${donkerModus ? 'rgba(255,255,255,0.06)' : '#f0ede8'}`, alignItems: 'baseline' }}>
+            <span style={{ minWidth: '80px', fontFamily: 'Arial', fontWeight: 'bold', color: GOUD_LICHT, fontSize: '13px', flexShrink: 0 }}>
+              {item.datum ? new Date(item.datum + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : ''}
+            </span>
+            <span style={{ flex: 1, fontSize: `calc(${basisFs} - 2px)`, fontFamily: 'Arial', color: donkerModus ? '#e0d0f0' : '#1a0a2e' }}>
+              {item.omschrijving}
+            </span>
+            {item.locatie && <span style={{ fontSize: '12px', color: donkerModus ? 'rgba(255,255,255,0.4)' : '#888', fontFamily: 'Arial', flexShrink: 0 }}>📍 {item.locatie}</span>}
+            {item.personen && <span style={{ fontSize: '12px', color: donkerModus ? 'rgba(255,255,255,0.4)' : '#888', fontStyle: 'italic', fontFamily: 'Arial', flexShrink: 0 }}>{item.personen}</span>}
           </div>
-        )}
+        ))}
       </div>
     </div>
   )
