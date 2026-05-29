@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ApiDocument } from '@/lib/types'
 import { haalRaadsmededelingen, haalAfgedaaneVragen, startSyncEnWacht, SyncLogItem, DEMO_RM, DEMO_VRAGEN } from '@/lib/api'

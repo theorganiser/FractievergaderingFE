@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useVergaderingen } from '@/hooks/useVergaderingen'
@@ -20,7 +22,7 @@ interface NieuweOpties {
 
 export default function OverzichtPagina() {
   const router = useRouter()
-  const { vergaderingen, geladen, maakNieuwe, kopieer, verwijder, update, supabaseFout, opslaanFout, herlaad, sluitOpslaanFout } = useVergaderingen()
+  const { vergaderingen, geladen, maakNieuwe, kopieer, verwijder, update, vernieuwToken, supabaseFout, opslaanFout, herlaad, sluitOpslaanFout } = useVergaderingen()
   const { isAdmin } = useAuth()
   const [melding, setMelding] = useState<{ type: 'succes' | 'info'; tekst: string } | null>(null)
   const [bezig, setBezig] = useState(false)
@@ -304,6 +306,14 @@ export default function OverzichtPagina() {
                   <Knop variant="primair" klein onClick={() => router.push(`/vergadering/${v.id}`)}>✏️ Bewerken</Knop>
                   <Knop variant="outline" klein onClick={() => handleKopieer(v.id)}>⧉ Kopiëren</Knop>
                   <button onClick={() => kopieerDeellink(v.deeltoken)} style={{ fontSize: '11px', background: '#e8f5ed', border: '1px solid #a8d8b5', color: '#2d7a4f', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'Arial' }}>🔗 Deel</button>
+                  {!v.deeltoken.startsWith('fractievergadering-') && v.datum && (
+                    <button onClick={async () => {
+                      const nieuw = await vernieuwToken(v.id)
+                      if (nieuw) { setMelding({ type: 'succes', tekst: `✓ Link vernieuwd: /lees/${nieuw}` }); setTimeout(() => setMelding(null), 6000) }
+                    }} style={{ fontSize: '11px', background: '#f5eeff', border: '1px solid #c0a0d8', color: '#4a1a5c', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'Arial' }} title="Maak deellink leesbaar">
+                      🔄 Link
+                    </button>
+                  )}
                   <Knop variant="gevaar" klein onClick={() => handleVerwijder(v.id)}>🗑</Knop>
                 </>
               )}

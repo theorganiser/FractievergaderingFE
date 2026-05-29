@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
 import { LeesweergaveVolledig } from '@/components/Leesweergave'
 import { useAuth } from '@/hooks/useAuth'
@@ -28,13 +30,19 @@ export default function LeesPagina({ params }: Props) {
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto' }} className="print-full">
       {isAdmin && (
-        <div className="no-print" style={{ marginBottom: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-          <button
-            onClick={() => window.open(`/presentatie/${token}`, '_blank')}
-            style={{ background: '#4a1a5c', color: '#a89060', border: '1px solid #a89060', padding: '7px 16px', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial', fontWeight: 'bold' }}
-          >
-            📺 Presentatiemodus
-          </button>
+        <div className="no-print" style={{ marginBottom: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+          <a href={`/stemlijst/${token}`} target="_blank"
+            style={{ background: 'white', color: '#4a1a5c', border: '1px solid #4a1a5c', padding: '7px 16px', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+            ⚖️ Stemlijst
+          </a>
+          {isAdmin && (
+            <button
+              onClick={() => window.open(`/presentatie/${token}`, '_blank')}
+              style={{ background: '#4a1a5c', color: '#a89060', border: '1px solid #a89060', padding: '7px 16px', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial', fontWeight: 'bold' }}
+            >
+              📺 Presentatiemodus
+            </button>
+          )}
         </div>
       )}
       <LeesweergaveVolledig vergadering={vergadering} toonPrintKnop />

@@ -5,16 +5,27 @@ export interface Subpunt {
   afgedaan?: boolean
   toelichting?: string
   publicatiedatum?: string
+  // Politieke Avond velden
+  starttijd?: string
+  woordvoerder?: string
+  // Raadsvergadering velden
+  rvNummer?: string        // bijv. "3a", "M26-57", "A26-58"
+  inStemlijst?: boolean   // opnemen in stemlijst
+  subtype?: 'motie' | 'amendement' | 'normaal'
+  gekoppeldAanRv?: string  // rvNummer van het gekoppelde raadsvoorstel (voor moties/amendementen)
 }
 
 export interface Agendapunt {
   id: number
   titel: string
   toelichting?: string
-  url?: string  // optionele link op het punt zelf (bijv. PA of RV agenda)
+  url?: string
   subpunten: Subpunt[]
   apiType?: 'raadsmededelingen' | 'vragen'
-  type?: 'normaal' | 'actielijst' | 'kalender'
+  // Punt type voor speciale weergave
+  puntType?: 'algemeen' | 'politieke_avond' | 'raadsvergadering'
+  // Raadsvergadering datum
+  rvDatum?: string
 }
 
 export interface ActieItem {
@@ -22,7 +33,8 @@ export interface ActieItem {
   naam: string
   actie: string
   afgedaan: boolean
-  datum: string // vergaderdatum waarop toegevoegd
+  datum: string
+  deadline?: string
 }
 
 export interface KalenderItem {

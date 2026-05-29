@@ -108,3 +108,19 @@ function vergaderingNaarRij(v: Vergadering): Record<string, unknown> {
     aangemaakt: v.aangemaakt,
   }
 }
+
+/**
+ * Maakt een leesbare deeltoken op basis van de datum
+ * bijv. "fractievergadering-18-05-2026"
+ * Bij dubbele datum: "fractievergadering-18-05-2026-2"
+ */
+export function maakLeesbarToken(datum: string, bestaandeTokens: string[] = []): string {
+  if (!datum) return nieuwToken()
+  const [jaar, maand, dag] = datum.split('-')
+  if (!jaar || !maand || !dag) return nieuwToken()
+  const basis = `fractievergadering-${dag}-${maand}-${jaar}`
+  if (!bestaandeTokens.includes(basis)) return basis
+  let teller = 2
+  while (bestaandeTokens.includes(`${basis}-${teller}`)) { teller++ }
+  return `${basis}-${teller}`
+}

@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState } from 'react'
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
 import { formatDatum, formatDatumNL } from '@/lib/datum'
@@ -145,28 +147,59 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
               {/* Subpunten */}
               {!isKlapt && punt.subpunten.length > 0 && (
                 <div style={{ borderTop: `1px solid ${kaartRand}` }}>
-                  {punt.subpunten.map((sub, si) => (
-                    <div key={sub.id} style={{ padding: '9px 16px 9px 60px', borderBottom: si < punt.subpunten.length - 1 ? `1px solid ${donkerModus ? 'rgba(255,255,255,0.06)' : '#f0ede8'}` : 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontSize: '13px', color: donkerModus ? 'rgba(255,255,255,0.35)' : '#999', fontStyle: 'italic', minWidth: '18px', fontFamily: 'Arial' }}>
-                        {String.fromCharCode(97 + si)}.
-                      </span>
-                      {sub.url ? (
-                        <a href={sub.url} target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: `calc(${basisFs} - 3px)`, color: donkerModus ? GOUD_LICHT : '#5a1a8a', fontFamily: 'Arial', flex: 1, textDecoration: 'underline' }}>
-                          {sub.titel}
-                        </a>
-                      ) : (
-                        <span style={{ fontSize: `calc(${basisFs} - 3px)`, fontFamily: 'Arial', flex: 1, color: donkerModus ? '#e0d0f0' : '#1a0a2e' }}>
-                          {sub.titel}
-                        </span>
-                      )}
-                      {sub.afgedaan && (
-                        <span style={{ fontSize: '10px', background: '#d4f5dd', color: '#1a5c2a', border: '1px solid #6dbb80', padding: '1px 5px', borderRadius: '3px' }}>
-                          Afgedaan
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                  {punt.subpunten.map((sub, si) => {
+                    const isPA = punt.puntType === 'politieke_avond'
+                    const isRV = punt.puntType === 'raadsvergadering'
+                    const isMotie = sub.subtype === 'motie'
+                    const isAmendement = sub.subtype === 'amendement'
+                    return (
+                      <div key={sub.id || si} style={{ padding: '9px 16px 9px 60px', borderBottom: si < punt.subpunten.length - 1 ? `1px solid ${donkerModus ? 'rgba(255,255,255,0.06)' : '#f0ede8'}` : 'none', display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: (isMotie || isAmendement) ? '80px' : '60px', background: (isMotie || isAmendement) ? (donkerModus ? 'rgba(0,0,0,0.15)' : 'rgba(90,26,138,0.04)') : 'transparent' }}>
+                        {/* PA: toon starttijd */}
+                        {isPA && sub.starttijd && (
+                          <span style={{ fontSize: '13px', fontWeight: 'bold', color: GOUD, fontFamily: 'Arial', flexShrink: 0, minWidth: '50px' }}>
+                            {sub.starttijd}
+                          </span>
+                        )}
+                        {/* RV: toon rvNummer badge */}
+                        {isRV && (isMotie || isAmendement) && (
+                          <span style={{ fontSize: '10px', background: isMotie ? '#fff0e8' : '#f0e8ff', color: isMotie ? '#8a4000' : '#5a1a8a', border: `1px solid ${isMotie ? '#e8a060' : '#c0a0d8'}`, padding: '1px 5px', borderRadius: '3px', flexShrink: 0, fontFamily: 'Arial' }}>
+                            {isMotie ? 'M' : 'A'}
+                          </span>
+                        )}
+                        {isRV && sub.rvNummer && (
+                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: GOUD_LICHT, fontFamily: 'Arial', flexShrink: 0, minWidth: '60px' }}>
+                            {sub.rvNummer}
+                          </span>
+                        )}
+                        {!isRV && !isPA && (
+                          <span style={{ fontSize: '13px', color: donkerModus ? 'rgba(255,255,255,0.35)' : '#999', fontStyle: 'italic', minWidth: '18px', fontFamily: 'Arial' }}>
+                            {String.fromCharCode(97 + si)}.
+                          </span>
+                        )}
+                        {sub.url ? (
+                          <a href={sub.url} target="_blank" rel="noopener noreferrer"
+                            style={{ fontSize: `calc(${basisFs} - 3px)`, color: donkerModus ? GOUD_LICHT : '#5a1a8a', fontFamily: 'Arial', flex: 1, textDecoration: 'underline' }}>
+                            {sub.titel}
+                          </a>
+                        ) : (
+                          <span style={{ fontSize: `calc(${basisFs} - 3px)`, fontFamily: 'Arial', flex: 1, color: donkerModus ? '#e0d0f0' : '#1a0a2e' }}>
+                            {sub.titel}
+                          </span>
+                        )}
+                        {/* PA: toon woordvoerder */}
+                        {isPA && sub.woordvoerder && (
+                          <span style={{ fontSize: '12px', color: donkerModus ? 'rgba(255,255,255,0.5)' : '#888', fontStyle: 'italic', fontFamily: 'Arial', flexShrink: 0 }}>
+                            {sub.woordvoerder}
+                          </span>
+                        )}
+                        {sub.afgedaan && (
+                          <span style={{ fontSize: '10px', background: '#d4f5dd', color: '#1a5c2a', border: '1px solid #6dbb80', padding: '1px 5px', borderRadius: '3px' }}>
+                            Afgedaan
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>

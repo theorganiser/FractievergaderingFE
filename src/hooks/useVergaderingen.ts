@@ -8,6 +8,7 @@ import {
   slaVergaderingOp,
   verwijderVergaderingDb,
   nieuweId,
+  maakLeesbarToken,
   nieuwToken,
 } from '@/lib/storage'
 import { bouwPuntenMetOpties } from '@/lib/template'
@@ -24,14 +25,8 @@ export function useVergaderingen() {
     setSupabaseFout(false)
     setGeladen(false)
     dbLaad()
-      .then(data => {
-        setVergaderingen(data)
-        setGeladen(true)
-      })
-      .catch(() => {
-        setSupabaseFout(true)
-        setGeladen(true)
-      })
+      .then(data => { setVergaderingen(data); setGeladen(true) })
+      .catch(() => { setSupabaseFout(true); setGeladen(true) })
   }, [])
 
   useEffect(() => { laad() }, [laad])
@@ -42,13 +37,11 @@ export function useVergaderingen() {
       versie: (vergadering.versie || 1) + 1,
       bijgewerkt: new Date().toISOString(),
     }
-    // Update lokale state meteen voor snelle UI
     setVergaderingen(huidig =>
       huidig.some(v => v.id === bijgewerkt.id)
         ? huidig.map(v => v.id === bijgewerkt.id ? bijgewerkt : v)
         : [bijgewerkt, ...huidig]
     )
-    // Debounce: wacht 3 seconden voor Supabase opslaan
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
     setOpslaan(true)
     setOpslaanFout(false)
@@ -63,21 +56,16 @@ export function useVergaderingen() {
   const maakNieuwe = useCallback(async (opties: {
     vanTemplate: boolean
     vergaderingDatum?: string
-    heeftPA: boolean
-    paDatum: string
-    paUrl: string
-    heeftRV: boolean
-    rvDatum: string
-    rvUrl: string
+    heeftPA: boolean; paDatum: string; paUrl: string
+    heeftRV: boolean; rvDatum: string; rvUrl: string
   }): Promise<Vergadering> => {
     const datumStr = opties.vergaderingDatum || new Date().toISOString().split('T')[0]
     const [jaar, maand, dag] = datumStr.split('-')
     const datumNL = `${dag}-${maand}-${jaar}`
-
     const punten = opties.vanTemplate
       ? bouwPuntenMetOpties(opties.heeftPA, opties.paDatum, opties.paUrl, opties.heeftRV, opties.rvDatum, opties.rvUrl)
       : []
-
+    const bestaandeTokens = vergaderingen.map(v => v.deeltoken)
     const v: Vergadering = {
       id: nieuweId(),
       titel: `Fractie Vergadering ${datumNL}`,
@@ -86,18 +74,16 @@ export function useVergaderingen() {
       aanvang: '20:00',
       locatie: 'Gemeentehuis van Eedenzaal',
       aanwezig: 'Pieter, Vera, Claudia, Bianca, Ralph, Marga, Robin, Jan',
-      online: '',
-      afwezig: '',
+      online: '', afwezig: '',
       punten,
-      actielijst: [],
-      kalender: [],
+      actielijst: [], kalender: [],
       heeftPolitiekeAvond: opties.heeftPA,
       politiekeAvondDatum: opties.paDatum,
       politiekeAvondUrl: opties.paUrl,
       heeftRaadsvergadering: opties.heeftRV,
       raadsvergaderingDatum: opties.rvDatum,
       raadsvergaderingUrl: opties.rvUrl,
-      deeltoken: nieuwToken(),
+      deeltoken: maakLeesbarToken(datumStr, bestaandeTokens),
       aangemaakt: new Date().toISOString(),
       bijgewerkt: new Date().toISOString(),
     }
@@ -105,11 +91,12 @@ export function useVergaderingen() {
     if (!ok) setOpslaanFout(true)
     setVergaderingen(huidig => [v, ...huidig])
     return v
-  }, [])
+  }, [vergaderingen])
 
   const kopieer = useCallback(async (id: string): Promise<Vergadering | null> => {
     const orig = vergaderingen.find(v => v.id === id)
     if (!orig) return null
+    const bestaandeTokens = vergaderingen.map(v => v.deeltoken)
     const kop: Vergadering = {
       ...JSON.parse(JSON.stringify(orig)),
       id: nieuweId(),
@@ -120,6 +107,7 @@ export function useVergaderingen() {
       aangemaakt: new Date().toISOString(),
       bijgewerkt: new Date().toISOString(),
     }
+    if (orig.datum) kop.deeltoken = maakLeesbarToken('', bestaandeTokens)
     const ok = await slaVergaderingOp(kop)
     if (!ok) setOpslaanFout(true)
     setVergaderingen(huidig => [kop, ...huidig])
@@ -146,14 +134,22 @@ export function useVergaderingen() {
     await update(vergaderingId, { punten: nieuwePunten })
   }, [update])
 
+  const vernieuwToken = useCallback(async (vergaderingId: string): Promise<string | null> => {
+    const v = vergaderingen.find(x => x.id === vergaderingId)
+    if (!v || !v.datum) return null
+    const bestaandeTokens = vergaderingen
+      .filter(x => x.id !== vergaderingId)
+      .map(x => x.deeltoken)
+    const nieuwLeesbarToken = maakLeesbarToken(v.datum, bestaandeTokens)
+    slaOp({ ...v, deeltoken: nieuwLeesbarToken })
+    return nieuwLeesbarToken
+  }, [vergaderingen, slaOp])
+
   const voegPuntToe = useCallback(async (vergaderingId: string) => {
     const v = vergaderingen.find(x => x.id === vergaderingId)
     if (!v) return
     const nieuwPunt: Agendapunt = {
-      id: v.punten.length + 1,
-      titel: 'Nieuw agendapunt',
-      toelichting: '',
-      subpunten: [],
+      id: v.punten.length + 1, titel: 'Nieuw agendapunt', toelichting: '', subpunten: [],
     }
     await updatePunten(vergaderingId, [...v.punten, nieuwPunt])
   }, [vergaderingen, updatePunten])
@@ -180,8 +176,7 @@ export function useVergaderingen() {
     if (!v) return
     const punt = v.punten[puntIndex]
     const nieuwSub: Subpunt = {
-      id: String.fromCharCode(97 + punt.subpunten.length),
-      titel: '', url: '', afgedaan: false,
+      id: String.fromCharCode(97 + punt.subpunten.length), titel: '', url: '', afgedaan: false,
     }
     await updatePunt(vergaderingId, puntIndex, { subpunten: [...punt.subpunten, nieuwSub] })
   }, [vergaderingen, updatePunt])
@@ -207,13 +202,15 @@ export function useVergaderingen() {
     await updatePunt(vergaderingId, puntIndex, { subpunten: nieuweSubs })
   }, [vergaderingen, updatePunt])
 
-  // Actielijst
-  const voegActieToe = useCallback(async (vergaderingId: string, naam: string, actie: string) => {
+  const voegActieToe = useCallback(async (
+    vergaderingId: string, naam: string, actie: string, deadline?: string
+  ) => {
     const v = vergaderingen.find(x => x.id === vergaderingId)
     if (!v) return
     const nieuw: ActieItem = {
       id: Date.now().toString(), naam, actie, afgedaan: false,
       datum: v.datum || new Date().toISOString().split('T')[0],
+      deadline: deadline || '',
     }
     await update(vergaderingId, { actielijst: [...(v.actielijst || []), nieuw] })
   }, [vergaderingen, update])
@@ -239,7 +236,6 @@ export function useVergaderingen() {
     await update(naarId, { actielijst: [...openActies, ...(naar.actielijst || [])] })
   }, [vergaderingen, update])
 
-  // Kalender
   const voegKalenderItemToe = useCallback(async (vergaderingId: string, item: Omit<KalenderItem, 'id'>) => {
     const v = vergaderingen.find(x => x.id === vergaderingId)
     if (!v) return
@@ -270,7 +266,7 @@ export function useVergaderingen() {
     vergaderingen, geladen, opslaan, supabaseFout, opslaanFout,
     herlaad: laad,
     sluitOpslaanFout: () => setOpslaanFout(false),
-    maakNieuwe, kopieer, verwijder, update, updatePunten, herorden,
+    maakNieuwe, kopieer, verwijder, update, updatePunten, herorden, vernieuwToken,
     voegPuntToe, verwijderPunt, updatePunt,
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
     voegActieToe, toggleActie, verwijderActie, neemActiesOver,

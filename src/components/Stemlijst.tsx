@@ -1,176 +1,166 @@
 'use client'
 
 import { useState } from 'react'
-import { Agendapunt } from '@/lib/types'
+import { Agendapunt, Subpunt } from '@/lib/types'
 
-type Stem = 'voor' | 'tegen' | 'onbekend'
+type Stem = '✅' | '🔶' | '❌' | ''
+type StemKey = string // `${puntIndex}-${subIndex|'main'}`
 
-interface StemItem {
-  id: string
-  titel: string
-  stem: Stem
-  notitie?: string
-}
+const FRACTIES = ['GDP', 'VVD', 'D66', 'PvdA/GL', 'CDA', 'PRO', 'Hart']
 
 interface StemlijstProps {
   punten: Agendapunt[]
   rvDatum?: string
 }
 
-const STEM_CONFIG: Record<Stem, { label: string; kleur: string; bg: string; rand: string; emoji: string }> = {
-  voor: { label: 'VOOR', kleur: '#1a5c2a', bg: '#d4f5dd', rand: '#6dbb80', emoji: '✅' },
-  onbekend: { label: 'NOG TE BEPALEN', kleur: '#7a5a00', bg: '#fff3cc', rand: '#d4aa00', emoji: '🔶' },
-  tegen: { label: 'TEGEN', kleur: '#8b1a1a', bg: '#fde8e8', rand: '#e08080', emoji: '❌' },
+interface StemItem {
+  key: string
+  label: string
+  rvNummer?: string
+  subtype?: 'motie' | 'amendement' | 'normaal'
+  indent?: boolean
 }
 
 export default function Stemlijst({ punten, rvDatum }: StemlijstProps) {
-  // Haal raadsvergadering subpunten op als stemitems
-  const rvPunt = punten.find(p => p.titel.toLowerCase().includes('raadsvergadering'))
-  
-  const [items, setItems] = useState<StemItem[]>(() => {
-    const bronPunten = rvPunt?.subpunten || []
-    return bronPunten
-      .filter(s => s.titel && !s.titel.toLowerCase().includes('agenda raadsvergadering') && !s.titel.toLowerCase().includes('stemlijst'))
-      .map(s => ({ id: s.id, titel: s.titel, stem: 'onbekend' as Stem, notitie: '' }))
+  const [stemmen, setStemmen] = useState<Record<string, Record<string, Stem>>>({})
+  const [notities, setNotities] = useState<Record<string, string>>({})
+
+  // Verzamel alle stemlijst-items uit alle punten
+  const stemItems: StemItem[] = []
+
+  punten.forEach((punt, pi) => {
+    if (punt.puntType === 'raadsvergadering') {
+      punt.subpunten.forEach((sub, si) => {
+        if (sub.inStemlijst) {
+          const isSubtype = sub.subtype === 'motie' || sub.subtype === 'amendement'
+          stemItems.push({
+            key: `${pi}-${si}`,
+            label: sub.titel,
+            rvNummer: sub.rvNummer,
+            subtype: sub.subtype || 'normaal',
+            indent: isSubtype,
+          })
+        }
+      })
+    }
   })
 
-  const [extraTitel, setExtraTitel] = useState('')
-  const [toonExport, setToonExport] = useState(false)
-
-  const setStem = (id: string, stem: Stem) => {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, stem } : i))
+  const setHoofdStem = (key: string, fractie: string, stem: Stem) => {
+    setStemmen(prev => ({
+      ...prev,
+      [key]: { ...(prev[key] || {}), [fractie]: stem }
+    }))
   }
 
-  const setNotitie = (id: string, notitie: string) => {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, notitie } : i))
-  }
-
-  const voegToe = () => {
-    if (!extraTitel.trim()) return
-    setItems(prev => [...prev, { id: 'e_' + Date.now(), titel: extraTitel.trim(), stem: 'onbekend', notitie: '' }])
-    setExtraTitel('')
-  }
-
-  const verwijder = (id: string) => setItems(prev => prev.filter(i => i.id !== id))
-
-  const exporteerPDF = () => {
-    const html = `
-<!DOCTYPE html><html lang="nl"><head><meta charset="UTF-8">
-<title>Stemlijst GDP ${rvDatum || ''}</title>
-<style>
-  body { font-family: Arial, sans-serif; padding: 32px; max-width: 700px; margin: 0 auto; }
-  h1 { color: #0d2b4e; border-bottom: 3px solid #e8c84a; padding-bottom: 10px; }
-  .item { margin: 10px 0; padding: 10px 14px; border-radius: 6px; display: flex; align-items: center; gap: 12px; }
-  .voor { background: #d4f5dd; border-left: 4px solid #6dbb80; }
-  .tegen { background: #fde8e8; border-left: 4px solid #e08080; }
-  .onbekend { background: #fff3cc; border-left: 4px solid #d4aa00; }
-  .stem-badge { font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
-  .notitie { font-size: 11px; color: #666; font-style: italic; margin-top: 3px; }
-  @media print { body { padding: 16px; } }
-</style></head><body>
-<h1>Stemlijst GDP — Raadsvergadering ${rvDatum || ''}</h1>
-${items.map(i => {
-  const c = STEM_CONFIG[i.stem]
-  return `<div class="item ${i.stem}">
-    <span class="stem-badge" style="background:${c.rand};color:${c.kleur}">${c.emoji} ${c.label}</span>
-    <div><div>${i.titel}</div>${i.notitie ? `<div class="notitie">${i.notitie}</div>` : ''}</div>
-  </div>`
-}).join('')}
-<p style="margin-top:24px;font-size:11px;color:#999;">Goois Democratisch Platform — gegenereerd ${new Date().toLocaleDateString('nl-NL')}</p>
-</body></html>`
-
-    const blob = new Blob([html], { type: 'text/html' })
+  const exporteer = () => {
+    const rijen = stemItems.map(item => {
+      const stemRij = FRACTIES.map(f => stemmen[item.key]?.[f] || '—')
+      return `${item.rvNummer || ''}\t${item.label}\t${stemRij.join('\t')}`
+    })
+    const header = `Punt\tTitel\t${FRACTIES.join('\t')}`
+    const blob = new Blob([[header, ...rijen].join('\n')], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `stemlijst-gdp-${rvDatum || 'rv'}.html`
+    a.download = `stemlijst-${rvDatum || 'vergadering'}.txt`
     a.click()
-    URL.revokeObjectURL(url)
   }
 
-  const stats = { voor: items.filter(i => i.stem === 'voor').length, tegen: items.filter(i => i.stem === 'tegen').length, onbekend: items.filter(i => i.stem === 'onbekend').length }
+  if (stemItems.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>
+        <div style={{ fontSize: '40px', marginBottom: '12px' }}>⚖️</div>
+        <p style={{ marginBottom: '8px' }}>Geen stemlijst-items gevonden.</p>
+        <p style={{ fontSize: '13px' }}>
+          Voeg een <strong>Raadsvergadering</strong> agendapunt toe en vink bij de subpunten{' '}
+          <strong>"Stemlijst"</strong> aan om ze hier te tonen.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div>
-      {/* Header met stats */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
-        {(['voor', 'onbekend', 'tegen'] as Stem[]).map(s => {
-          const c = STEM_CONFIG[s]
-          return (
-            <div key={s} style={{ background: c.bg, border: `1px solid ${c.rand}`, borderRadius: '8px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px' }}>{c.emoji}</span>
-              <div>
-                <div style={{ fontSize: '10px', color: c.kleur, fontFamily: 'Arial', fontWeight: 'bold', letterSpacing: '0.5px' }}>{c.label}</div>
-                <div style={{ fontSize: '20px', fontWeight: 'bold', color: c.kleur, lineHeight: 1 }}>{stats[s]}</div>
-              </div>
-            </div>
-          )
-        })}
-        <div style={{ flex: 1 }} />
-        <button onClick={exporteerPDF} style={{ background: 'var(--blauw)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          ⬇ Exporteer stemlijst
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h2 style={{ fontSize: '16px', color: 'var(--blauw)', fontFamily: 'Arial', fontWeight: '600', margin: 0 }}>
+          ⚖️ Stemlijst {rvDatum && `— ${rvDatum}`}
+        </h2>
+        <button onClick={exporteer}
+          style={{ background: 'white', color: 'var(--blauw)', border: '1px solid var(--blauw)', padding: '7px 14px', borderRadius: '7px', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial' }}>
+          ↓ Exporteren
         </button>
       </div>
 
-      {items.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '32px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', fontStyle: 'italic' }}>
-          Geen raadsvergadering agendapunten gevonden. Voeg punten hieronder handmatig toe.
-        </div>
-      )}
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', fontFamily: 'Arial' }}>
+          <thead>
+            <tr style={{ background: 'var(--blauw)', color: 'white' }}>
+              <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600', minWidth: '70px' }}>Nr.</th>
+              <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600', minWidth: '200px' }}>Punt</th>
+              {FRACTIES.map(f => (
+                <th key={f} style={{ padding: '10px 8px', textAlign: 'center', fontWeight: '600', minWidth: '80px' }}>{f}</th>
+              ))}
+              <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '600', minWidth: '120px' }}>Notitie</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stemItems.map((item, idx) => {
+              const isMotie = item.subtype === 'motie'
+              const isAmendement = item.subtype === 'amendement'
+              const rij = stemmen[item.key] || {}
+              const bg = idx % 2 === 0 ? 'white' : '#fafaf8'
 
-      {/* Stemitems */}
-      {items.map(item => {
-        const c = STEM_CONFIG[item.stem]
-        return (
-          <div key={item.id} style={{ background: c.bg, border: `1px solid ${c.rand}`, borderRadius: '8px', padding: '12px 16px', marginBottom: '8px', transition: 'all 0.2s' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '14px', fontFamily: 'Arial', color: 'var(--tekst)', marginBottom: '6px' }}>{item.titel}</div>
-                <input
-                  placeholder="Notitie / aantekening (optioneel)"
-                  value={item.notitie || ''}
-                  onChange={e => setNotitie(item.id, e.target.value)}
-                  style={{ width: '100%', fontSize: '12px', padding: '4px 8px', border: `1px solid ${c.rand}`, borderRadius: '4px', background: 'rgba(255,255,255,0.7)', fontFamily: 'Arial', fontStyle: 'italic', outline: 'none' }}
-                />
-              </div>
-              {/* Stem knoppen */}
-              <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                {(['voor', 'onbekend', 'tegen'] as Stem[]).map(s => {
-                  const sc = STEM_CONFIG[s]
-                  const actief = item.stem === s
-                  return (
-                    <button key={s} onClick={() => setStem(item.id, s)} style={{
-                      padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial', fontWeight: 'bold',
-                      background: actief ? sc.rand : 'rgba(255,255,255,0.6)',
-                      color: actief ? sc.kleur : '#999',
-                      border: `2px solid ${actief ? sc.rand : 'rgba(0,0,0,0.1)'}`,
-                      transform: actief ? 'scale(1.05)' : 'scale(1)',
-                      transition: 'all 0.15s',
-                    }}>
-                      {sc.emoji}
-                    </button>
-                  )
-                })}
-                <button onClick={() => verwijder(item.id)} style={{ padding: '6px 8px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.1)', color: '#999' }}>✕</button>
-              </div>
-            </div>
-          </div>
-        )
-      })}
-
-      {/* Punt toevoegen */}
-      <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-        <input
-          value={extraTitel}
-          onChange={e => setExtraTitel(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && voegToe()}
-          placeholder="Extra agendapunt toevoegen aan stemlijst..."
-          style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--rand)', borderRadius: '7px', fontSize: '13px', fontFamily: 'Arial', outline: 'none' }}
-        />
-        <button onClick={voegToe} disabled={!extraTitel.trim()} style={{ background: 'var(--blauw)', color: 'white', border: 'none', padding: '9px 16px', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial', opacity: !extraTitel.trim() ? 0.5 : 1 }}>
-          + Toevoegen
-        </button>
+              return (
+                <tr key={item.key} style={{ background: item.indent ? (idx % 2 === 0 ? '#fdf8ff' : '#f8f0ff') : bg }}>
+                  <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--rand)', verticalAlign: 'middle' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {(isMotie || isAmendement) && (
+                        <span style={{ fontSize: '10px', background: isMotie ? '#fff0e8' : '#f0e8ff', color: isMotie ? '#8a4000' : '#5a1a8a', border: `1px solid ${isMotie ? '#e8a060' : '#c0a0d8'}`, padding: '1px 4px', borderRadius: '3px' }}>
+                          {isMotie ? 'M' : 'A'}
+                        </span>
+                      )}
+                      <span style={{ fontWeight: item.indent ? 'normal' : 'bold', color: item.indent ? '#5a1a8a' : 'var(--blauw)' }}>
+                        {item.rvNummer || '—'}
+                      </span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--rand)', paddingLeft: item.indent ? '28px' : '12px', verticalAlign: 'middle' }}>
+                    {item.label}
+                  </td>
+                  {FRACTIES.map(f => (
+                    <td key={f} style={{ padding: '6px 8px', borderBottom: '1px solid var(--rand)', textAlign: 'center', verticalAlign: 'middle' }}>
+                      <StemKnop
+                        waarde={rij[f] || ''}
+                        onChange={(stem) => setHoofdStem(item.key, f, stem)}
+                      />
+                    </td>
+                  ))}
+                  <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--rand)', verticalAlign: 'middle' }}>
+                    <input
+                      value={notities[item.key] || ''}
+                      onChange={e => setNotities(prev => ({ ...prev, [item.key]: e.target.value }))}
+                      placeholder="Notitie..."
+                      style={{ width: '100%', border: '1px solid var(--rand)', borderRadius: '4px', padding: '4px 6px', fontSize: '12px', outline: 'none', fontFamily: 'Arial' }}
+                    />
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
+  )
+}
+
+function StemKnop({ waarde, onChange }: { waarde: Stem; onChange: (s: Stem) => void }) {
+  const volgorde: Stem[] = ['', '✅', '🔶', '❌']
+  const volgende = volgorde[(volgorde.indexOf(waarde) + 1) % volgorde.length]
+  const bg = waarde === '✅' ? '#e8f5ed' : waarde === '❌' ? '#fdf0ef' : waarde === '🔶' ? '#fff8e8' : '#f5f5f5'
+  return (
+    <button onClick={() => onChange(volgende)}
+      style={{ background: bg, border: '1px solid #ddd', borderRadius: '6px', padding: '5px 10px', cursor: 'pointer', fontSize: '16px', minWidth: '42px', transition: 'all 0.15s' }}>
+      {waarde || '·'}
+    </button>
   )
 }

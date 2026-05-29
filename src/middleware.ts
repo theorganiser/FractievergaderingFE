@@ -10,6 +10,7 @@ const OPENBARE_PADEN = [
   '/api/admin-login',
   '/api/logout',
   '/api/check-auth',
+  '/stemlijst',
   '/_next',
   '/favicon',
 ]
