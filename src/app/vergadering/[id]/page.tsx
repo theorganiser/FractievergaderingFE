@@ -8,13 +8,14 @@ import { useVergaderingen } from '@/hooks/useVergaderingen'
 import { useAuth } from '@/hooks/useAuth'
 import { ApiDocument } from '@/lib/types'
 import AgendaEditor from '@/components/AgendaEditor'
+import { CentraalKalenderItem } from '@/lib/kalender'
 import DocumentenSelector from '@/components/DocumentenSelector'
 import Leesweergave from '@/components/Leesweergave'
 import Melding from '@/components/Melding'
 import Actielijst from '@/components/Actielijst'
 import SupabaseFout, { OpslaanFoutBanner } from '@/components/SupabaseFout'
 import Stemlijst from '@/components/Stemlijst'
-import Kalender from '@/components/Kalender'
+import KalenderTab from '@/components/KalenderTab'
 
 interface Props { params: { id: string } }
 type Tabblad = 'details' | 'agenda' | 'acties' | 'kalender' | 'stemlijst' | 'documenten' | 'lees'
@@ -29,7 +30,6 @@ export default function VergaderingEditorPagina({ params }: Props) {
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
     herorden,
     voegActieToe, toggleActie, verwijderActie, neemActiesOver,
-    voegKalenderItemToe, verwijderKalenderItem, updateKalenderItem,
   } = useVergaderingen()
 
   const [tabblad, setTabblad] = useState<Tabblad>('details')
@@ -77,7 +77,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
     { key: 'details', label: 'Gegevens' },
     { key: 'agenda', label: 'Agenda' },
     { key: 'acties', label: 'Actielijst', badge: v.actielijst?.filter(a => !a.afgedaan).length },
-    { key: 'kalender', label: 'Kalender', badge: v.kalender?.length },
+    { key: 'kalender', label: '📅 Kalender' },
     { key: 'documenten', label: 'Documenten' },
     { key: 'stemlijst', label: '⚖️ Stemlijst', badge: v.heeftRaadsvergadering ? undefined : undefined },
     { key: 'lees', label: 'Leesweergave' },
@@ -146,12 +146,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
         />
       )}
       {tabblad === 'kalender' && (
-        <Kalender
-          items={v.kalender || []}
-          onVoegToe={(item) => voegKalenderItemToe(id, item)}
-          onVerwijder={(itemId) => verwijderKalenderItem(id, itemId)}
-          onUpdate={(itemId, w) => updateKalenderItem(id, itemId, w)}
-        />
+        <KalenderTab onVoegToeAanAgenda={voegKalenderItemToeAanAgenda} />
       )}
       {tabblad === 'stemlijst' && (
         <Stemlijst punten={v.punten} rvDatum={v.raadsvergaderingDatum} />

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Vergadering, Agendapunt } from '@/lib/types'
 import { formatDatum, formatDatumNL } from '@/lib/datum'
 
@@ -157,6 +158,14 @@ export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop }: {
 }) {
   const actielijst = Array.isArray(v.actielijst) ? v.actielijst : []
   const kalender = Array.isArray(v.kalender) ? v.kalender : []
+  const [centraleKalender, setCentraleKalender] = useState<{ id: string; datum: string; omschrijving: string; locatie: string; personen: string }[]>([])
+
+  useEffect(() => {
+    // Haal toekomstige items op uit de centrale fractiekalender
+    import('@/lib/kalender').then(({ haalKalenderItems }) => {
+      haalKalenderItems(true).then(items => setCentraleKalender(items)).catch(() => {})
+    })
+  }, [])
 
   return (
     <div>
@@ -176,16 +185,17 @@ export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop }: {
         </div>
       )}
 
-      {kalender.length > 0 && (
+      {centraleKalender.length > 0 && (
         <div style={{ marginTop: '28px', borderTop: '1px solid var(--rand)', paddingTop: '16px' }}>
-          <h2 style={{ fontSize: '15px', color: 'var(--blauw)', marginBottom: '10px', fontWeight: 'bold', fontFamily: 'Arial' }}>📅 Algemene agendapunten</h2>
-          {[...kalender].sort((a, b) => a.datum.localeCompare(b.datum)).map(item => (
-            <div key={item.id} style={{ display: 'flex', gap: '16px', padding: '4px 0', fontSize: '14px', alignItems: 'baseline' }}>
+          <h2 style={{ fontSize: '15px', color: 'var(--blauw)', marginBottom: '10px', fontWeight: 'bold', fontFamily: 'Arial' }}>📅 Fractiekalender — aankomende evenementen</h2>
+          {centraleKalender.map(item => (
+            <div key={item.id} style={{ display: 'flex', gap: '12px', padding: '5px 0', fontSize: '14px', alignItems: 'baseline', borderBottom: '1px solid #f5f0f8' }}>
               <span style={{ minWidth: '75px', fontFamily: 'Arial', fontWeight: 'bold', color: 'var(--blauw)', fontSize: '13px', flexShrink: 0 }}>
                 {item.datum ? new Date(item.datum + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : ''}
               </span>
               <span style={{ flex: 1 }}>{item.omschrijving}</span>
-              {item.personen && <span style={{ fontSize: '13px', color: 'var(--tekst-zacht)', fontStyle: 'italic', flexShrink: 0 }}>{item.personen}</span>}
+              {item.locatie && <span style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', flexShrink: 0 }}>📍 {item.locatie}</span>}
+              {item.personen && <span style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontStyle: 'italic', fontFamily: 'Arial', flexShrink: 0 }}>{item.personen}</span>}
             </div>
           ))}
         </div>

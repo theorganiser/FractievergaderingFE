@@ -138,6 +138,7 @@ export default function Topbalk() {
         <nav style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
           <NavLink href="/" actief={pathname === '/'}>Vergaderingen</NavLink>
           <NavLink href="/documenten" actief={pathname === '/documenten'}>Documenten</NavLink>
+          <NavLink href="/kalender" actief={pathname === '/kalender'}>📅 Kalender</NavLink>
           {isAdmin && <NavLink href="/beheer" actief={pathname === '/beheer'}>Beheer</NavLink>}
           {isAdmin ? (
             <button onClick={logout} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '5px 12px', cursor: 'pointer', fontSize: '12px', borderRadius: '6px', marginLeft: '4px', fontFamily: 'Arial' }}>
