@@ -20,7 +20,7 @@ type Tabblad = 'details' | 'agenda' | 'acties' | 'kalender' | 'stemlijst' | 'doc
 export default function VergaderingEditorPagina({ params }: Props) {
   const { id } = params
   const router = useRouter()
-  const { isAdmin } = useAuth()
+  const { isAdmin, geladen: authGeladen } = useAuth()
   const {
     vergaderingen, geladen, opslaan, supabaseFout, opslaanFout, herlaad, sluitOpslaanFout, update,
     updatePunt, verwijderPunt, voegPuntToe,
@@ -33,8 +33,8 @@ export default function VergaderingEditorPagina({ params }: Props) {
   const [tabblad, setTabblad] = useState<Tabblad>('details')
   const [melding, setMelding] = useState<{ type: 'succes' | 'info' | 'fout'; tekst: string } | null>(null)
 
-  if (!geladen) return <div style={{ textAlign: 'center', padding: '80px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>⏳ Laden...</div>
-  if (!isAdmin) { router.push('/login'); return null }
+  if (!geladen || !authGeladen) return <div style={{ textAlign: 'center', padding: '80px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>⏳ Laden...</div>
+  if (!isAdmin) { router.push('/inloggen?admin=1'); return null }
 
   const v = vergaderingen.find(x => x.id === id)
   if (!v) return <div style={{ fontFamily: 'Arial', padding: '40px', color: 'var(--rood)' }}>Vergadering niet gevonden.</div>
