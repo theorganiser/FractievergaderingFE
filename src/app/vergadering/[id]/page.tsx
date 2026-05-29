@@ -94,6 +94,14 @@ export default function VergaderingEditorPagina({ params }: Props) {
         </div>
         {opslaan && <span style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>💾 Opslaan...</span>}
         <button onClick={kopieerDeellink} style={btnOutline}>🔗 Deel</button>
+        {!v.deeltoken.startsWith('fractievergadering-') && v.datum && (
+          <button onClick={async () => {
+            const nieuw = await vernieuwToken(id)
+            if (nieuw) setMelding({ type: 'succes', tekst: `Link vernieuwd naar /lees/${nieuw}` })
+          }} style={{ ...btnOutline, borderColor: '#c0a0d8', color: '#4a1a5c' }} title="Maak deellink leesbaar">
+            🔄 Vernieuw link
+          </button>
+        )}
         <button onClick={() => router.push(`/lees/${v.deeltoken}`)} style={btnAccent}>👁 Bekijken</button>
         <button onClick={() => window.open(`/presentatie/${v.deeltoken}`, '_blank')} style={{ ...btnOutline, background: '#1a3a5c', color: '#e8c84a', borderColor: '#e8c84a' }}>📺 Presenteren</button>
       </div>

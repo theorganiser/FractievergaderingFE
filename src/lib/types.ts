@@ -4,7 +4,6 @@ export interface Subpunt {
   url?: string
   afgedaan?: boolean
   toelichting?: string
-  publicatiedatum?: string
 }
 
 export interface Agendapunt {

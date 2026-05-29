@@ -5,25 +5,30 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { startSyncEnWacht, SyncLogItem } from '@/lib/api'
+import { getSprekerNaam, setSprekerNaam } from '@/components/Toegangspoort'
 
 export default function Topbalk() {
   const pathname = usePathname()
-  const { isAdmin, logout, naam: _naam } = useAuth()
+  const { isAdmin, logout } = useAuth()
   const [syncBezig, setSyncBezig] = useState(false)
+  const [sprekerNaam, setSprekerNaamState] = useState('')
   const [naamBewerken, setNaamBewerken] = useState(false)
   const [naamInvoer, setNaamInvoer] = useState('')
-  const { naam: sprekerNaam } = useAuth()
+
+  useEffect(() => {
+    setSprekerNaamState(getSprekerNaam())
+  }, [])
 
   const slaaNaamOp = () => {
     if (!naamInvoer.trim()) return
-    localStorage.setItem('gdp_spreker_naam', naamInvoer.trim())
+    setSprekerNaam(naamInvoer.trim())
+    setSprekerNaamState(naamInvoer.trim())
     setNaamBewerken(false)
-    window.location.reload()
   }
   const [syncResultaat, setSyncResultaat] = useState<SyncLogItem | null>(null)
   const [toonResultaat, setToonResultaat] = useState(false)
 
-  if (pathname.startsWith('/presentatie/') || pathname.startsWith('/inloggen')) return null
+  if (pathname.startsWith('/presentatie/')) return null
 
   const handleSync = async () => {
     setSyncBezig(true)
@@ -138,6 +143,7 @@ export default function Topbalk() {
         <nav style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
           <NavLink href="/" actief={pathname === '/'}>Vergaderingen</NavLink>
           <NavLink href="/documenten" actief={pathname === '/documenten'}>Documenten</NavLink>
+          <NavLink href="/kalender" actief={pathname === '/kalender'}>📅 Kalender</NavLink>
           {isAdmin && <NavLink href="/beheer" actief={pathname === '/beheer'}>Beheer</NavLink>}
           {isAdmin ? (
             <button onClick={logout} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '5px 12px', cursor: 'pointer', fontSize: '12px', borderRadius: '6px', marginLeft: '4px', fontFamily: 'Arial' }}>
