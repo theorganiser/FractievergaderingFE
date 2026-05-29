@@ -18,7 +18,6 @@ export function useAuth(): AuthStatus & { logout: () => Promise<void> } {
   })
 
   useEffect(() => {
-    // Haal auth status op via API (leest cookies server-side)
     fetch('/api/check-auth')
       .then(r => r.json())
       .then(data => setStatus({ ...data, geladen: true }))

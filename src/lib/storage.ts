@@ -22,30 +22,6 @@ export function nieuwToken(): string {
   return Math.random().toString(36).substr(2, 12)
 }
 
-/**
- * Maakt een leesbare deeltoken op basis van de datum
- * bijv. "fractievergadering-18-05-2026"
- * Als de datum leeg is, valt het terug op een random token
- */
-export function maakLeesbarToken(datum: string, bestaandeTokens: string[] = []): string {
-  if (!datum) return nieuwToken()
-  
-  // Zet ISO datum (2026-05-18) om naar NL formaat (18-05-2026)
-  const [jaar, maand, dag] = datum.split('-')
-  if (!jaar || !maand || !dag) return nieuwToken()
-  
-  const basis = `fractievergadering-${dag}-${maand}-${jaar}`
-  
-  // Check op duplicaten en voeg -2, -3 etc toe indien nodig
-  if (!bestaandeTokens.includes(basis)) return basis
-  
-  let teller = 2
-  while (bestaandeTokens.includes(`${basis}-${teller}`)) {
-    teller++
-  }
-  return `${basis}-${teller}`
-}
-
 export async function laadVergaderingen(): Promise<Vergadering[]> {
   const { data, error } = await supabase
     .from('vergaderingen')

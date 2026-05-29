@@ -20,7 +20,7 @@ type Tabblad = 'details' | 'agenda' | 'acties' | 'kalender' | 'stemlijst' | 'doc
 export default function VergaderingEditorPagina({ params }: Props) {
   const { id } = params
   const router = useRouter()
-  const { isAdmin, geladen: authGeladen } = useAuth()
+  const { isAdmin } = useAuth()
   const {
     vergaderingen, geladen, opslaan, supabaseFout, opslaanFout, herlaad, sluitOpslaanFout, update,
     updatePunt, verwijderPunt, voegPuntToe,
@@ -33,9 +33,8 @@ export default function VergaderingEditorPagina({ params }: Props) {
   const [tabblad, setTabblad] = useState<Tabblad>('details')
   const [melding, setMelding] = useState<{ type: 'succes' | 'info' | 'fout'; tekst: string } | null>(null)
 
-  // Wacht tot BEIDE geladen zijn - anders redirect te vroeg omdat isAdmin nog false is
-  if (!geladen || !authGeladen) return <div style={{ textAlign: 'center', padding: '80px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>⏳ Laden...</div>
-  if (!isAdmin) { router.push('/inloggen?admin=1'); return null }
+  if (!geladen) return <div style={{ textAlign: 'center', padding: '80px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>⏳ Laden...</div>
+  if (!isAdmin) { router.push('/login'); return null }
 
   const v = vergaderingen.find(x => x.id === id)
   if (!v) return <div style={{ fontFamily: 'Arial', padding: '40px', color: 'var(--rood)' }}>Vergadering niet gevonden.</div>
@@ -94,14 +93,6 @@ export default function VergaderingEditorPagina({ params }: Props) {
         </div>
         {opslaan && <span style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>💾 Opslaan...</span>}
         <button onClick={kopieerDeellink} style={btnOutline}>🔗 Deel</button>
-        {!v.deeltoken.startsWith('fractievergadering-') && v.datum && (
-          <button onClick={async () => {
-            const nieuw = await vernieuwToken(id)
-            if (nieuw) setMelding({ type: 'succes', tekst: `Link vernieuwd naar /lees/${nieuw}` })
-          }} style={{ ...btnOutline, borderColor: '#c0a0d8', color: '#4a1a5c' }} title="Maak deellink leesbaar">
-            🔄 Vernieuw link
-          </button>
-        )}
         <button onClick={() => router.push(`/lees/${v.deeltoken}`)} style={btnAccent}>👁 Bekijken</button>
         <button onClick={() => window.open(`/presentatie/${v.deeltoken}`, '_blank')} style={{ ...btnOutline, background: '#1a3a5c', color: '#e8c84a', borderColor: '#e8c84a' }}>📺 Presenteren</button>
       </div>

@@ -2,14 +2,13 @@
 
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
 import { LeesweergaveVolledig } from '@/components/Leesweergave'
-import SupabaseFout from '@/components/SupabaseFout'
 import { useAuth } from '@/hooks/useAuth'
 
 interface Props { params: { token: string } }
 
 export default function LeesPagina({ params }: Props) {
   const { token } = params
-  const { vergadering, geladen, fout, herlaad } = useVergaderingOpToken(token)
+  const { vergadering, geladen } = useVergaderingOpToken(token)
   const { isAdmin } = useAuth()
 
   if (!geladen) return (
@@ -17,8 +16,6 @@ export default function LeesPagina({ params }: Props) {
       ⏳ Agenda laden...
     </div>
   )
-
-  if (fout) return <SupabaseFout opnieuw={herlaad} />
 
   if (!vergadering) return (
     <div style={{ textAlign: 'center', padding: '80px', fontFamily: 'Arial', color: 'var(--tekst-zacht)' }}>
