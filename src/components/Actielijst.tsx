@@ -29,8 +29,15 @@ export default function Actielijst({
     setActie('')
   }
 
-  const openActies = acties.filter(a => !a.afgedaan)
-  const gedaanActies = acties.filter(a => a.afgedaan)
+  const sorteerOpDeadline = (a: ActieItem, b: ActieItem) => {
+    // Geen deadline = onderaan
+    if (!a.deadline && !b.deadline) return 0
+    if (!a.deadline) return 1
+    if (!b.deadline) return -1
+    return a.deadline.localeCompare(b.deadline)
+  }
+  const openActies = acties.filter(a => !a.afgedaan).sort(sorteerOpDeadline)
+  const gedaanActies = acties.filter(a => a.afgedaan).sort(sorteerOpDeadline)
 
   return (
     <div style={{ border: '1px solid var(--rand)', borderRadius: '8px', overflow: 'hidden' }}>

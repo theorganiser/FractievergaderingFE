@@ -16,6 +16,7 @@ import Actielijst from '@/components/Actielijst'
 import SupabaseFout, { OpslaanFoutBanner } from '@/components/SupabaseFout'
 import Stemlijst from '@/components/Stemlijst'
 import KalenderTab from '@/components/KalenderTab'
+import AanwezigheidChecklist from '@/components/AanwezigheidChecklist'
 import Kalender from '@/components/Kalender'
 
 interface Props { params: { id: string } }
@@ -220,16 +221,14 @@ function DetailsTab({ vergadering: v, onUpdate, onNaarAgenda }: {
         <input style={invoerStijl} value={v.locatie || ''} onChange={e => onUpdate({ locatie: e.target.value })} />
       </Invoerveld>
       <hr style={{ border: 'none', borderTop: '1px solid var(--rand)', margin: '20px 0' }} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-        {(['aanwezig', 'online', 'afwezig'] as const).map(veld => (
-          <div key={veld} style={{ background: 'var(--blauw-licht)', border: '1px solid #a0c0e0', borderRadius: '8px', padding: '12px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--blauw-mid)', fontFamily: 'Arial', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '6px' }}>
-              {veld.charAt(0).toUpperCase() + veld.slice(1)}
-            </div>
-            <textarea rows={3} style={{ ...invoerStijl, resize: 'vertical' }} value={v[veld] || ''}
-              onChange={e => onUpdate({ [veld]: e.target.value })} placeholder="Namen, komma gescheiden" />
-          </div>
-        ))}
+      <div style={{ marginBottom: '20px' }}>
+        <label style={{ display: 'block', fontSize: '13px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', marginBottom: '10px' }}>Aanwezigheid</label>
+        <AanwezigheidChecklist
+          aanwezig={v.aanwezig || ''}
+          afwezig={v.afwezig || ''}
+          online={v.online || ''}
+          onUpdate={onUpdate}
+        />
       </div>
       <button onClick={onNaarAgenda} style={btnOutline}>Naar agenda bewerken →</button>
     </div>

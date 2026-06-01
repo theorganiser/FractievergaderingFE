@@ -97,11 +97,14 @@ export default function Topbalk() {
               {syncBezig ? <><Spinner /> Bezig...</> : '↻ Sync'}
             </button>
           )}
-          {isAdmin ? (
-            <button onClick={logout} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', borderRadius: '6px', marginLeft: '4px', fontFamily: 'Arial' }}>
-              Uitloggen
-            </button>
-          ) : null}
+          <button onClick={logout} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', borderRadius: '6px', marginLeft: '4px', fontFamily: 'Arial' }}>
+            Uitloggen
+          </button>
+          {!isAdmin && (
+            <Link href="/inloggen?admin=1" style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', fontFamily: 'Arial', marginLeft: '2px', textDecoration: 'none', padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              Beheerder →
+            </Link>
+          )}
         </nav>
 
         {/* Naam op desktop voor niet-admin */}

@@ -29,7 +29,17 @@ export default function PresentatiePagina({ params }: Props) {
 function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
   const [ingeklapt, setIngeklapt] = useState<Set<number>>(new Set())
   const [afgehandeld, setAfgehandeld] = useState<Set<number>>(new Set())
+  const [afgehandeldeSubs, setAfgehandeldeSubs] = useState<Set<string>>(new Set())
   const [huidig, setHuidig] = useState<number | null>(null)
+
+  const toggleSub = (puntId: number, subIdx: number) => {
+    const key = `${puntId}-${subIdx}`
+    setAfgehandeldeSubs(prev => {
+      const n = new Set(prev)
+      n.has(key) ? n.delete(key) : n.add(key)
+      return n
+    })
+  }
   const [grootLettertype, setGrootLettertype] = useState(false)
   const [donkerModus, setDonkerModus] = useState(true) // standaard donker voor presentatie
 
@@ -153,7 +163,7 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
                     const isMotie = sub.subtype === 'motie'
                     const isAmendement = sub.subtype === 'amendement'
                     return (
-                      <div key={sub.id || si} style={{ padding: '9px 16px 9px 60px', borderBottom: si < punt.subpunten.length - 1 ? `1px solid ${donkerModus ? 'rgba(255,255,255,0.06)' : '#f0ede8'}` : 'none', display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: (isMotie || isAmendement) ? '80px' : '60px', background: (isMotie || isAmendement) ? (donkerModus ? 'rgba(0,0,0,0.15)' : 'rgba(90,26,138,0.04)') : 'transparent' }}>
+                      <div key={sub.id || si} onClick={() => toggleSub(punt.id, si)} style={{ padding: '9px 16px 9px 60px', borderBottom: si < punt.subpunten.length - 1 ? `1px solid ${donkerModus ? 'rgba(255,255,255,0.06)' : '#f0ede8'}` : 'none', display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: (isMotie || isAmendement) ? '80px' : '60px', background: afgehandeldeSubs.has(`${punt.id}-${si}`) ? (donkerModus ? 'rgba(0,50,0,0.3)' : 'rgba(0,100,0,0.06)') : (isMotie || isAmendement) ? (donkerModus ? 'rgba(0,0,0,0.15)' : 'rgba(90,26,138,0.04)') : 'transparent', cursor: 'pointer', opacity: afgehandeldeSubs.has(`${punt.id}-${si}`) ? 0.6 : 1, transition: 'all 0.2s' }}>
                         {/* PA: toon starttijd */}
                         {isPA && sub.starttijd && (
                           <span style={{ fontSize: '13px', fontWeight: 'bold', color: GOUD, fontFamily: 'Arial', flexShrink: 0, minWidth: '50px' }}>
@@ -176,13 +186,16 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
                             {String.fromCharCode(97 + si)}.
                           </span>
                         )}
+                        {/* Vinkje voor afgehandelde subs */}
+                        <span style={{ fontSize: '14px', flexShrink: 0, color: afgehandeldeSubs.has(`${punt.id}-${si}`) ? '#6dbb80' : 'transparent' }}>✓</span>
                         {sub.url ? (
                           <a href={sub.url} target="_blank" rel="noopener noreferrer"
-                            style={{ fontSize: `calc(${basisFs} - 3px)`, color: donkerModus ? GOUD_LICHT : '#5a1a8a', fontFamily: 'Arial', flex: 1, textDecoration: 'underline' }}>
+                            onClick={e => e.stopPropagation()}
+                            style={{ fontSize: `calc(${basisFs} - 3px)`, color: donkerModus ? GOUD_LICHT : '#5a1a8a', fontFamily: 'Arial', flex: 1, textDecoration: afgehandeldeSubs.has(`${punt.id}-${si}`) ? 'line-through' : 'underline' }}>
                             {sub.titel}
                           </a>
                         ) : (
-                          <span style={{ fontSize: `calc(${basisFs} - 3px)`, fontFamily: 'Arial', flex: 1, color: donkerModus ? '#e0d0f0' : '#1a0a2e' }}>
+                          <span style={{ fontSize: `calc(${basisFs} - 3px)`, fontFamily: 'Arial', flex: 1, color: donkerModus ? '#e0d0f0' : '#1a0a2e', textDecoration: afgehandeldeSubs.has(`${punt.id}-${si}`) ? 'line-through' : 'none' }}>
                             {sub.titel}
                           </span>
                         )}

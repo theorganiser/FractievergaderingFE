@@ -85,7 +85,7 @@ export default function KalenderPagina() {
             Goois Democratisch Platform — {toekomstItems.length} aankomende evenementen
           </p>
         </div>
-        {authGeladen && isAdmin && (
+        {authGeladen && (
           <button
             onClick={() => { resetFormulier(); setToonFormulier(true) }}
             style={{ background: 'var(--blauw)', color: 'white', border: 'none', padding: '9px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial', fontWeight: '600' }}
@@ -149,7 +149,7 @@ export default function KalenderPagina() {
       ) : (
         <div>
           {toekomstItems.map(item => (
-            <KalenderRij key={item.id} item={item} isAdmin={isAdmin && authGeladen}
+            <KalenderRij key={item.id} item={item} isAdmin={isAdmin}
               isVandaag={isVandaag(item.datum)} isMorgen={isMorgen(item.datum)}
               formatDatum={formatDatum}
               onBewerk={() => openBewerken(item)}
@@ -167,7 +167,7 @@ export default function KalenderPagina() {
             {toonHistorisch ? '▾' : '▸'} {verledenItems.length} historische evenementen
           </button>
           {toonHistorisch && verledenItems.map(item => (
-            <KalenderRij key={item.id} item={item} isAdmin={isAdmin && authGeladen}
+            <KalenderRij key={item.id} item={item} isAdmin={isAdmin}
               isVandaag={false} isMorgen={false} historisch
               formatDatum={formatDatum}
               onBewerk={() => openBewerken(item)}
