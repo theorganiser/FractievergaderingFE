@@ -98,7 +98,7 @@ export default function KalenderPagina() {
       <div style={{ height: '2px', background: 'linear-gradient(to right, var(--blauw), #a89060, transparent)', margin: '12px 0 20px' }} />
 
       {/* Formulier */}
-      {toonFormulier && isAdmin && (
+      {toonFormulier && (
         <div style={{ background: 'white', border: '2px solid var(--blauw)', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
           <h3 style={{ fontSize: '15px', color: 'var(--blauw)', fontFamily: 'Arial', fontWeight: '600', margin: '0 0 16px' }}>
             {bewerkId ? 'Evenement bewerken' : 'Nieuw evenement'}
