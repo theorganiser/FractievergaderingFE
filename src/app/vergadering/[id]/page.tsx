@@ -220,7 +220,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
       )}
 
       {tabblad === 'stemlijst' && (
-        <Stemlijst punten={v.punten} rvDatum={v.raadsvergaderingDatum} />
+        <Stemlijst vergadering={v} />
       )}
       {tabblad === 'documenten' && (
         <DocumentenSelector
