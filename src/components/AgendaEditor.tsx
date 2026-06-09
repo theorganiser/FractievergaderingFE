@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Agendapunt, Subpunt } from '@/lib/types'
 import IngekomenStukkenInvoer from './IngekomentukkenInvoer'
@@ -284,6 +284,20 @@ function RVEditor({ punt, onUpdate, onUpdateSub, onVerwijderSub }: {
   onUpdateSub: (si: number, w: Partial<Subpunt>) => void; onVerwijderSub: (si: number) => void
 }) {
   const [toonSubtypeVoor, setToonSubtypeVoor] = useState<number | null>(null)
+  const [dragOver, setDragOver] = useState<number | null>(null)
+  const dragItem = useRef<number | null>(null)
+
+  const handleDragStart = (si: number) => { dragItem.current = si }
+  const handleDragOver = (e: React.DragEvent, si: number) => { e.preventDefault(); setDragOver(si) }
+  const handleDrop = (si: number) => {
+    if (dragItem.current === null || dragItem.current === si) { setDragOver(null); return }
+    const nieuw = Array.from(punt.subpunten)
+    const [verplaatst] = nieuw.splice(dragItem.current, 1)
+    nieuw.splice(si, 0, verplaatst)
+    onUpdate({ subpunten: nieuw })
+    dragItem.current = null
+    setDragOver(null)
+  }
 
   const voegHoofdpuntToe = () => {
     const id = String(punt.subpunten.filter(s => !s.subtype || s.subtype === 'normaal').length + 1)
@@ -315,8 +329,14 @@ function RVEditor({ punt, onUpdate, onUpdateSub, onVerwijderSub }: {
         const isAmendement = sub.subtype === 'amendement'
         const isSubtype = isMotie || isAmendement
         return (
-          <div key={si} style={{ padding: '8px 14px', borderBottom: '1px solid #f0ede8', background: isSubtype ? '#fdf8ff' : '#fafaf8', paddingLeft: isSubtype ? '40px' : '14px' }}>
+          <div key={si}
+            draggable
+            onDragStart={() => handleDragStart(si)}
+            onDragOver={(e) => handleDragOver(e, si)}
+            onDrop={() => handleDrop(si)}
+            style={{ padding: '8px 14px', borderBottom: '1px solid #f0ede8', background: dragOver === si ? '#f0eeff' : isSubtype ? '#fdf8ff' : '#fafaf8', paddingLeft: isSubtype ? '28px' : '14px', transition: 'background 0.15s' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{ cursor: 'grab', color: '#9a7aaa', fontSize: '14px', flexShrink: 0 }} title="Sleep om te herordenen">⠿</span>
               {isSubtype && (
                 <span style={{ fontSize: '10px', background: isMotie ? '#fff0e8' : '#f0e8ff', color: isMotie ? '#8a4000' : '#5a1a8a', border: `1px solid ${isMotie ? '#e8a060' : '#c0a0d8'}`, padding: '1px 5px', borderRadius: '3px', flexShrink: 0 }}>
                   {isMotie ? 'Motie' : 'Amendement'}

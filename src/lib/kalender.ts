@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 export interface CentraalKalenderItem {
   id: string
   datum: string
+  starttijd: string
   omschrijving: string
   locatie: string
   personen: string

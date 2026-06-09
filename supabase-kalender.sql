@@ -39,3 +39,7 @@ CREATE POLICY "Iedereen kan kalender verwijderen"
 -- deadline wordt opgeslagen in het JSONB veld als onderdeel van ActieItem
 
 SELECT 'Kalender tabel aangemaakt ✓' as status;
+
+-- Voeg starttijd kolom toe aan bestaande tabel
+ALTER TABLE kalender_items ADD COLUMN IF NOT EXISTS starttijd TEXT DEFAULT '';
+SELECT 'Starttijd kolom toegevoegd ✓' as status;

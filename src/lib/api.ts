@@ -109,3 +109,55 @@ export const DEMO_VRAGEN: ApiDocument[] = [
     url: 'https://bestuur.gooisemeren.nl/Documenten/raadsinstrumenten/1518500-SQ-Muiderberg/',
   },
 ]
+
+// ===== NIEUWS =====
+
+export interface NieuwsArtikel {
+  id: string
+  bron: 'gooisemerennieuws' | 'nhgooi' | 'gooieneemlander' | 'gemeente_gooisemeren'
+  titel: string
+  intro: string
+  categorie: string
+  url: string
+  afbeelding_url?: string
+  gepubliceerd: string
+  gevonden_op: string
+  is_betaald: number
+}
+
+const BRON_LABELS: Record<string, string> = {
+  gooisemerennieuws: 'GooiseMerenNieuws',
+  nhgooi: 'NH Gooi',
+  gooieneemlander: 'Gooi en Eemlander',
+  gemeente_gooisemeren: 'Gemeente Gooise Meren',
+}
+
+export { BRON_LABELS }
+
+export async function haalNieuws(bron?: string, categorie?: string): Promise<NieuwsArtikel[]> {
+  try {
+    const params = new URLSearchParams()
+    if (bron) params.set('bron', bron)
+    if (categorie) params.set('categorie', categorie)
+    const query = params.toString() ? `?${params.toString()}` : ''
+    const resp = await fetch(`${API_URL}/nieuws${query}`, {
+      signal: AbortSignal.timeout(15000),
+    })
+    if (!resp.ok) return []
+    return await resp.json()
+  } catch {
+    return []
+  }
+}
+
+export async function syncNieuws(): Promise<boolean> {
+  try {
+    const resp = await fetch(`${API_URL}/sync/nieuws`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(60000),
+    })
+    return resp.ok
+  } catch {
+    return false
+  }
+}

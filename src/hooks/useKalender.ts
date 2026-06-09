@@ -51,6 +51,7 @@ export function useKalender(alleenToekomst = false) {
   // Standaard leeg item voor nieuw formulier
   const nieuwItem = (): Omit<CentraalKalenderItem, 'id' | 'aangemaakt_op' | 'bijgewerkt_op'> => ({
     datum: eersteVolgendeMaandag(),
+    starttijd: '',
     omschrijving: '',
     locatie: '',
     personen: '',

@@ -20,7 +20,7 @@ import AanwezigheidChecklist from '@/components/AanwezigheidChecklist'
 import Kalender from '@/components/Kalender'
 
 interface Props { params: { id: string } }
-type Tabblad = 'details' | 'agenda' | 'acties' | 'kalender' | 'vergkalender' | 'stemlijst' | 'documenten' | 'lees'
+type Tabblad = 'details' | 'agenda' | 'acties' | 'kalender' | 'stemlijst' | 'documenten' | 'lees'
 
 export default function VergaderingEditorPagina({ params }: Props) {
   const { id } = params
@@ -31,12 +31,13 @@ export default function VergaderingEditorPagina({ params }: Props) {
     updatePunt, verwijderPunt, voegPuntToe,
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
     herorden,
-    voegActieToe, toggleActie, verwijderActie, neemActiesOver,
+    voegActieToe, toggleActie, verwijderActie, neemActiesOver, updateActie,
     voegKalenderItemToe, verwijderKalenderItem, updateKalenderItem,
   } = useVergaderingen()
 
   const [tabblad, setTabblad] = useState<Tabblad>('details')
   const [melding, setMelding] = useState<{ type: 'succes' | 'info' | 'fout'; tekst: string } | null>(null)
+  const [toonOvernemen, setToonOvernemen] = useState(false)
 
   if (!geladen || !authGeladen) return <div style={{ textAlign: 'center', padding: '80px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>⏳ Laden...</div>
   if (!isAdmin) { router.push('/inloggen?admin=1'); return null }
@@ -45,6 +46,9 @@ export default function VergaderingEditorPagina({ params }: Props) {
   if (!v) return <div style={{ fontFamily: 'Arial', padding: '40px', color: 'var(--rood)' }}>Vergadering niet gevonden.</div>
 
   const andereVergaderingen = vergaderingen.filter(x => x.id !== id && (x.actielijst?.length || 0) > 0)
+  const vorigeVergadering = vergaderingen
+    .filter(x => x.id !== id && x.datum && x.datum < (v.datum || '9999'))
+    .sort((a, b) => b.datum.localeCompare(a.datum))[0] || null
 
   const kopieerDeellink = () => {
     navigator.clipboard.writeText(`${window.location.origin}/lees/${v.deeltoken}`).then(() => {
@@ -96,12 +100,24 @@ export default function VergaderingEditorPagina({ params }: Props) {
     setTimeout(() => setMelding(null), 3000)
   }
 
+  const neemPuntOver = async (puntIndex: number) => {
+    if (!vorigeVergadering) return
+    const over = JSON.parse(JSON.stringify(vorigeVergadering.punten[puntIndex]))
+    const nieuweId = v.punten.length + 1
+    over.id = nieuweId
+    const nieuwePunten = [...v.punten, over]
+    nieuwePunten.forEach((p, i) => { p.id = i + 1 })
+    await update(id, { punten: nieuwePunten })
+    setToonOvernemen(false)
+    setMelding({ type: 'succes', tekst: `Punt "${over.titel}" overgenomen` })
+    setTimeout(() => setMelding(null), 3000)
+  }
+
   const TABS: { key: Tabblad; label: string; badge?: number }[] = [
     { key: 'details', label: 'Gegevens' },
     { key: 'agenda', label: 'Agenda' },
     { key: 'acties', label: 'Actielijst', badge: v.actielijst?.filter(a => !a.afgedaan).length },
     { key: 'kalender', label: '📅 Fract.kalender' },
-    { key: 'vergkalender', label: '📋 Verg.kalender', badge: v.kalender?.length },
     { key: 'documenten', label: 'Documenten' },
     { key: 'stemlijst', label: '⚖️ Stemlijst', badge: v.heeftRaadsvergadering ? undefined : undefined },
     { key: 'lees', label: 'Leesweergave' },
@@ -146,7 +162,36 @@ export default function VergaderingEditorPagina({ params }: Props) {
         <DetailsTab vergadering={v} onUpdate={(w) => update(id, w)} onNaarAgenda={() => setTabblad('agenda')} />
       )}
       {tabblad === 'agenda' && (
-        <AgendaEditor
+        <>
+          {vorigeVergadering && (
+            <div style={{ marginBottom: '12px' }}>
+              <button onClick={() => setToonOvernemen(!toonOvernemen)}
+                style={{ background: 'white', color: '#5a1a8a', border: '1px solid #c0a0d8', padding: '7px 14px', borderRadius: '7px', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial' }}>
+                ← Punt overnemen van {vorigeVergadering.titel}
+              </button>
+              {toonOvernemen && (
+                <div style={{ marginTop: '8px', border: '1px solid #c0a0d8', borderRadius: '10px', overflow: 'hidden', background: 'white' }}>
+                  <div style={{ padding: '10px 14px', background: '#f5eeff', borderBottom: '1px solid #c0a0d8', fontSize: '13px', fontFamily: 'Arial', color: '#4a1a5c', fontWeight: '600' }}>
+                    Kies een punt om over te nemen:
+                  </div>
+                  {vorigeVergadering.punten.map((punt, pi) => (
+                    <div key={pi} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderBottom: pi < vorigeVergadering.punten.length - 1 ? '1px solid #f0ede8' : 'none', cursor: 'pointer' }}
+                      onClick={() => neemPuntOver(pi)}
+                      onMouseOver={e => (e.currentTarget.style.background = '#faf5ff')}
+                      onMouseOut={e => (e.currentTarget.style.background = 'white')}>
+                      <span style={{ fontSize: '12px', color: '#888', minWidth: '24px' }}>{punt.id}.</span>
+                      {punt.puntType === 'politieke_avond' && <span style={{ fontSize: '10px', background: '#e8f0f8', color: '#1a5c8a', border: '1px solid #a0c0e0', padding: '1px 5px', borderRadius: '3px' }}>PA</span>}
+                      {punt.puntType === 'raadsvergadering' && <span style={{ fontSize: '10px', background: '#f0e8f8', color: '#5a1a8a', border: '1px solid #c0a0d8', padding: '1px 5px', borderRadius: '3px' }}>RV</span>}
+                      <span style={{ flex: 1, fontSize: '13px', fontFamily: 'Arial', color: 'var(--tekst)' }}>{punt.titel}</span>
+                      {punt.subpunten?.length > 0 && <span style={{ fontSize: '11px', color: '#888' }}>{punt.subpunten.length} subpunten</span>}
+                      <span style={{ fontSize: '12px', color: '#5a1a8a' }}>+ Overnemen</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <AgendaEditor
           vergaderingId={id} punten={v.punten}
           onUpdatePunt={(pi, w) => updatePunt(id, pi, w)}
           onVerwijderPunt={(pi) => verwijderPunt(id, pi)}
@@ -157,6 +202,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
           onSyncDocumenten={() => setTabblad('documenten')} ladenSync={false}
           onHerorden={(nieuw) => herorden(id, nieuw)}
         />
+        </>
       )}
       {tabblad === 'acties' && (
         <Actielijst
@@ -172,14 +218,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
       {tabblad === 'kalender' && (
         <KalenderTab onVoegToeAanAgenda={voegKalenderItemToeAanAgenda} />
       )}
-      {tabblad === 'vergkalender' && (
-        <Kalender
-          items={v.kalender || []}
-          onVoegToe={(item) => voegKalenderItemToe(id, item)}
-          onVerwijder={(itemId) => verwijderKalenderItem(id, itemId)}
-          onUpdate={(itemId, w) => updateKalenderItem(id, itemId, w)}
-        />
-      )}
+
       {tabblad === 'stemlijst' && (
         <Stemlijst punten={v.punten} rvDatum={v.raadsvergaderingDatum} />
       )}

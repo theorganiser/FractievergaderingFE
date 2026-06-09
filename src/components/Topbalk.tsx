@@ -49,6 +49,7 @@ export default function Topbalk() {
     { href: '/', label: '📅 Vergaderingen' },
     { href: '/documenten', label: '📄 Documenten' },
     { href: '/kalender', label: '🗓 Kalender' },
+    { href: '/nieuws', label: '📰 Nieuws' },
     ...(isAdmin ? [{ href: '/beheer', label: '⚙️ Beheer' }] : []),
   ]
 
@@ -171,12 +172,18 @@ export default function Topbalk() {
             </button>
           )}
 
-          {isAdmin && (
-            <button onClick={() => { logout(); setMenuOpen(false) }}
-              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', padding: '14px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontFamily: 'Arial' }}>
-              Uitloggen
-            </button>
+          {!isAdmin && (
+            <Link href="/inloggen?admin=1"
+              onClick={() => setMenuOpen(false)}
+              style={{ display: 'block', textAlign: 'center', color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '14px', borderRadius: '10px', textDecoration: 'none', fontSize: '14px', fontFamily: 'Arial', marginBottom: '8px' }}>
+              🔐 Beheerder inloggen
+            </Link>
           )}
+
+          <button onClick={() => { logout(); setMenuOpen(false) }}
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', padding: '14px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontFamily: 'Arial' }}>
+            Uitloggen
+          </button>
         </div>
       )}
 

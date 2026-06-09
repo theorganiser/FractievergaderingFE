@@ -16,8 +16,9 @@ export default function KalenderPagina() {
   const [bewerkId, setBewerkId] = useState<string | null>(null)
   const [formulier, setFormulier] = useState({
     datum: eersteVolgendeMaandag(),
+    starttijd: '',
     omschrijving: '',
-    locatie: '',
+    locatie: 'Gemeentehuis Bussum',
     personen: '',
   })
 
@@ -31,13 +32,13 @@ export default function KalenderPagina() {
   const toekomstItems = items.filter(i => i.datum >= vandaag)
 
   const resetFormulier = () => {
-    setFormulier({ datum: eersteVolgendeMaandag(), omschrijving: '', locatie: '', personen: '' })
+    setFormulier({ datum: eersteVolgendeMaandag(), starttijd: '', omschrijving: '', locatie: 'Gemeentehuis Bussum', personen: '' })
     setToonFormulier(false)
     setBewerkId(null)
   }
 
   const openBewerken = (item: CentraalKalenderItem) => {
-    setFormulier({ datum: item.datum, omschrijving: item.omschrijving, locatie: item.locatie, personen: item.personen })
+    setFormulier({ datum: item.datum, starttijd: item.starttijd || '', omschrijving: item.omschrijving, locatie: item.locatie, personen: item.personen })
     setBewerkId(item.id)
     setToonFormulier(true)
   }
@@ -110,8 +111,13 @@ export default function KalenderPagina() {
                 onChange={e => setFormulier(f => ({ ...f, datum: e.target.value }))} />
             </div>
             <div>
+              <label style={labelStijl}>Starttijd</label>
+              <input type="time" style={invoerStijl} value={formulier.starttijd}
+                onChange={e => setFormulier(f => ({ ...f, starttijd: e.target.value }))} />
+            </div>
+            <div>
               <label style={labelStijl}>Locatie</label>
-              <input style={invoerStijl} placeholder="Locatie (optioneel)" value={formulier.locatie}
+              <input style={invoerStijl} placeholder="Locatie" value={formulier.locatie}
                 onChange={e => setFormulier(f => ({ ...f, locatie: e.target.value }))} />
             </div>
           </div>

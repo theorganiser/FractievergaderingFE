@@ -222,6 +222,13 @@ export function useVergaderingen() {
     await update(vergaderingId, { actielijst: nieuw })
   }, [vergaderingen, update])
 
+  const updateActie = useCallback(async (vergaderingId: string, actieId: string, wijzigingen: Partial<ActieItem>) => {
+    const v = vergaderingen.find(x => x.id === vergaderingId)
+    if (!v) return
+    const nieuw = (v.actielijst || []).map(a => a.id === actieId ? { ...a, ...wijzigingen } : a)
+    await update(vergaderingId, { actielijst: nieuw })
+  }, [vergaderingen, update])
+
   const verwijderActie = useCallback(async (vergaderingId: string, actieId: string) => {
     const v = vergaderingen.find(x => x.id === vergaderingId)
     if (!v) return
@@ -269,7 +276,7 @@ export function useVergaderingen() {
     maakNieuwe, kopieer, verwijder, update, updatePunten, herorden, vernieuwToken,
     voegPuntToe, verwijderPunt, updatePunt,
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
-    voegActieToe, toggleActie, verwijderActie, neemActiesOver,
+    voegActieToe, toggleActie, verwijderActie, updateActie, neemActiesOver,
     voegKalenderItemToe, verwijderKalenderItem, updateKalenderItem,
     vindOpToken,
   }
