@@ -50,6 +50,7 @@ export default function Topbalk() {
     { href: '/documenten', label: '📄 Documenten' },
     { href: '/kalender', label: '🗓 Kalender' },
     { href: '/nieuws', label: '📰 Nieuws' },
+    { href: '/persberichten', label: '✍️ Persberichten' },
     ...(isAdmin ? [{ href: '/beheer', label: '⚙️ Beheer' }] : []),
   ]
 

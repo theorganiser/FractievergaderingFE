@@ -27,41 +27,62 @@ function bouwStemlijstItems(punten: Agendapunt[]): StemItem[] {
   punten.forEach((punt, pi) => {
     if (punt.puntType !== 'raadsvergadering') return
 
-    const raadsvoorstellen = punt.subpunten.filter(s => (!s.subtype || s.subtype === 'normaal') && s.inStemlijst)
+    // Alle hoofdpunten (ook zonder inStemlijst - als ouder van amendementen/moties)
+    const alleHoofdpunten = punt.subpunten.filter(s => !s.subtype || s.subtype === 'normaal')
     const alleAmendementen = punt.subpunten.filter(s => s.subtype === 'amendement' && s.inStemlijst)
     const alleMoties = punt.subpunten.filter(s => s.subtype === 'motie' && s.inStemlijst)
+    const raadsvoorstellenInStemlijst = alleHoofdpunten.filter(s => s.inStemlijst)
 
-    if (!raadsvoorstellen.length && !alleAmendementen.length && !alleMoties.length) return
+    // Bepaal unieke blokken: elk hoofdpunt dat zelf in stemlijst staat OF
+    // waarvoor amendementen/moties in de stemlijst staan
+    const relevantHoofdpunten = alleHoofdpunten.filter(hp => {
+      const rvNr = hp.rvNummer || ''
+      const heeftGekoppelde = alleAmendementen.some(a => a.gekoppeldAanRv === rvNr) ||
+                              alleMoties.some(m => m.gekoppeldAanRv === rvNr)
+      return hp.inStemlijst || heeftGekoppelde
+    })
 
-    raadsvoorstellen.forEach((rv, rvi) => {
+    // Als geen hoofdpunten relevant en ook geen losse items, sla over
+    const lozeA = alleAmendementen.filter(a => !a.gekoppeldAanRv || a.gekoppeldAanRv === '')
+    const lozeM = alleMoties.filter(m => !m.gekoppeldAanRv || m.gekoppeldAanRv === '')
+    if (!relevantHoofdpunten.length && !lozeA.length && !lozeM.length) return
+
+    // Per relevant hoofdpunt een blok
+    relevantHoofdpunten.forEach((hp, hpi) => {
       blokTeller++
       const blok = blokTeller
-      const rvNr = rv.rvNummer || ''
+      const rvNr = hp.rvNummer || ''
 
-      const gekoppeldeAmendementen = alleAmendementen.filter(a =>
-        a.gekoppeldAanRv ? a.gekoppeldAanRv === rvNr : raadsvoorstellen.length === 1
+      // Amendementen gekoppeld aan dit hoofdpunt
+      // Als slechts 1 hoofdpunt totaal: neem ook ongekoppelde mee
+      const totaalHoofdpunten = alleHoofdpunten.length
+      const gekoppeldeA = alleAmendementen.filter(a =>
+        a.gekoppeldAanRv
+          ? a.gekoppeldAanRv === rvNr
+          : totaalHoofdpunten === 1
       )
-      const gekoppeldeMoties = alleMoties.filter(m =>
-        m.gekoppeldAanRv ? m.gekoppeldAanRv === rvNr : raadsvoorstellen.length === 1
+      const gekoppeldeM = alleMoties.filter(m =>
+        m.gekoppeldAanRv
+          ? m.gekoppeldAanRv === rvNr
+          : totaalHoofdpunten === 1
       )
 
-      gekoppeldeAmendementen.forEach((a, ai) => {
-        items.push({ key: `${pi}-${rvi}-a-${ai}`, label: a.titel, rvNummer: a.rvNummer, subtype: 'amendement', indent: true, blokNummer: blok })
+      gekoppeldeA.forEach((a, ai) => {
+        items.push({ key: `${pi}-${hpi}-a-${ai}`, label: a.titel, rvNummer: a.rvNummer, subtype: 'amendement', indent: true, blokNummer: blok })
       })
-      items.push({ key: `${pi}-rv-${rvi}`, label: rv.titel, rvNummer: rv.rvNummer, subtype: 'raadsvoorstel', indent: false, blokNummer: blok })
-      gekoppeldeMoties.forEach((m, mi) => {
-        items.push({ key: `${pi}-${rvi}-m-${mi}`, label: m.titel, rvNummer: m.rvNummer, subtype: 'motie', indent: true, blokNummer: blok })
+      if (hp.inStemlijst) {
+        items.push({ key: `${pi}-rv-${hpi}`, label: hp.titel, rvNummer: hp.rvNummer, subtype: 'raadsvoorstel', indent: false, blokNummer: blok })
+      }
+      gekoppeldeM.forEach((m, mi) => {
+        items.push({ key: `${pi}-${hpi}-m-${mi}`, label: m.titel, rvNummer: m.rvNummer, subtype: 'motie', indent: true, blokNummer: blok })
       })
     })
 
-    if (raadsvoorstellen.length > 1) {
-      const lozeA = alleAmendementen.filter(a => !a.gekoppeldAanRv)
-      const lozeM = alleMoties.filter(m => !m.gekoppeldAanRv)
-      if (lozeA.length || lozeM.length) {
-        blokTeller++
-        lozeA.forEach((a, ai) => items.push({ key: `${pi}-los-a-${ai}`, label: a.titel, rvNummer: a.rvNummer, subtype: 'amendement', indent: true, blokNummer: blokTeller }))
-        lozeM.forEach((m, mi) => items.push({ key: `${pi}-los-m-${mi}`, label: m.titel, rvNummer: m.rvNummer, subtype: 'motie', indent: true, blokNummer: blokTeller }))
-      }
+    // Losse amendementen/moties zonder koppeling (alleen als meerdere hoofdpunten)
+    if (alleHoofdpunten.length > 1 && (lozeA.length || lozeM.length)) {
+      blokTeller++
+      lozeA.forEach((a, ai) => items.push({ key: `${pi}-los-a-${ai}`, label: a.titel, rvNummer: a.rvNummer, subtype: 'amendement', indent: true, blokNummer: blokTeller }))
+      lozeM.forEach((m, mi) => items.push({ key: `${pi}-los-m-${mi}`, label: m.titel, rvNummer: m.rvNummer, subtype: 'motie', indent: true, blokNummer: blokTeller }))
     }
   })
   return items
