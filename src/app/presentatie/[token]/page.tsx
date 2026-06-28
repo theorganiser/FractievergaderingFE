@@ -227,6 +227,12 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
               <h2 style={{ fontSize: '15px', color: GOUD, fontFamily: 'Arial', fontWeight: 'bold', marginBottom: '12px' }}>
                 ✓ Actielijst
               </h2>
+              <div style={{ display: 'flex', gap: '12px', padding: '4px 0', borderBottom: `1px solid ${kaartRand}`, fontSize: '10px', color: donkerModus ? 'rgba(255,255,255,0.35)' : '#999', fontFamily: 'Arial', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                <span style={{ width: '16px', flexShrink: 0 }} />
+                <span style={{ minWidth: '100px', maxWidth: '120px', flexShrink: 0 }}>Wie</span>
+                <span style={{ flex: 1 }}>Wat</span>
+                <span style={{ flexShrink: 0 }}>Deadline</span>
+              </div>
               {actielijst.map(a => (
                 <div key={a.id} style={{ display: 'flex', gap: '12px', padding: '8px 0', borderBottom: `1px solid ${donkerModus ? 'rgba(255,255,255,0.06)' : '#f0ede8'}`, alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '16px', flexShrink: 0 }}>{a.afgedaan ? '✅' : '⬜'}</span>
@@ -236,7 +242,7 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
                   <span style={{ flex: 1, fontSize: `calc(${basisFs} - 2px)`, fontFamily: 'Arial', color: donkerModus ? '#e0d0f0' : '#1a0a2e', textDecoration: a.afgedaan ? 'line-through' : 'none', opacity: a.afgedaan ? 0.6 : 1 }}>
                     {a.actie}
                   </span>
-                  {a.datum && <span style={{ fontSize: '12px', color: donkerModus ? 'rgba(255,255,255,0.4)' : '#888', fontFamily: 'Arial', flexShrink: 0 }}>{formatDatumNL(a.datum)}</span>}
+                  {a.deadline && <span style={{ fontSize: '12px', color: donkerModus ? 'rgba(255,255,255,0.4)' : '#888', fontFamily: 'Arial', flexShrink: 0 }}>{formatDatumNL(a.deadline)}</span>}
                 </div>
               ))}
             </div>

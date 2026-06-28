@@ -23,7 +23,7 @@ interface NieuweOpties {
 export default function OverzichtPagina() {
   const router = useRouter()
   const { vergaderingen, geladen, maakNieuwe, kopieer, verwijder, update, vernieuwToken, supabaseFout, opslaanFout, herlaad, sluitOpslaanFout } = useVergaderingen()
-  const { isAdmin } = useAuth()
+  const { isAdmin, isModerator } = useAuth()
   const [melding, setMelding] = useState<{ type: 'succes' | 'info'; tekst: string } | null>(null)
   const [bezig, setBezig] = useState(false)
   const [toonDialoog, setToonDialoog] = useState(false)
@@ -317,9 +317,11 @@ export default function OverzichtPagina() {
               {toekomstig && (
                 <Knop variant="indienen" klein onClick={() => openIndienen(v)}>📝 Punt indienen</Knop>
               )}
+              {(isAdmin || isModerator) && (
+                <Knop variant="primair" klein onClick={() => router.push(`/vergadering/${v.id}`)}>✏️ Bewerken</Knop>
+              )}
               {isAdmin && (
                 <>
-                  <Knop variant="primair" klein onClick={() => router.push(`/vergadering/${v.id}`)}>✏️ Bewerken</Knop>
                   <Knop variant="outline" klein onClick={() => handleKopieer(v.id)}>⧉ Kopiëren</Knop>
                   <button onClick={() => kopieerDeellink(v.deeltoken)} style={{ fontSize: '11px', background: '#e8f5ed', border: '1px solid #a8d8b5', color: '#2d7a4f', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'Arial' }}>🔗 Deel</button>
                   {!v.deeltoken.startsWith('fractievergadering-') && v.datum && (

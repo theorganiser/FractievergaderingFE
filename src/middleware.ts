@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 // Cookie namen
 const COOKIE_LEZER = 'gdp_toegang'
 const COOKIE_ADMIN = 'gdp_admin'
+const COOKIE_MODERATOR = 'gdp_moderator'
 
 const OPENBARE_PADEN = [
   '/inloggen',
@@ -34,12 +35,24 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Check admin cookie voor beveiligde paden
-  const adminPaden = ['/vergadering', '/beheer']
-  if (adminPaden.some(p => pad.startsWith(p))) {
+  // /beheer en /nieuws zijn alleen voor admin
+  if (pad.startsWith('/beheer') || pad.startsWith('/nieuws')) {
     const heeftAdminCookie = !!req.cookies.get(COOKIE_ADMIN)?.value
-
     if (!heeftAdminCookie) {
+      const url = req.nextUrl.clone()
+      url.pathname = '/inloggen'
+      url.searchParams.set('terug', pad)
+      url.searchParams.set('admin', '1')
+      return NextResponse.redirect(url)
+    }
+  }
+
+  // /vergadering editor mag door admin of moderator
+  if (pad.startsWith('/vergadering')) {
+    const heeftAdminCookie = !!req.cookies.get(COOKIE_ADMIN)?.value
+    const heeftModeratorCookie = !!req.cookies.get(COOKIE_MODERATOR)?.value
+
+    if (!heeftAdminCookie && !heeftModeratorCookie) {
       const url = req.nextUrl.clone()
       url.pathname = '/inloggen'
       url.searchParams.set('terug', pad)

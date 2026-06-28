@@ -223,6 +223,11 @@ function KalenderRij({ item, isAdmin, isVandaag, isMorgen, historisch, formatDat
       {/* Inhoud */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {item.starttijd && (
+            <span style={{ fontSize: '13px', fontFamily: 'Arial', fontWeight: '700', color: isVandaag ? '#a86a00' : 'var(--blauw)', background: isVandaag ? '#fff0c0' : '#eee8f8', padding: '2px 8px', borderRadius: '4px', flexShrink: 0 }}>
+              🕐 {item.starttijd}
+            </span>
+          )}
           <span style={{ fontSize: '15px', fontFamily: 'Georgia, serif', color: 'var(--tekst)' }}>
             {item.omschrijving}
           </span>

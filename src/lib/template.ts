@@ -6,7 +6,7 @@ export const TEMPLATE_PUNTEN: Agendapunt[] = [
   { id: 3, titel: 'Openstaande taken / vaststellen besluitenlijst', toelichting: '', subpunten: [] },
   {
     id: 4, titel: 'Mededelingen', toelichting: '', subpunten: [
-      { id: 'a', titel: 'Presidium', toelichting: 'fractievoorzittersapp / presidium', url: '' },
+      { id: 'a', titel: 'Presidium / Fractievoorzittersapp', toelichting: '', url: '' },
       { id: 'b', titel: 'Agendacommissie', url: '' },
       { id: 'c', titel: 'Bestuur', url: '' },
       { id: 'd', titel: 'Overige', url: '' },

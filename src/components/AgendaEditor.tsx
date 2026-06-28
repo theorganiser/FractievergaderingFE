@@ -152,6 +152,7 @@ interface PuntEditorProps {
 function PuntEditor({ punt, dragHandleProps, isDragging, onUpdate, onVerwijder, onVoegSubToe, onVerwijderSub, onUpdateSub }: PuntEditorProps) {
   const [ingeklapt, setIngeklapt] = useState(false)
   const isIngekomen = punt.titel.toLowerCase().includes('ingekomen')
+  const isMededelingen = punt.titel.toLowerCase().includes('mededeling')
   const isPA = punt.puntType === 'politieke_avond'
   const isRV = punt.puntType === 'raadsvergadering'
 
@@ -203,6 +204,7 @@ function PuntEditor({ punt, dragHandleProps, isDragging, onUpdate, onVerwijder, 
             <>
               {punt.subpunten.map((sub, si) => (
                 <SubpuntEditor key={`${sub.id}-${si}`} sub={sub} subIndex={si}
+                  toonUrl={!isMededelingen}
                   onVerwijder={() => onVerwijderSub(si)} onUpdate={(w) => onUpdateSub(si, w)} />
               ))}
               {punt.subpunten.length === 0 && (
@@ -309,7 +311,9 @@ function RVEditor({ punt, onUpdate, onUpdateSub, onVerwijderSub }: {
     const prefix = type === 'motie' ? 'M' : 'A'
     const bestaande = punt.subpunten.filter(s => s.subtype === type).length
     const rvNr = `${prefix}26-${50 + bestaande}`
-    onUpdate({ subpunten: [...punt.subpunten, { id: `${type}-${parentIndex}-${bestaande}`, titel: '', rvNummer: rvNr, inStemlijst: true, subtype: type, url: '' }] })
+    // Koppel automatisch aan het raadsvoorstel waar de + M/A op geklikt is
+    const ouderRvNummer = punt.subpunten[parentIndex]?.rvNummer || ''
+    onUpdate({ subpunten: [...punt.subpunten, { id: `${type}-${parentIndex}-${bestaande}`, titel: '', rvNummer: rvNr, inStemlijst: true, subtype: type, url: '', gekoppeldAanRv: ouderRvNummer }] })
   }
 
   return (
@@ -344,10 +348,18 @@ function RVEditor({ punt, onUpdate, onUpdateSub, onVerwijderSub }: {
               )}
               <input className="invoer-inline" style={{ width: '90px', flexShrink: 0, fontWeight: isSubtype ? 'normal' : 'bold', fontSize: '12px' }}
                 value={sub.rvNummer || ''} onChange={e => onUpdateSub(si, { rvNummer: e.target.value })}
+                onMouseDown={e => e.stopPropagation()}
                 placeholder={isMotie ? 'M26-57' : isAmendement ? 'A26-58' : '3a'} />
               <input className="invoer-inline" style={{ flex: 1 }}
                 value={sub.titel} onChange={e => onUpdateSub(si, { titel: e.target.value })}
+                onMouseDown={e => e.stopPropagation()}
                 placeholder="Titel..." />
+              {!isSubtype && (
+                <input className="invoer-inline" style={{ width: '110px', flexShrink: 0, fontSize: '12px' }}
+                  value={sub.woordvoerder || ''} onChange={e => onUpdateSub(si, { woordvoerder: e.target.value })}
+                  onMouseDown={e => e.stopPropagation()}
+                  placeholder="Woordvoerder" />
+              )}
               {isSubtype && (
                 <select
                   value={sub.gekoppeldAanRv || ''}
@@ -393,8 +405,8 @@ function RVEditor({ punt, onUpdate, onUpdateSub, onVerwijderSub }: {
   )
 }
 
-function SubpuntEditor({ sub, subIndex, onVerwijder, onUpdate }: {
-  sub: Subpunt; subIndex: number; onVerwijder: () => void; onUpdate: (w: Partial<Subpunt>) => void
+function SubpuntEditor({ sub, subIndex, onVerwijder, onUpdate, toonUrl = true }: {
+  sub: Subpunt; subIndex: number; onVerwijder: () => void; onUpdate: (w: Partial<Subpunt>) => void; toonUrl?: boolean
 }) {
   return (
     <div style={{ padding: '7px 14px 7px 48px', borderBottom: '1px solid #f0ede8', background: '#fafaf8', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
@@ -404,8 +416,10 @@ function SubpuntEditor({ sub, subIndex, onVerwijder, onUpdate }: {
       <div style={{ flex: 1 }}>
         <input className="invoer-inline" value={sub.titel} onChange={e => onUpdate({ titel: e.target.value })} placeholder="Titel subpunt..." />
         <div style={{ display: 'flex', gap: '8px', marginTop: '4px', alignItems: 'center' }}>
-          <input className="invoer-inline" style={{ flex: 1, fontSize: '12px' }} value={sub.url || ''} onChange={e => onUpdate({ url: e.target.value })} placeholder="URL (optioneel)" type="url" />
-          <label style={{ fontSize: '12px', fontFamily: 'Arial', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' as const, cursor: 'pointer' }}>
+          {toonUrl && (
+            <input className="invoer-inline" style={{ flex: 1, fontSize: '12px' }} value={sub.url || ''} onChange={e => onUpdate({ url: e.target.value })} placeholder="URL (optioneel)" type="url" />
+          )}
+          <label style={{ fontSize: '12px', fontFamily: 'Arial', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' as const, cursor: 'pointer', marginLeft: toonUrl ? 0 : 'auto' }}>
             <input type="checkbox" checked={!!sub.afgedaan} onChange={e => onUpdate({ afgedaan: e.target.checked })} />
             Afgedaan
           </label>

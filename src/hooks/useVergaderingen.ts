@@ -298,5 +298,12 @@ export function useVergaderingOpToken(token: string) {
 
   useEffect(() => { laad() }, [laad])
 
-  return { vergadering, geladen, fout, herlaad: laad }
+  const updateNotulen = useCallback(async (notulen: string) => {
+    if (!vergadering) return
+    const bijgewerkt = { ...vergadering, notulen, bijgewerkt: new Date().toISOString() }
+    setVergadering(bijgewerkt)
+    await slaVergaderingOp(bijgewerkt)
+  }, [vergadering])
+
+  return { vergadering, geladen, fout, herlaad: laad, updateNotulen }
 }

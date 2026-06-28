@@ -25,7 +25,7 @@ type Tabblad = 'details' | 'agenda' | 'acties' | 'kalender' | 'stemlijst' | 'doc
 export default function VergaderingEditorPagina({ params }: Props) {
   const { id } = params
   const router = useRouter()
-  const { isAdmin, geladen: authGeladen } = useAuth()
+  const { isAdmin, isModerator, geladen: authGeladen } = useAuth()
   const {
     vergaderingen, geladen, opslaan, supabaseFout, opslaanFout, herlaad, sluitOpslaanFout, update,
     updatePunt, verwijderPunt, voegPuntToe,
@@ -40,7 +40,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
   const [toonOvernemen, setToonOvernemen] = useState(false)
 
   if (!geladen || !authGeladen) return <div style={{ textAlign: 'center', padding: '80px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>⏳ Laden...</div>
-  if (!isAdmin) { router.push('/inloggen?admin=1'); return null }
+  if (!isAdmin && !isModerator) { router.push('/inloggen?admin=1'); return null }
 
   const v = vergaderingen.find(x => x.id === id)
   if (!v) return <div style={{ fontFamily: 'Arial', padding: '40px', color: 'var(--rood)' }}>Vergadering niet gevonden.</div>
@@ -209,9 +209,10 @@ export default function VergaderingEditorPagina({ params }: Props) {
           acties={v.actielijst || []}
           vergaderingen={andereVergaderingen}
           vergaderingId={id}
-          onVoegToe={(naam, actie) => voegActieToe(id, naam, actie)}
+          onVoegToe={(naam, actie, deadline) => voegActieToe(id, naam, actie, deadline)}
           onToggle={(actieId) => toggleActie(id, actieId)}
           onVerwijder={(actieId) => verwijderActie(id, actieId)}
+          onUpdate={(actieId, wijzigingen) => updateActie(id, actieId, wijzigingen)}
           onNeemOver={(vanId) => neemActiesOver(id, vanId)}
         />
       )}

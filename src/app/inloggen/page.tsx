@@ -11,6 +11,7 @@ function InloggenFormulier() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isAdmin = searchParams.get('admin') === '1'
+  const isModerator = searchParams.get('moderator') === '1'
   const terugPad = searchParams.get('terug') || '/'
 
   const [naam, setNaam] = useState('')
@@ -25,15 +26,15 @@ function InloggenFormulier() {
   }, [])
 
   const handleLogin = async () => {
-    if (!isAdmin && !naam.trim()) {
+    if (!isAdmin && !isModerator && !naam.trim()) {
       setFout('Vul je naam in.')
       schud(); return
     }
     setLaden(true); setFout(null)
     try {
-      const endpoint = isAdmin ? '/api/admin-login' : '/api/login'
-      const body = isAdmin
-        ? { wachtwoord: code, naam: naam.trim() || 'Beheerder' }
+      const endpoint = isAdmin ? '/api/admin-login' : isModerator ? '/api/moderator-login' : '/api/login'
+      const body = (isAdmin || isModerator)
+        ? { wachtwoord: code, naam: naam.trim() || (isAdmin ? 'Beheerder' : 'Moderator') }
         : { naam: naam.trim(), code }
       const resp = await fetch(endpoint, {
         method: 'POST',
@@ -66,7 +67,7 @@ function InloggenFormulier() {
           <p style={{ fontSize: '13px', color: '#888', margin: 0, fontFamily: 'Arial' }}>Goois Democratisch Platform</p>
         </div>
 
-        {!isAdmin && (
+        {!isAdmin && !isModerator && (
           <div style={{ marginBottom: '16px' }}>
             <label style={labelStijl}>Jouw naam</label>
             <input type="text" value={naam} onChange={e => { setNaam(e.target.value); setFout(null) }}
@@ -77,10 +78,10 @@ function InloggenFormulier() {
         )}
 
         <div style={{ marginBottom: '24px' }}>
-          <label style={labelStijl}>{isAdmin ? 'Beheerderswachtwoord' : 'Toegangscode'}</label>
+          <label style={labelStijl}>{isAdmin ? 'Beheerderswachtwoord' : isModerator ? 'Moderatorwachtwoord' : 'Toegangscode'}</label>
           <input type="password" value={code} onChange={e => { setCode(e.target.value); setFout(null) }}
-            onKeyDown={e => e.key === 'Enter' && handleLogin()} autoFocus={!!naam && !isAdmin}
-            placeholder={isAdmin ? 'Beheerderswachtwoord...' : 'Toegangscode...'}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()} autoFocus={!!naam && !isAdmin && !isModerator}
+            placeholder={isAdmin ? 'Beheerderswachtwoord...' : isModerator ? 'Moderatorwachtwoord...' : 'Toegangscode...'}
             style={{ ...invoerStijl, borderColor: fout ? '#c0392b' : '#dde3ed' }} />
         </div>
 
@@ -95,17 +96,23 @@ function InloggenFormulier() {
           {laden ? '⏳ Bezig...' : 'Toegang →'}
         </button>
 
-        <div style={{ textAlign: 'center', marginTop: '20px' }}>
-          {isAdmin ? (
+        <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {isAdmin || isModerator ? (
             <button onClick={() => { setFout(null); setCode(''); router.push(`/inloggen?terug=${terugPad}`) }}
               style={{ background: 'none', border: 'none', color: '#888', fontSize: '12px', fontFamily: 'Arial', cursor: 'pointer', textDecoration: 'underline' }}>
               ← Terug naar fractie-inloggen
             </button>
           ) : (
-            <button onClick={() => { setFout(null); setCode(''); router.push(`/inloggen?terug=${terugPad}&admin=1`) }}
-              style={{ background: 'none', border: 'none', color: '#888', fontSize: '12px', fontFamily: 'Arial', cursor: 'pointer', textDecoration: 'underline' }}>
-              Beheerder inloggen
-            </button>
+            <>
+              <button onClick={() => { setFout(null); setCode(''); router.push(`/inloggen?terug=${terugPad}&admin=1`) }}
+                style={{ background: 'none', border: 'none', color: '#888', fontSize: '12px', fontFamily: 'Arial', cursor: 'pointer', textDecoration: 'underline' }}>
+                Beheerder inloggen
+              </button>
+              <button onClick={() => { setFout(null); setCode(''); router.push(`/inloggen?terug=${terugPad}&moderator=1`) }}
+                style={{ background: 'none', border: 'none', color: '#888', fontSize: '12px', fontFamily: 'Arial', cursor: 'pointer', textDecoration: 'underline' }}>
+                Moderator inloggen
+              </button>
+            </>
           )}
         </div>
         <p style={{ fontSize: '11px', color: '#bbb', fontFamily: 'Arial', textAlign: 'center', marginTop: '12px' }}>

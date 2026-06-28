@@ -8,11 +8,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ fout: 'Geen tekst opgegeven.' }, { status: 400 })
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return NextResponse.json({ fout: 'ANTHROPIC_API_KEY ontbreekt in omgevingsvariabelen.' }, { status: 500 })
-  }
-
   // Haal system prompt op uit Supabase
   const { data: instructieData } = await supabase
     .from('persbericht_instructies')
@@ -44,7 +39,7 @@ Genereer precies drie versies in dit formaat (gebruik exact deze scheidingsteken
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
+        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
@@ -57,12 +52,8 @@ Genereer precies drie versies in dit formaat (gebruik exact deze scheidingsteken
 
     if (!response.ok) {
       const err = await response.text()
-      console.error('Anthropic API fout:', response.status, err)
-      let foutBericht = 'AI-generatie mislukt.'
-      if (response.status === 401) foutBericht = 'API key ongeldig of ontbreekt. Controleer ANTHROPIC_API_KEY in Vercel.'
-      if (response.status === 529) foutBericht = 'Anthropic API overbelast. Probeer opnieuw.'
-      if (response.status === 400) foutBericht = 'Verzoek ongeldig: ' + err.substring(0, 100)
-      return NextResponse.json({ fout: foutBericht }, { status: 500 })
+      console.error('Anthropic API fout:', err)
+      return NextResponse.json({ fout: 'AI-generatie mislukt.' }, { status: 500 })
     }
 
     const data = await response.json()

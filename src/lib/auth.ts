@@ -5,6 +5,7 @@ import { SignJWT, jwtVerify } from 'jose'
 
 export const COOKIE_LEZER = 'gdp_toegang'
 export const COOKIE_ADMIN = 'gdp_admin'
+export const COOKIE_MODERATOR = 'gdp_moderator'
 const COOKIE_OPTIES = 'HttpOnly; Path=/; SameSite=Strict'
 
 function getSecret(): Uint8Array {
@@ -49,9 +50,17 @@ export async function maakAdminCookie(): Promise<string> {
   return `${COOKIE_ADMIN}=${token}; Max-Age=${maxAge}; ${COOKIE_OPTIES}${secure}`
 }
 
+export async function maakModeratorCookie(): Promise<string> {
+  const token = await maakToken({ rol: 'moderator' }, '8h')
+  const maxAge = 8 * 60 * 60
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
+  return `${COOKIE_MODERATOR}=${token}; Max-Age=${maxAge}; ${COOKIE_OPTIES}${secure}`
+}
+
 export function verwijderCookies(): string[] {
   return [
     `${COOKIE_LEZER}=; Max-Age=0; ${COOKIE_OPTIES}`,
     `${COOKIE_ADMIN}=; Max-Age=0; ${COOKIE_OPTIES}`,
+    `${COOKIE_MODERATOR}=; Max-Age=0; ${COOKIE_OPTIES}`,
   ]
 }

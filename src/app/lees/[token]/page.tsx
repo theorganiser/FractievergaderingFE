@@ -4,14 +4,15 @@ export const dynamic = 'force-dynamic'
 
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
 import { LeesweergaveVolledig } from '@/components/Leesweergave'
+import Notulen from '@/components/Notulen'
 import { useAuth } from '@/hooks/useAuth'
 
 interface Props { params: { token: string } }
 
 export default function LeesPagina({ params }: Props) {
   const { token } = params
-  const { vergadering, geladen, fout, herlaad } = useVergaderingOpToken(token)
-  const { isAdmin } = useAuth()
+  const { vergadering, geladen, fout, herlaad, updateNotulen } = useVergaderingOpToken(token)
+  const { isAdmin, isModerator } = useAuth()
 
   if (!geladen) return (
     <div style={{ textAlign: 'center', padding: '80px', fontFamily: 'Arial', color: 'var(--tekst-zacht)' }}>
@@ -61,6 +62,11 @@ export default function LeesPagina({ params }: Props) {
         )}
       </div>
       <LeesweergaveVolledig vergadering={vergadering} toonPrintKnop />
+      <Notulen
+        notulen={vergadering.notulen || ''}
+        onUpdate={(isAdmin || isModerator) ? updateNotulen : undefined}
+        magBewerken={isAdmin || isModerator}
+      />
     </div>
   )
 }

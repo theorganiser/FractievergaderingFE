@@ -174,12 +174,18 @@ export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop }: {
       {actielijst.length > 0 && (
         <div style={{ marginTop: '32px', borderTop: '2px solid var(--blauw)', paddingTop: '20px' }}>
           <h2 style={{ fontSize: '15px', color: 'var(--blauw)', marginBottom: '10px', fontWeight: 'bold', fontFamily: 'Arial' }}>✓ Actielijst</h2>
+          <div style={{ display: 'flex', gap: '12px', padding: '4px 0', borderBottom: '1px solid var(--rand)', fontSize: '10px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+            <span style={{ minWidth: '20px', flexShrink: 0 }} />
+            <span style={{ minWidth: '100px', maxWidth: '120px', flexShrink: 0 }}>Wie</span>
+            <span style={{ flex: 1 }}>Wat</span>
+            <span style={{ flexShrink: 0 }}>Deadline</span>
+          </div>
           {actielijst.map(a => (
             <div key={a.id} style={{ display: 'flex', gap: '12px', padding: '6px 0', borderBottom: '1px solid #f0ede8', fontSize: '14px', alignItems: 'flex-start' }}>
               <span style={{ minWidth: '20px', flexShrink: 0, marginTop: '2px' }}>{a.afgedaan ? '✅' : '⬜'}</span>
               <span style={{ fontWeight: 'bold', minWidth: '100px', maxWidth: '120px', textDecoration: a.afgedaan ? 'line-through' : 'none', opacity: a.afgedaan ? 0.5 : 1, fontFamily: 'Arial', fontSize: '13px', flexShrink: 0 }}>{a.naam}</span>
               <span style={{ flex: 1, textDecoration: a.afgedaan ? 'line-through' : 'none', opacity: a.afgedaan ? 0.5 : 1 }}>{a.actie}</span>
-              {a.datum && <span style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', flexShrink: 0 }}>{formatDatumNL(a.datum)}</span>}
+              {a.deadline && <span style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', flexShrink: 0 }}>{formatDatumNL(a.deadline)}</span>}
             </div>
           ))}
         </div>

@@ -63,6 +63,7 @@ export interface Vergadering {
   heeftRaadsvergadering: boolean
   raadsvergaderingDatum: string
   raadsvergaderingUrl: string
+  notulen?: string
   deeltoken: string
   aangemaakt: string
   bijgewerkt: string
