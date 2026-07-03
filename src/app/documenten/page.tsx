@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ApiDocument } from '@/lib/types'
-import { haalRaadsmededelingen, haalAfgedaaneVragen, startSyncEnWacht, SyncLogItem, DEMO_RM, DEMO_VRAGEN } from '@/lib/api'
+import { haalRaadsmededelingen, haalAfgedaaneVragen, haalAlleVragen, startSyncEnWacht, SyncLogItem, DEMO_RM, DEMO_VRAGEN } from '@/lib/api'
 import { formatDatumNL, formatDatumKort } from '@/lib/datum'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -14,6 +14,7 @@ export default function DocumentenPagina() {
   const { isAdmin } = useAuth()
   const [rmDocs, setRmDocs] = useState<ApiDocument[]>([])
   const [vragenDocs, setVragenDocs] = useState<ApiDocument[]>([])
+  const [alleVragenDocs, setAlleVragenDocs] = useState<ApiDocument[]>([])
   const [laden, setLaden] = useState(true)
   const [verversBezig, setVerversBezig] = useState(false)
   const [syncBezig, setSyncBezig] = useState(false)
@@ -29,12 +30,14 @@ export default function DocumentenPagina() {
     else setVerversBezig(true)
     setFout(false)
     try {
-      const [rm, vragen] = await Promise.all([
+      const [rm, vragen, alleVragen] = await Promise.all([
         haalRaadsmededelingen().catch(() => [] as ApiDocument[]),
         haalAfgedaaneVragen().catch(() => [] as ApiDocument[]),
+        haalAlleVragen().catch(() => [] as ApiDocument[]),
       ])
       setRmDocs(rm.length > 0 ? rm : DEMO_RM)
       setVragenDocs(vragen.length > 0 ? vragen : DEMO_VRAGEN)
+      setAlleVragenDocs(alleVragen)
       if (rm.length === 0 && vragen.length === 0) setFout(true)
     } catch {
       setRmDocs(DEMO_RM)
@@ -85,14 +88,24 @@ export default function DocumentenPagina() {
     laadAlles(true)
   }
 
-  const alleDocs: ApiDocument[] = [...rmDocs, ...vragenDocs]
+  // open_gdp gebruikt alleVragenDocs (alle vragen incl. niet-afgedane)
+  const openGdpDocs = alleVragenDocs.filter(d =>
+    (d.type === 'technische_vragen' || d.type === 'schriftelijke_vragen') &&
+    (!d.afgedaan || d.afgedaan === '') &&
+    (d.fracties?.includes('Goois Democratisch Platform') || d.indieners?.includes('Goois Democratisch Platform'))
+  )
+
+  const alleDocs: ApiDocument[] = filter === 'open_gdp'
+    ? openGdpDocs
+    : [...rmDocs, ...vragenDocs]
 
   const gefilterd = alleDocs.filter(doc => {
     const matchFilter =
       filter === 'alle' ? true :
       filter === 'rm' ? doc.type === 'raadsmededelingen' :
       filter === 'tq' ? doc.type === 'technische_vragen' :
-      filter === 'sq' ? doc.type === 'schriftelijke_vragen' : true
+      filter === 'sq' ? doc.type === 'schriftelijke_vragen' :
+      filter === 'open_gdp' ? true : true
     const matchZoek = !zoek ||
       doc.titel.toLowerCase().includes(zoek.toLowerCase()) ||
       (doc.indieners || '').toLowerCase().includes(zoek.toLowerCase()) ||
@@ -110,11 +123,7 @@ export default function DocumentenPagina() {
     rm: rmDocs.length,
     tq: vragenDocs.filter(d => d.type === 'technische_vragen').length,
     sq: vragenDocs.filter(d => d.type === 'schriftelijke_vragen').length,
-    open_gdp: vragenDocs.filter(d =>
-      (d.type === 'technische_vragen' || d.type === 'schriftelijke_vragen') &&
-      (!d.afgedaan || d.afgedaan === '') &&
-      (d.fracties?.includes('Goois Democratisch Platform') || d.indieners?.includes('Goois Democratisch Platform'))
-    ).length,
+    open_gdp: openGdpDocs.length,
   }
 
   return (
