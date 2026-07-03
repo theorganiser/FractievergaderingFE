@@ -13,6 +13,7 @@ export interface Subpunt {
   inStemlijst?: boolean   // opnemen in stemlijst
   subtype?: 'motie' | 'amendement' | 'normaal'
   gekoppeldAanRv?: string  // rvNummer van het gekoppelde raadsvoorstel (voor moties/amendementen)
+  stemlijstKey?: string    // unieke key voor stemlijst opslag (UUID, nooit veranderend)
 }
 
 export interface Agendapunt {

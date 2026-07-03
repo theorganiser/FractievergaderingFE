@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useRef } from 'react'
+
+const nieuweKey = () => Math.random().toString(36).substring(2) + Date.now().toString(36)
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Agendapunt, Subpunt } from '@/lib/types'
 import IngekomenStukkenInvoer from './IngekomentukkenInvoer'
@@ -303,7 +305,7 @@ function RVEditor({ punt, onUpdate, onUpdateSub, onVerwijderSub }: {
 
   const voegHoofdpuntToe = () => {
     const id = String(punt.subpunten.filter(s => !s.subtype || s.subtype === 'normaal').length + 1)
-    onUpdate({ subpunten: [...punt.subpunten, { id, titel: '', rvNummer: id, inStemlijst: false, subtype: 'normaal', url: '' }] })
+    onUpdate({ subpunten: [...punt.subpunten, { id, titel: '', rvNummer: id, inStemlijst: false, subtype: 'normaal', url: '', stemlijstKey: nieuweKey() }] })
   }
 
   const voegSubtypeToe = (parentIndex: number, type: 'motie' | 'amendement') => {
@@ -313,7 +315,7 @@ function RVEditor({ punt, onUpdate, onUpdateSub, onVerwijderSub }: {
     const rvNr = `${prefix}26-${50 + bestaande}`
     // Koppel automatisch aan het raadsvoorstel waar de + M/A op geklikt is
     const ouderRvNummer = punt.subpunten[parentIndex]?.rvNummer || ''
-    onUpdate({ subpunten: [...punt.subpunten, { id: `${type}-${parentIndex}-${bestaande}`, titel: '', rvNummer: rvNr, inStemlijst: true, subtype: type, url: '', gekoppeldAanRv: ouderRvNummer }] })
+    onUpdate({ subpunten: [...punt.subpunten, { id: `${type}-${parentIndex}-${bestaande}`, titel: '', rvNummer: rvNr, inStemlijst: true, subtype: type, url: '', gekoppeldAanRv: ouderRvNummer, stemlijstKey: nieuweKey() }] })
   }
 
   return (

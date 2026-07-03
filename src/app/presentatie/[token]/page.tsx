@@ -41,7 +41,7 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
     })
   }
   const [grootLettertype, setGrootLettertype] = useState(false)
-  const [donkerModus, setDonkerModus] = useState(true) // standaard donker voor presentatie
+  const [donkerModus, setDonkerModus] = useState(false) // standaard donker voor presentatie
 
   const toggleIngeklapt = (id: number) => setIngeklapt(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const toggleAfgehandeld = (id: number) => { setAfgehandeld(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n }); setHuidig(id) }

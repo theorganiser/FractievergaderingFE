@@ -29,16 +29,22 @@ export default function Stemlijst({ vergadering }: StemlijstProps) {
 
   return (
     <div>
-      <div style={{ background: '#f5eeff', border: '1px solid #c0a0d8', borderRadius: '10px', padding: '16px 20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <span style={{ fontSize: '24px' }}>⚖️</span>
-        <div>
-          <div style={{ fontSize: '14px', fontFamily: 'Arial', fontWeight: '600', color: '#4a1a5c', marginBottom: '4px' }}>
-            De stemlijst is beschikbaar via de leesweergave
-          </div>
-          <div style={{ fontSize: '12px', color: '#888', fontFamily: 'Arial' }}>
-            Open de leesweergave en klik op "⚖️ Stemlijst" voor de volledige stemlijst met GDP-stemmen die worden opgeslagen.
+      <div style={{ background: '#f5eeff', border: '1px solid #c0a0d8', borderRadius: '10px', padding: '16px 20px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '24px' }}>⚖️</span>
+          <div>
+            <div style={{ fontSize: '14px', fontFamily: 'Arial', fontWeight: '600', color: '#4a1a5c', marginBottom: '4px' }}>
+              Stemlijst
+            </div>
+            <div style={{ fontSize: '12px', color: '#888', fontFamily: 'Arial' }}>
+              Klik op de knop om de stemlijst te openen en stemmen in te vullen.
+            </div>
           </div>
         </div>
+        <a href={`/stemlijst/${vergadering.deeltoken}`} target="_blank"
+          style={{ background: '#4a1a5c', color: '#a89060', border: '1px solid #a89060', padding: '10px 20px', borderRadius: '8px', textDecoration: 'none', fontSize: '14px', fontFamily: 'Arial', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          ⚖️ Open stemlijst
+        </a>
       </div>
 
       {stemItems.length === 0 ? (

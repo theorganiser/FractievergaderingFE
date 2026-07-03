@@ -2,11 +2,12 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useVergaderingen } from '@/hooks/useVergaderingen'
 import { testVerbinding, haalSyncLog } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 import Melding from '@/components/Melding'
 
 export default function BeheerPagina() {
@@ -88,19 +89,7 @@ export default function BeheerPagina() {
       <Kaart titel="Opgeslagen gegevens">
         <p style={tekststijl}>{vergaderingen.length} vergadering(en) opgeslagen in localStorage.</p>
         <div style={{ marginTop: '14px' }}>
-          <button
-            onClick={wisAllesOp}
-            style={{
-              background: 'white',
-              color: 'var(--rood)',
-              border: '1px solid var(--rood)',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontFamily: 'Arial, sans-serif',
-            }}
-          >
+          <button onClick={wisAllesOp} style={{ background: 'white', color: 'var(--rood)', border: '1px solid var(--rood)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial, sans-serif' }}>
             🗑 Alle gegevens wissen
           </button>
         </div>
@@ -113,7 +102,9 @@ export default function BeheerPagina() {
           Vergaderingen zijn beschikbaar op alle apparaten via de deellink.
         </p>
         <p style={{ ...tekststijl, marginTop: '8px' }}>
-          Wachtwoord instellen via de omgevingsvariabelen <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>READER_PASSWORD</code> en <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>ADMIN_PASSWORD</code> in Vercel (zonder NEXT_PUBLIC_ prefix).
+          Wachtwoord instellen via de omgevingsvariabelen{' '}
+          <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>READER_PASSWORD</code> en{' '}
+          <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>ADMIN_PASSWORD</code> in Vercel (zonder NEXT_PUBLIC_ prefix).
         </p>
         <p style={{ ...tekststijl, marginTop: '8px', color: 'var(--rood)' }}>
           ⚠️ Let op: NEXT_PUBLIC_ variabelen zijn zichtbaar in de browser. Gebruik een sterk wachtwoord.
@@ -139,6 +130,116 @@ export default function BeheerPagina() {
           </div>
         ))}
       </Kaart>
+
+      {/* Gebruikersbeheer */}
+      <GebruikersBeheer />
+    </div>
+  )
+}
+
+function GebruikersBeheer() {
+  const [gebruikers, setGebruikers] = useState<{id: string; naam: string; rol: string; actief: boolean}[]>([])
+  const [laden, setLaden] = useState(true)
+  const [nieuwNaam, setNieuwNaam] = useState('')
+  const [nieuwRol, setNieuwRol] = useState('fractielid')
+  const [opslaan, setOpslaan] = useState(false)
+
+  const laad = async () => {
+    const { data } = await supabase.from('gebruikers').select('*').order('naam')
+    setGebruikers(data || [])
+    setLaden(false)
+  }
+
+  useEffect(() => { laad() }, [])
+
+  const voegToe = async () => {
+    if (!nieuwNaam.trim()) return
+    setOpslaan(true)
+    await supabase.from('gebruikers').insert({ naam: nieuwNaam.trim(), rol: nieuwRol })
+    setNieuwNaam('')
+    setNieuwRol('fractielid')
+    await laad()
+    setOpslaan(false)
+  }
+
+  const updateRol = async (id: string, rol: string) => {
+    await supabase.from('gebruikers').update({ rol }).eq('id', id)
+    setGebruikers(prev => prev.map(g => g.id === id ? { ...g, rol } : g))
+  }
+
+  const toggleActief = async (id: string, actief: boolean) => {
+    await supabase.from('gebruikers').update({ actief: !actief }).eq('id', id)
+    setGebruikers(prev => prev.map(g => g.id === id ? { ...g, actief: !actief } : g))
+  }
+
+  const verwijder = async (id: string) => {
+    if (!confirm('Gebruiker verwijderen?')) return
+    await supabase.from('gebruikers').delete().eq('id', id)
+    setGebruikers(prev => prev.filter(g => g.id !== id))
+  }
+
+  const rolKleur = (rol: string) => (({
+    beheerder: { bg: '#f0e8ff', kleur: '#4a1a5c', rand: '#c0a0d8' },
+    moderator:  { bg: '#e8f0f8', kleur: '#1a4a7a', rand: '#a0c0e0' },
+    fractielid: { bg: '#f0f8f0', kleur: '#1a5c2a', rand: '#a0d8b0' },
+  } as Record<string, {bg: string; kleur: string; rand: string}>)[rol] || { bg: '#f5f5f5', kleur: '#888', rand: '#ddd' })
+
+  return (
+    <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid var(--rand)', marginTop: '4px' }}>
+      <h3 style={{ fontSize: '16px', color: 'var(--blauw)', fontFamily: 'Georgia, serif', fontWeight: 'normal', marginBottom: '16px' }}>
+        👥 Gebruikersbeheer
+      </h3>
+
+      {laden ? (
+        <div style={{ color: 'var(--tekst-zacht)', fontFamily: 'Arial', fontSize: '13px' }}>Laden...</div>
+      ) : (
+        <>
+          <div style={{ border: '1px solid var(--rand)', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' }}>
+            {gebruikers.length === 0 && (
+              <div style={{ padding: '16px', fontSize: '13px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', textAlign: 'center', fontStyle: 'italic' }}>
+                Nog geen gebruikers. Voeg de SQL toe in Supabase en voeg dan gebruikers toe.
+              </div>
+            )}
+            {gebruikers.map((g, idx) => {
+              const rk = rolKleur(g.rol)
+              return (
+                <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderBottom: idx < gebruikers.length - 1 ? '1px solid #f0ede8' : 'none', background: g.actief ? 'white' : '#f5f5f5', opacity: g.actief ? 1 : 0.6 }}>
+                  <span style={{ flex: 1, fontSize: '14px', fontFamily: 'Arial', fontWeight: '600', color: 'var(--blauw)' }}>{g.naam}</span>
+                  <select value={g.rol} onChange={e => updateRol(g.id, e.target.value)}
+                    style={{ padding: '4px 8px', border: `1px solid ${rk.rand}`, borderRadius: '5px', fontSize: '12px', fontFamily: 'Arial', background: rk.bg, color: rk.kleur, cursor: 'pointer' }}>
+                    <option value="fractielid">👤 Fractielid</option>
+                    <option value="moderator">✏️ Moderator</option>
+                    <option value="beheerder">⚙️ Beheerder</option>
+                  </select>
+                  <button onClick={() => toggleActief(g.id, g.actief)}
+                    style={{ background: g.actief ? '#e8f5ed' : '#f5f5f5', color: g.actief ? '#2d7a4f' : '#888', border: '1px solid #ddd', padding: '4px 10px', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontFamily: 'Arial' }}>
+                    {g.actief ? '✓ Actief' : '✗ Inactief'}
+                  </button>
+                  <button onClick={() => verwijder(g.id)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--rood)', fontSize: '14px', padding: '0 4px' }}>✕</button>
+                </div>
+              )
+            })}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <input value={nieuwNaam} onChange={e => setNieuwNaam(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && voegToe()}
+              placeholder="Voornaam nieuw fractielid..."
+              style={{ flex: 1, minWidth: '150px', padding: '7px 10px', border: '1px solid var(--rand)', borderRadius: '6px', fontSize: '13px', fontFamily: 'Arial', outline: 'none' }} />
+            <select value={nieuwRol} onChange={e => setNieuwRol(e.target.value)}
+              style={{ padding: '7px 10px', border: '1px solid var(--rand)', borderRadius: '6px', fontSize: '13px', fontFamily: 'Arial' }}>
+              <option value="fractielid">👤 Fractielid</option>
+              <option value="moderator">✏️ Moderator</option>
+              <option value="beheerder">⚙️ Beheerder</option>
+            </select>
+            <button onClick={voegToe} disabled={!nieuwNaam.trim() || opslaan}
+              style={{ background: 'var(--blauw)', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial', fontWeight: '600', opacity: !nieuwNaam.trim() ? 0.5 : 1 }}>
+              + Toevoegen
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -154,21 +255,7 @@ function Kaart({ titel, children }: { titel: string; children: React.ReactNode }
 
 function Knop({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        background: 'white',
-        color: 'var(--blauw)',
-        border: '1px solid var(--blauw)',
-        padding: '8px 14px',
-        borderRadius: '8px',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        fontSize: '13px',
-        fontFamily: 'Arial, sans-serif',
-        opacity: disabled ? 0.6 : 1,
-      }}
-    >
+    <button onClick={onClick} disabled={disabled} style={{ background: 'white', color: 'var(--blauw)', border: '1px solid var(--blauw)', padding: '8px 14px', borderRadius: '8px', cursor: disabled ? 'not-allowed' : 'pointer', fontSize: '13px', fontFamily: 'Arial, sans-serif', opacity: disabled ? 0.6 : 1 }}>
       {children}
     </button>
   )

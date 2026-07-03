@@ -8,7 +8,7 @@ import { haalRaadsmededelingen, haalAfgedaaneVragen, startSyncEnWacht, SyncLogIt
 import { formatDatumNL, formatDatumKort } from '@/lib/datum'
 import { useAuth } from '@/hooks/useAuth'
 
-type Filter = 'alle' | 'rm' | 'tq' | 'sq'
+type Filter = 'alle' | 'rm' | 'tq' | 'sq' | 'open_gdp'
 
 export default function DocumentenPagina() {
   const { isAdmin } = useAuth()
@@ -110,6 +110,11 @@ export default function DocumentenPagina() {
     rm: rmDocs.length,
     tq: vragenDocs.filter(d => d.type === 'technische_vragen').length,
     sq: vragenDocs.filter(d => d.type === 'schriftelijke_vragen').length,
+    open_gdp: vragenDocs.filter(d =>
+      (d.type === 'technische_vragen' || d.type === 'schriftelijke_vragen') &&
+      (!d.afgedaan || d.afgedaan === '') &&
+      (d.fracties?.includes('Goois Democratisch Platform') || d.indieners?.includes('Goois Democratisch Platform'))
+    ).length,
   }
 
   return (
@@ -185,6 +190,7 @@ export default function DocumentenPagina() {
         <StatKaart label="Raadsmededelingen" count={counts.rm} kleur="#4a1a5c" actief={filter === 'rm'} onClick={() => setFilter(filter === 'rm' ? 'alle' : 'rm')} />
         <StatKaart label="Technische vragen" count={counts.tq} kleur="#1a4a7a" actief={filter === 'tq'} onClick={() => setFilter(filter === 'tq' ? 'alle' : 'tq')} />
         <StatKaart label="Schriftelijke vragen" count={counts.sq} kleur="#5a1a8a" actief={filter === 'sq'} onClick={() => setFilter(filter === 'sq' ? 'alle' : 'sq')} />
+        <StatKaart label="⚡ Openstaand GDP" count={counts.open_gdp} kleur="#c04000" actief={filter === 'open_gdp'} onClick={() => setFilter(filter === 'open_gdp' ? 'alle' : 'open_gdp')} />
         <StatKaart label="Totaal" count={alleDocs.length} kleur="#a89060" actief={filter === 'alle'} onClick={() => setFilter('alle')} />
       </div>
 

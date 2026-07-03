@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { maakLezerCookie } from '@/lib/auth'
+import { maakLezerCookie, maakAdminCookie, maakModeratorCookie } from '@/lib/auth'
 import { checkRateLimit } from '@/lib/ratelimit'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
-  // Rate limiting: max 5 pogingen per minuut per IP
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'onbekend'
   const { toegestaan, resterend, resetOver } = checkRateLimit(ip)
 
@@ -21,8 +21,40 @@ export async function POST(req: NextRequest) {
   if (!juisteCode) return NextResponse.json({ fout: 'Server configuratiefout.' }, { status: 500 })
   if (code !== juisteCode) return NextResponse.json({ fout: `Onjuiste toegangscode. Nog ${resterend} poging(en).` }, { status: 401 })
 
-  const cookie = await maakLezerCookie(naam.trim())
-  const response = NextResponse.json({ ok: true, naam: naam.trim() })
-  response.headers.set('Set-Cookie', cookie)
+  // Zoek naam op in gebruikerstabel om rol te bepalen
+  const { data: gebruiker } = await supabase
+    .from('gebruikers')
+    .select('naam, rol, actief')
+    .ilike('naam', naam.trim())
+    .single()
+
+  // Als naam niet gevonden in gebruikerstabel → weigeren
+  if (!gebruiker) {
+    return NextResponse.json(
+      { fout: 'Naam niet gevonden. Neem contact op met de beheerder.' },
+      { status: 401 }
+    )
+  }
+
+  if (!gebruiker.actief) {
+    return NextResponse.json(
+      { fout: 'Dit account is gedeactiveerd. Neem contact op met de beheerder.' },
+      { status: 401 }
+    )
+  }
+
+  // Maak cookies op basis van rol
+  const lezerCookie = await maakLezerCookie(gebruiker.naam)
+  const response = NextResponse.json({ ok: true, naam: gebruiker.naam, rol: gebruiker.rol })
+  response.headers.append('Set-Cookie', lezerCookie)
+
+  if (gebruiker.rol === 'beheerder') {
+    const adminCookie = await maakAdminCookie()
+    response.headers.append('Set-Cookie', adminCookie)
+  } else if (gebruiker.rol === 'moderator') {
+    const moderatorCookie = await maakModeratorCookie()
+    response.headers.append('Set-Cookie', moderatorCookie)
+  }
+
   return response
 }
