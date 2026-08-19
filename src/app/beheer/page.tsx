@@ -4,12 +4,12 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
-import { useVergaderingen } from '@/hooks/useVergaderingen'
-import { testVerbinding, haalSyncLog } from '@/lib/api'
-import { supabase } from '@/lib/supabase'
-import Melding from '@/components/Melding'
-import ExcelUpload from '@/components/ExcelUpload'
+import { useAuth } from '../../hooks/useAuth'
+import { useVergaderingen } from '../../hooks/useVergaderingen'
+import { testVerbinding, haalSyncLog } from '../../lib/api'
+import { supabase } from '../../lib/supabase'
+import Melding from '../../components/Melding'
+import ExcelUpload from '../../components/ExcelUpload'
 
 type BeheerTab = 'algemeen' | 'excel' | 'gebruikers'
 
