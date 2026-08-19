@@ -136,7 +136,7 @@ export default function PersberichtenPagina() {
           { nr: 2, label: '2. Artikel bewerken + tips' },
           { nr: 3, label: '3. Sociale media posts' },
         ] as { nr: Stap; label: string }[]).map(s => (
-          <button key={s.nr} onClick={() => setStap(s.nr)}
+          <button key={s.nr} onClick={() => { if (s.nr <= stap || (s.nr === 2 && nieuwsArtikel) || (s.nr === 3 && nieuwsArtikel)) setStap(s.nr) }}
             style={{ flex: 1, padding: '10px 8px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial', fontWeight: stap === s.nr ? '700' : '400', background: stap === s.nr ? '#4a1a5c' : 'transparent', color: stap === s.nr ? 'white' : stap > s.nr ? '#2d7a4f' : 'var(--tekst-zacht)', transition: 'all 0.15s', textAlign: 'center' as const }}>
             {stap > s.nr ? '✓ ' : ''}{s.label}
           </button>
@@ -190,10 +190,10 @@ export default function PersberichtenPagina() {
         <div>
           <div style={{ background: 'white', border: '1px solid var(--rand)', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '13px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Nieuwsartikel — plak of bewerk je tekst
+              Nieuwsartikel bewerken
             </label>
             <textarea rows={12} value={nieuwsArtikel} onChange={e => setNieuwsArtikel(e.target.value)}
-              placeholder="Plak hier je eigen tekst of bewerk het gegenereerde artikel..."
+              placeholder="Plak of bewerk hier je nieuwsartikel..."
               style={{ width: '100%', padding: '12px', border: '1px solid var(--rand)', borderRadius: '8px', fontSize: '14px', fontFamily: 'Arial', resize: 'vertical', outline: 'none', boxSizing: 'border-box' as const, lineHeight: 1.6 }} />
             {fout && <div style={{ background: '#fdf0ef', border: '1px solid #e8a090', borderRadius: '6px', padding: '10px 14px', marginTop: '10px', fontSize: '13px', color: '#c0392b', fontFamily: 'Arial' }}>⚠️ {fout}</div>}
             <div style={{ display: 'flex', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
@@ -225,25 +225,12 @@ export default function PersberichtenPagina() {
       {stap === 3 && (
         <div>
           <div style={{ background: 'white', border: '1px solid var(--rand)', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
-            {nieuwsArtikel ? (
-              <>
-                <div style={{ background: '#e8f5ed', border: '1px solid #a8d8b5', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', fontSize: '13px', color: '#1a5c2a', fontFamily: 'Arial' }}>
-                  ✓ Goedgekeurde tekst staat klaar. Druk op "Maak sociale media berichten" om de posts te genereren.
-                </div>
-                <div style={{ maxHeight: '300px', overflowY: 'auto', padding: '12px 14px', background: '#fafaf8', border: '1px solid var(--rand)', borderRadius: '8px', fontSize: '13px', fontFamily: 'Arial', color: '#333', lineHeight: 1.7, whiteSpace: 'pre-wrap' as const, marginBottom: '16px', cursor: 'text', userSelect: 'text' as const }}>
-                  {nieuwsArtikel}
-                </div>
-              </>
-            ) : (
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '13px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Plak je tekst hier
-                </label>
-                <textarea rows={8} value={nieuwsArtikel} onChange={e => setNieuwsArtikel(e.target.value)}
-                  placeholder="Plak hier de tekst waarvan je sociale media berichten wilt maken..."
-                  style={{ width: '100%', padding: '12px', border: '1px solid var(--rand)', borderRadius: '8px', fontSize: '14px', fontFamily: 'Arial', resize: 'vertical', outline: 'none', boxSizing: 'border-box' as const, lineHeight: 1.6 }} />
-              </div>
-            )}
+            <div style={{ background: '#e8f5ed', border: '1px solid #a8d8b5', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', fontSize: '13px', color: '#1a5c2a', fontFamily: 'Arial' }}>
+              ✓ Goedgekeurde tekst staat klaar. Claude maakt nu Facebook- en LinkedIn-berichten op basis van jouw artikel.
+            </div>
+            <div style={{ maxHeight: '150px', overflowY: 'auto', padding: '10px 12px', background: '#f5f5f5', borderRadius: '8px', fontSize: '13px', fontFamily: 'Arial', color: '#666', lineHeight: 1.5, whiteSpace: 'pre-wrap' as const, marginBottom: '16px' }}>
+              {nieuwsArtikel.substring(0, 400)}{nieuwsArtikel.length > 400 ? '...' : ''}
+            </div>
             {fout && <div style={{ background: '#fdf0ef', border: '1px solid #e8a090', borderRadius: '6px', padding: '10px 14px', marginBottom: '12px', fontSize: '13px', color: '#c0392b', fontFamily: 'Arial' }}>⚠️ {fout}</div>}
             <button onClick={() => roepAIAan('sociaal', nieuwsArtikel)} disabled={laden}
               style={{ background: laden ? '#9a7aac' : 'var(--blauw)', color: 'white', border: 'none', padding: '11px 24px', borderRadius: '8px', cursor: laden ? 'not-allowed' : 'pointer', fontSize: '14px', fontFamily: 'Arial', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -252,18 +239,12 @@ export default function PersberichtenPagina() {
           </div>
 
           {resultaat?.linkedin && resultaat?.facebook && (
-            <>
-            <div style={{ background: '#fff8e8', border: '1px solid #e8c84a', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', fontSize: '13px', color: '#7a5000', fontFamily: 'Arial', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '18px' }}>💡</span>
-              <span>Denk aan het plaatsen van de <strong>link naar het nieuwsartikel</strong> in de Facebook- en LinkedIn-posts!</span>
-            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
               <SociaalKaart platform="LinkedIn" emoji="💼" kleur="#0a66c2" bg="#e8f0f8" rand="#a0c0e0"
                 inhoud={resultaat.linkedin} gekopieerd={gekopieerd === 'linkedin'} onKopieer={() => kopieer('linkedin', resultaat.linkedin!)} />
               <SociaalKaart platform="Facebook" emoji="👥" kleur="#1877f2" bg="#e8f0ff" rand="#a0c0e0"
                 inhoud={resultaat.facebook} gekopieerd={gekopieerd === 'facebook'} onKopieer={() => kopieer('facebook', resultaat.facebook!)} />
             </div>
-            </>
           )}
         </div>
       )}

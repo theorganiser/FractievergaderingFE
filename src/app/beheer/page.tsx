@@ -2,18 +2,34 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useVergaderingen } from '@/hooks/useVergaderingen'
 import { testVerbinding, haalSyncLog } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import Melding from '@/components/Melding'
+import ExcelUpload from '@/components/ExcelUpload'
+
+type BeheerTab = 'algemeen' | 'excel' | 'gebruikers'
 
 export default function BeheerPagina() {
+  return (
+    <Suspense fallback={<div style={{ padding: '40px', fontFamily: 'Arial', color: 'var(--tekst-zacht)' }}>⏳ Laden...</div>}>
+      <BeheerInhoud />
+    </Suspense>
+  )
+}
+
+function BeheerInhoud() {
   const { isAdmin, geladen } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { vergaderingen } = useVergaderingen()
+  const [actieveTab, setActieveTab] = useState<BeheerTab>(() =>
+    searchParams.get('tab') === 'excel' ? 'excel' :
+    searchParams.get('tab') === 'gebruikers' ? 'gebruikers' : 'algemeen'
+  )
   const [apiStatus, setApiStatus] = useState<'idle' | 'laden' | 'ok' | 'fout'>('idle')
   const [syncLog, setSyncLog] = useState<unknown[]>([])
   const [melding, setMelding] = useState<{ type: 'succes' | 'fout'; tekst: string } | null>(null)
@@ -49,14 +65,31 @@ export default function BeheerPagina() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://datascraperraad.onrender.com'
 
   return (
-    <div style={{ maxWidth: '600px' }}>
+    <div style={{ maxWidth: '700px' }}>
       <h1 style={{ fontSize: '22px', color: 'var(--blauw)', fontWeight: 'normal', marginBottom: '4px' }}>Beheer</h1>
-      <p style={{ fontSize: '13px', color: 'var(--tekst-zacht)', fontFamily: 'Arial, sans-serif', marginBottom: '24px' }}>
+      <p style={{ fontSize: '13px', color: 'var(--tekst-zacht)', fontFamily: 'Arial, sans-serif', marginBottom: '16px' }}>
         Instellingen en API-status
       </p>
 
       {melding && <Melding type={melding.type} tekst={melding.tekst} onSluit={() => setMelding(null)} />}
 
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', background: '#f5f0fa', borderRadius: '10px', padding: '4px', border: '1px solid #e0d0f0' }}>
+        {([
+          { key: 'algemeen', label: '⚙️ Algemeen' },
+          { key: 'excel', label: '📊 Excel upload' },
+          { key: 'gebruikers', label: '👥 Gebruikers' },
+        ] as { key: BeheerTab; label: string }[]).map(t => (
+          <button key={t.key} onClick={() => setActieveTab(t.key)}
+            style={{ flex: 1, padding: '8px 12px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial', fontWeight: actieveTab === t.key ? '700' : '400', background: actieveTab === t.key ? '#4a1a5c' : 'transparent', color: actieveTab === t.key ? 'white' : 'var(--tekst-zacht)', transition: 'all 0.15s' }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab: Algemeen */}
+      {actieveTab === 'algemeen' && (
+        <div>
       {/* API */}
       <Kaart titel="API-verbinding">
         <p style={tekststijl}>
@@ -89,7 +122,19 @@ export default function BeheerPagina() {
       <Kaart titel="Opgeslagen gegevens">
         <p style={tekststijl}>{vergaderingen.length} vergadering(en) opgeslagen in localStorage.</p>
         <div style={{ marginTop: '14px' }}>
-          <button onClick={wisAllesOp} style={{ background: 'white', color: 'var(--rood)', border: '1px solid var(--rood)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial, sans-serif' }}>
+          <button
+            onClick={wisAllesOp}
+            style={{
+              background: 'white',
+              color: 'var(--rood)',
+              border: '1px solid var(--rood)',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontFamily: 'Arial, sans-serif',
+            }}
+          >
             🗑 Alle gegevens wissen
           </button>
         </div>
@@ -102,9 +147,7 @@ export default function BeheerPagina() {
           Vergaderingen zijn beschikbaar op alle apparaten via de deellink.
         </p>
         <p style={{ ...tekststijl, marginTop: '8px' }}>
-          Wachtwoord instellen via de omgevingsvariabelen{' '}
-          <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>READER_PASSWORD</code> en{' '}
-          <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>ADMIN_PASSWORD</code> in Vercel (zonder NEXT_PUBLIC_ prefix).
+          Wachtwoord instellen via de omgevingsvariabelen <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>READER_PASSWORD</code> en <code style={{ background: '#f0ede8', padding: '1px 5px', borderRadius: '3px', fontSize: '12px' }}>ADMIN_PASSWORD</code> in Vercel (zonder NEXT_PUBLIC_ prefix).
         </p>
         <p style={{ ...tekststijl, marginTop: '8px', color: 'var(--rood)' }}>
           ⚠️ Let op: NEXT_PUBLIC_ variabelen zijn zichtbaar in de browser. Gebruik een sterk wachtwoord.
@@ -130,9 +173,21 @@ export default function BeheerPagina() {
           </div>
         ))}
       </Kaart>
+        </div>
+      )}
 
-      {/* Gebruikersbeheer */}
-      <GebruikersBeheer />
+      {/* Tab: Excel upload */}
+      {actieveTab === 'excel' && (
+        <Kaart titel="📊 Excel bestanden uploaden">
+          <ExcelUpload />
+        </Kaart>
+      )}
+
+      {/* Tab: Gebruikers */}
+      {actieveTab === 'gebruikers' && (
+        <GebruikersBeheer />
+      )}
+
     </div>
   )
 }
@@ -145,6 +200,7 @@ function GebruikersBeheer() {
   const [opslaan, setOpslaan] = useState(false)
 
   const laad = async () => {
+    const { supabase } = await import('@/lib/supabase')
     const { data } = await supabase.from('gebruikers').select('*').order('naam')
     setGebruikers(data || [])
     setLaden(false)
@@ -155,6 +211,7 @@ function GebruikersBeheer() {
   const voegToe = async () => {
     if (!nieuwNaam.trim()) return
     setOpslaan(true)
+    const { supabase } = await import('@/lib/supabase')
     await supabase.from('gebruikers').insert({ naam: nieuwNaam.trim(), rol: nieuwRol })
     setNieuwNaam('')
     setNieuwRol('fractielid')
@@ -163,43 +220,41 @@ function GebruikersBeheer() {
   }
 
   const updateRol = async (id: string, rol: string) => {
+    const { supabase } = await import('@/lib/supabase')
     await supabase.from('gebruikers').update({ rol }).eq('id', id)
     setGebruikers(prev => prev.map(g => g.id === id ? { ...g, rol } : g))
   }
 
   const toggleActief = async (id: string, actief: boolean) => {
+    const { supabase } = await import('@/lib/supabase')
     await supabase.from('gebruikers').update({ actief: !actief }).eq('id', id)
     setGebruikers(prev => prev.map(g => g.id === id ? { ...g, actief: !actief } : g))
   }
 
   const verwijder = async (id: string) => {
     if (!confirm('Gebruiker verwijderen?')) return
+    const { supabase } = await import('@/lib/supabase')
     await supabase.from('gebruikers').delete().eq('id', id)
     setGebruikers(prev => prev.filter(g => g.id !== id))
   }
 
-  const rolKleur = (rol: string) => (({
-    beheerder: { bg: '#f0e8ff', kleur: '#4a1a5c', rand: '#c0a0d8' },
-    moderator:  { bg: '#e8f0f8', kleur: '#1a4a7a', rand: '#a0c0e0' },
-    fractielid: { bg: '#f0f8f0', kleur: '#1a5c2a', rand: '#a0d8b0' },
-  } as Record<string, {bg: string; kleur: string; rand: string}>)[rol] || { bg: '#f5f5f5', kleur: '#888', rand: '#ddd' })
+  const rolKleur = (rol: string) => ({
+    beheerder: { bg: '#f0e8ff', kleur: '#4a1a5c', rand: '#c0a0d8', label: '⚙️ Beheerder' },
+    moderator:  { bg: '#e8f0f8', kleur: '#1a4a7a', rand: '#a0c0e0', label: '✏️ Moderator' },
+    fractielid: { bg: '#f0f8f0', kleur: '#1a5c2a', rand: '#a0d8b0', label: '👤 Fractielid' },
+  }[rol] || { bg: '#f5f5f5', kleur: '#888', rand: '#ddd', label: rol })
 
   return (
-    <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid var(--rand)', marginTop: '4px' }}>
-      <h3 style={{ fontSize: '16px', color: 'var(--blauw)', fontFamily: 'Georgia, serif', fontWeight: 'normal', marginBottom: '16px' }}>
+    <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid var(--rand)', marginTop: '20px' }}>
+      <h2 style={{ fontSize: '16px', color: 'var(--blauw)', fontFamily: 'Arial', fontWeight: '600', margin: '0 0 16px' }}>
         👥 Gebruikersbeheer
-      </h3>
+      </h2>
 
       {laden ? (
         <div style={{ color: 'var(--tekst-zacht)', fontFamily: 'Arial', fontSize: '13px' }}>Laden...</div>
       ) : (
         <>
           <div style={{ border: '1px solid var(--rand)', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' }}>
-            {gebruikers.length === 0 && (
-              <div style={{ padding: '16px', fontSize: '13px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', textAlign: 'center', fontStyle: 'italic' }}>
-                Nog geen gebruikers. Voeg de SQL toe in Supabase en voeg dan gebruikers toe.
-              </div>
-            )}
             {gebruikers.map((g, idx) => {
               const rk = rolKleur(g.rol)
               return (
@@ -222,6 +277,7 @@ function GebruikersBeheer() {
             })}
           </div>
 
+          {/* Nieuwe gebruiker */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
             <input value={nieuwNaam} onChange={e => setNieuwNaam(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && voegToe()}
@@ -253,9 +309,24 @@ function Kaart({ titel, children }: { titel: string; children: React.ReactNode }
   )
 }
 
+
 function Knop({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} disabled={disabled} style={{ background: 'white', color: 'var(--blauw)', border: '1px solid var(--blauw)', padding: '8px 14px', borderRadius: '8px', cursor: disabled ? 'not-allowed' : 'pointer', fontSize: '13px', fontFamily: 'Arial, sans-serif', opacity: disabled ? 0.6 : 1 }}>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        background: 'white',
+        color: 'var(--blauw)',
+        border: '1px solid var(--blauw)',
+        padding: '8px 14px',
+        borderRadius: '8px',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        fontSize: '13px',
+        fontFamily: 'Arial, sans-serif',
+        opacity: disabled ? 0.6 : 1,
+      }}
+    >
       {children}
     </button>
   )

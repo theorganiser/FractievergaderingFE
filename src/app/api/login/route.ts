@@ -21,14 +21,12 @@ export async function POST(req: NextRequest) {
   if (!juisteCode) return NextResponse.json({ fout: 'Server configuratiefout.' }, { status: 500 })
   if (code !== juisteCode) return NextResponse.json({ fout: `Onjuiste toegangscode. Nog ${resterend} poging(en).` }, { status: 401 })
 
-  // Zoek naam op in gebruikerstabel om rol te bepalen
   const { data: gebruiker } = await supabase
     .from('gebruikers')
     .select('naam, rol, actief')
     .ilike('naam', naam.trim())
     .single()
 
-  // Als naam niet gevonden in gebruikerstabel → weigeren
   if (!gebruiker) {
     return NextResponse.json(
       { fout: 'Naam niet gevonden. Neem contact op met de beheerder.' },
@@ -43,7 +41,6 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Maak cookies op basis van rol
   const lezerCookie = await maakLezerCookie(gebruiker.naam)
   const response = NextResponse.json({ ok: true, naam: gebruiker.naam, rol: gebruiker.rol })
   response.headers.append('Set-Cookie', lezerCookie)

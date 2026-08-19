@@ -27,21 +27,9 @@ export async function haalAfgedaaneVragen(): Promise<ApiDocument[]> {
   ])
   const tqDocs: ApiDocument[] = Array.isArray(tq) ? tq : (tq.documenten || [])
   const sqDocs: ApiDocument[] = Array.isArray(sq) ? sq : (sq.documenten || [])
+  // Combineer en sorteer op afgedaan-datum nieuwste eerst
   return [...tqDocs, ...sqDocs].sort((a, b) =>
     (b.afgedaan || '').localeCompare(a.afgedaan || '')
-  )
-}
-
-export async function haalAlleVragen(): Promise<ApiDocument[]> {
-  // Haal ALLE vragen op (afgedaan én openstaand) voor het openstaand GDP filter
-  const [tq, sq] = await Promise.all([
-    fetch(`${API_URL}/documenten?type=technische_vragen`).then(r => r.json()).catch(() => []),
-    fetch(`${API_URL}/documenten?type=schriftelijke_vragen`).then(r => r.json()).catch(() => []),
-  ])
-  const tqDocs: ApiDocument[] = Array.isArray(tq) ? tq : (tq.documenten || [])
-  const sqDocs: ApiDocument[] = Array.isArray(sq) ? sq : (sq.documenten || [])
-  return [...tqDocs, ...sqDocs].sort((a, b) =>
-    (b.sorteerdatum || b.publicatiedatum || '').localeCompare(a.sorteerdatum || a.publicatiedatum || '')
   )
 }
 
