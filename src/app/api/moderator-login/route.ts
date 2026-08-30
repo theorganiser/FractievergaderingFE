@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { maakModeratorCookie, maakLezerCookie } from '@/lib/auth'
-import { checkRateLimit } from '@/lib/ratelimit'
+import { maakModeratorCookie, maakLezerCookie } from '../../../lib/auth'
+import { checkRateLimit } from '../../../lib/ratelimit'
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'onbekend'

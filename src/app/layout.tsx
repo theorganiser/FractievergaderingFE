@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import Topbalk from '@/components/Topbalk'
-import BackendPing from '@/components/BackendPing'
+import Topbalk from '../components/Topbalk'
+import BackendPing from '../components/BackendPing'
 import '../app/globals.css'
 
 export const metadata: Metadata = {

@@ -4,13 +4,13 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useVergaderingen } from '@/hooks/useVergaderingen'
-import { useAuth } from '@/hooks/useAuth'
-import { formatDatum, sorteerOpDatum, eersteVolgendeMaandag, vandaag } from '@/lib/datum'
-import { getSprekerNaam } from '@/components/Toegangspoort'
-import Melding from '@/components/Melding'
-import SupabaseFout, { OpslaanFoutBanner } from '@/components/SupabaseFout'
-import { Vergadering } from '@/lib/types'
+import { useVergaderingen } from '../hooks/useVergaderingen'
+import { useAuth } from '../hooks/useAuth'
+import { formatDatum, sorteerOpDatum, eersteVolgendeMaandag, vandaag } from '../lib/datum'
+import { getSprekerNaam } from '../components/Toegangspoort'
+import Melding from '../components/Melding'
+import SupabaseFout, { OpslaanFoutBanner } from '../components/SupabaseFout'
+import { Vergadering } from '../lib/types'
 
 const MAX_WOORDEN = 15
 

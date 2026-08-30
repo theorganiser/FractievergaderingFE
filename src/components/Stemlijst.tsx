@@ -1,7 +1,7 @@
 'use client'
 
 
-import { Vergadering } from '@/lib/types'
+import { Vergadering } from '../lib/types'
 
 interface StemlijstProps {
   vergadering: Vergadering

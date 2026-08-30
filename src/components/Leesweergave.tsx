@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Vergadering, Agendapunt } from '@/lib/types'
-import { formatDatum, formatDatumNL } from '@/lib/datum'
+import { Vergadering, Agendapunt } from '../lib/types'
+import { formatDatum, formatDatumNL } from '../lib/datum'
 
 function normaliseerPunt(punt: Agendapunt): Agendapunt {
   return { ...punt, subpunten: Array.isArray(punt.subpunten) ? punt.subpunten : [] }
@@ -162,7 +162,7 @@ export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop }: {
 
   useEffect(() => {
     // Haal toekomstige items op uit de centrale fractiekalender
-    import('@/lib/kalender').then(({ haalKalenderItems }) => {
+    import('../lib/kalender').then(({ haalKalenderItems }) => {
       haalKalenderItems(true).then(items => setCentraleKalender(items)).catch(() => {})
     })
   }, [])

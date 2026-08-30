@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Vergadering, Agendapunt, Subpunt, ActieItem, KalenderItem } from '@/lib/types'
+import { Vergadering, Agendapunt, Subpunt, ActieItem, KalenderItem } from '../lib/types'
 import {
   laadVergaderingen as dbLaad,
   laadVergaderingOpToken as dbLaadOpToken,
@@ -10,8 +10,8 @@ import {
   nieuweId,
   maakLeesbarToken,
   nieuwToken,
-} from '@/lib/storage'
-import { bouwPuntenMetOpties } from '@/lib/template'
+} from '../lib/storage'
+import { bouwPuntenMetOpties } from '../lib/template'
 
 export function useVergaderingen() {
   const [vergaderingen, setVergaderingen] = useState<Vergadering[]>([])

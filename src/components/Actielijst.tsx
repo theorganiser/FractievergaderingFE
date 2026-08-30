@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { ActieItem } from '@/lib/types'
-import { formatDatumNL, eersteVolgendeMaandag } from '@/lib/datum'
+import { ActieItem } from '../lib/types'
+import { formatDatumNL, eersteVolgendeMaandag } from '../lib/datum'
 
 interface ActielijstProps {
   acties: ActieItem[]

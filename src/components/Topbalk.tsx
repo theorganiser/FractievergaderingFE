@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
-import { startSyncEnWacht, SyncLogItem } from '@/lib/api'
+import { useAuth } from '../hooks/useAuth'
+import { startSyncEnWacht, SyncLogItem } from '../lib/api'
 
 export default function Topbalk() {
   const pathname = usePathname()

@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useCallback } from 'react'
-import { haalNieuws, syncNieuws, NieuwsArtikel, BRON_LABELS } from '@/lib/api'
+import { haalNieuws, syncNieuws, NieuwsArtikel, BRON_LABELS } from '../../lib/api'
 
 type BronFilter = 'alle' | 'gooisemerennieuws' | 'nhgooi' | 'gooieneemlander' | 'gemeente_gooisemeren'
 

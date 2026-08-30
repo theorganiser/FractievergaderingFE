@@ -3,10 +3,10 @@
 export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
-import { useKalender } from '@/hooks/useKalender'
-import { useAuth } from '@/hooks/useAuth'
-import { CentraalKalenderItem } from '@/lib/kalender'
-import { eersteVolgendeMaandag } from '@/lib/datum'
+import { useKalender } from '../../hooks/useKalender'
+import { useAuth } from '../../hooks/useAuth'
+import { CentraalKalenderItem } from '../../lib/kalender'
+import { eersteVolgendeMaandag } from '../../lib/datum'
 
 export default function KalenderPagina() {
   const { items, geladen, bezig, voegToe, update, verwijder } = useKalender(false)

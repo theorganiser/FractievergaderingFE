@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { maakAdminCookie, maakLezerCookie } from '@/lib/auth'
-import { checkRateLimit } from '@/lib/ratelimit'
+import { maakAdminCookie, maakLezerCookie } from '../../../lib/auth'
+import { checkRateLimit } from '../../../lib/ratelimit'
 
 export async function POST(req: NextRequest) {
   // Rate limiting: max 5 pogingen per minuut per IP

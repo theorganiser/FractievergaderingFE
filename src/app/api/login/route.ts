@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { maakLezerCookie, maakAdminCookie, maakModeratorCookie } from '@/lib/auth'
-import { checkRateLimit } from '@/lib/ratelimit'
-import { supabase } from '@/lib/supabase'
+import { maakLezerCookie, maakAdminCookie, maakModeratorCookie } from '../../../lib/auth'
+import { checkRateLimit } from '../../../lib/ratelimit'
+import { supabase } from '../../../lib/supabase'
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'onbekend'
