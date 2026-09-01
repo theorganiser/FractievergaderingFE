@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Subpunt } from '../lib/types'
+import { Subpunt } from '@/lib/types'
 
 interface IngekomenStukkenInvoerProps {
   subpunten: Subpunt[]

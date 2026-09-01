@@ -2,10 +2,10 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useVergaderingOpToken } from '../../../hooks/useVergaderingen'
-import { LeesweergaveVolledig } from '../../../components/Leesweergave'
-import Notulen from '../../../components/Notulen'
-import { useAuth } from '../../../hooks/useAuth'
+import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
+import { LeesweergaveVolledig } from '@/components/Leesweergave'
+import Notulen from '@/components/Notulen'
+import { useAuth } from '@/hooks/useAuth'
 
 interface Props { params: { token: string } }
 

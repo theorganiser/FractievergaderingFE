@@ -2,11 +2,11 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useVergaderingOpToken } from '../../../hooks/useVergaderingen'
-import { useAuth } from '../../../hooks/useAuth'
+import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
+import { useAuth } from '@/hooks/useAuth'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Agendapunt, Subpunt } from '../../../lib/types'
-import { laadStemmen, slaaStemOp } from '../../../lib/stemlijst'
+import { Agendapunt, Subpunt } from '@/lib/types'
+import { laadStemmen, slaaStemOp } from '@/lib/stemlijst'
 
 interface Props { params: { token: string } }
 

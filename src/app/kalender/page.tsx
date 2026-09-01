@@ -3,16 +3,17 @@
 export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
-import { useKalender } from '../../hooks/useKalender'
-import { useAuth } from '../../hooks/useAuth'
-import { CentraalKalenderItem } from '../../lib/kalender'
-import { eersteVolgendeMaandag } from '../../lib/datum'
+import { useKalender } from '@/hooks/useKalender'
+import { useAuth } from '@/hooks/useAuth'
+import { CentraalKalenderItem } from '@/lib/kalender'
+import { eersteVolgendeMaandag } from '@/lib/datum'
 
 export default function KalenderPagina() {
   const { items, geladen, bezig, voegToe, update, verwijder } = useKalender(false)
   const { isAdmin, geladen: authGeladen } = useAuth()
   const [toonHistorisch, setToonHistorisch] = useState(false)
   const [toonFormulier, setToonFormulier] = useState(false)
+  const [categorieFilter, setCategorieFilter] = useState('')
   const [bewerkId, setBewerkId] = useState<string | null>(null)
   const [formulier, setFormulier] = useState({
     datum: eersteVolgendeMaandag(),
@@ -20,6 +21,7 @@ export default function KalenderPagina() {
     omschrijving: '',
     locatie: 'Gemeentehuis Bussum',
     personen: '',
+    categorie: '' as import('@/lib/kalender').KalenderCategorie,
   })
 
   const vandaag = new Date().toISOString().split('T')[0]
@@ -32,13 +34,13 @@ export default function KalenderPagina() {
   const toekomstItems = items.filter(i => i.datum >= vandaag)
 
   const resetFormulier = () => {
-    setFormulier({ datum: eersteVolgendeMaandag(), starttijd: '', omschrijving: '', locatie: 'Gemeentehuis Bussum', personen: '' })
+    setFormulier({ datum: eersteVolgendeMaandag(), starttijd: '', omschrijving: '', locatie: 'Gemeentehuis Bussum', personen: '', categorie: '' as import('@/lib/kalender').KalenderCategorie })
     setToonFormulier(false)
     setBewerkId(null)
   }
 
   const openBewerken = (item: CentraalKalenderItem) => {
-    setFormulier({ datum: item.datum, starttijd: item.starttijd || '', omschrijving: item.omschrijving, locatie: item.locatie, personen: item.personen })
+    setFormulier({ datum: item.datum, starttijd: item.starttijd || '', omschrijving: item.omschrijving, locatie: item.locatie, personen: item.personen, categorie: (item.categorie || '') as import('@/lib/kalender').KalenderCategorie })
     setBewerkId(item.id)
     setToonFormulier(true)
   }

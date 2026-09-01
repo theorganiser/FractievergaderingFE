@@ -3,10 +3,10 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ApiDocument } from '../../lib/types'
-import { haalRaadsmededelingen, haalAfgedaaneVragen, startSyncEnWacht, SyncLogItem, DEMO_RM, DEMO_VRAGEN } from '../../lib/api'
-import { formatDatumNL, formatDatumKort } from '../../lib/datum'
-import { useAuth } from '../../hooks/useAuth'
+import { ApiDocument } from '@/lib/types'
+import { haalRaadsmededelingen, haalAfgedaaneVragen, startSyncEnWacht, SyncLogItem, DEMO_RM, DEMO_VRAGEN } from '@/lib/api'
+import { formatDatumNL, formatDatumKort } from '@/lib/datum'
+import { useAuth } from '@/hooks/useAuth'
 
 type Filter = 'alle' | 'rm' | 'tq' | 'sq' | 'open_gdp'
 

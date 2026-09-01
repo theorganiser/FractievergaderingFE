@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useKalender } from '../hooks/useKalender'
-import { CentraalKalenderItem } from '../lib/kalender'
+import { useKalender } from '@/hooks/useKalender'
+import { CentraalKalenderItem } from '@/lib/kalender'
 
 interface KalenderTabProps {
   onVoegToeAanAgenda: (item: CentraalKalenderItem) => void

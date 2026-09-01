@@ -25,7 +25,7 @@ export default function Notulen({ notulen, onUpdate, magBewerken }: NotulenProps
   if (!notulen && !magBewerken) return null
 
   return (
-    <div style={{ marginTop: '28px', borderTop: '2px solid var(--blauw)', paddingTop: '20px' }}>
+    <div id="notulen" style={{ marginTop: '28px', borderTop: '2px solid var(--blauw)', paddingTop: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
         <h2 style={{ fontSize: '15px', color: 'var(--blauw)', fontWeight: 'bold', fontFamily: 'Arial', margin: 0 }}>
           📝 Notulen

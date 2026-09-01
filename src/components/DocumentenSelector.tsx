@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ApiDocument } from '../lib/types'
-import { haalRaadsmededelingen, haalAfgedaaneVragen, DEMO_RM, DEMO_VRAGEN } from '../lib/api'
-import { formatDatumNL } from '../lib/datum'
+import { ApiDocument } from '@/lib/types'
+import { haalRaadsmededelingen, haalAfgedaaneVragen, DEMO_RM, DEMO_VRAGEN } from '@/lib/api'
+import { formatDatumNL } from '@/lib/datum'
 
 interface DocumentenSelectorProps {
   onVoegRMToe: (docs: ApiDocument[]) => void

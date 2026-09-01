@@ -7,8 +7,8 @@ import {
   voegKalenderItemToe,
   updateKalenderItem,
   verwijderKalenderItem,
-} from '../lib/kalender'
-import { eersteVolgendeMaandag } from '../lib/datum'
+} from '@/lib/kalender'
+import { eersteVolgendeMaandag } from '@/lib/datum'
 
 export function useKalender(alleenToekomst = false) {
   const [items, setItems] = useState<CentraalKalenderItem[]>([])
@@ -55,6 +55,7 @@ export function useKalender(alleenToekomst = false) {
     omschrijving: '',
     locatie: '',
     personen: '',
+    categorie: '' as import('@/lib/kalender').KalenderCategorie,
   })
 
   return { items, geladen, bezig, laad, voegToe, update, verwijder, nieuwItem }

@@ -4,12 +4,12 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useAuth } from '../../hooks/useAuth'
-import { useVergaderingen } from '../../hooks/useVergaderingen'
-import { testVerbinding, haalSyncLog } from '../../lib/api'
-import { supabase } from '../../lib/supabase'
-import Melding from '../../components/Melding'
-import ExcelUpload from '../../components/ExcelUpload'
+import { useAuth } from '@/hooks/useAuth'
+import { useVergaderingen } from '@/hooks/useVergaderingen'
+import { testVerbinding, haalSyncLog } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
+import Melding from '@/components/Melding'
+import ExcelUpload from '@/components/ExcelUpload'
 
 type BeheerTab = 'algemeen' | 'excel' | 'gebruikers'
 
@@ -200,7 +200,7 @@ function GebruikersBeheer() {
   const [opslaan, setOpslaan] = useState(false)
 
   const laad = async () => {
-    const { supabase } = await import('../../lib/supabase')
+    const { supabase } = await import('@/lib/supabase')
     const { data } = await supabase.from('gebruikers').select('*').order('naam')
     setGebruikers(data || [])
     setLaden(false)
@@ -211,7 +211,7 @@ function GebruikersBeheer() {
   const voegToe = async () => {
     if (!nieuwNaam.trim()) return
     setOpslaan(true)
-    const { supabase } = await import('../../lib/supabase')
+    const { supabase } = await import('@/lib/supabase')
     await supabase.from('gebruikers').insert({ naam: nieuwNaam.trim(), rol: nieuwRol })
     setNieuwNaam('')
     setNieuwRol('fractielid')
@@ -220,20 +220,20 @@ function GebruikersBeheer() {
   }
 
   const updateRol = async (id: string, rol: string) => {
-    const { supabase } = await import('../../lib/supabase')
+    const { supabase } = await import('@/lib/supabase')
     await supabase.from('gebruikers').update({ rol }).eq('id', id)
     setGebruikers(prev => prev.map(g => g.id === id ? { ...g, rol } : g))
   }
 
   const toggleActief = async (id: string, actief: boolean) => {
-    const { supabase } = await import('../../lib/supabase')
+    const { supabase } = await import('@/lib/supabase')
     await supabase.from('gebruikers').update({ actief: !actief }).eq('id', id)
     setGebruikers(prev => prev.map(g => g.id === id ? { ...g, actief: !actief } : g))
   }
 
   const verwijder = async (id: string) => {
     if (!confirm('Gebruiker verwijderen?')) return
-    const { supabase } = await import('../../lib/supabase')
+    const { supabase } = await import('@/lib/supabase')
     await supabase.from('gebruikers').delete().eq('id', id)
     setGebruikers(prev => prev.filter(g => g.id !== id))
   }

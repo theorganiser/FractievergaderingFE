@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { KalenderItem } from '../lib/types'
+import { KalenderItem } from '@/lib/types'
 
 interface KalenderProps {
   items: KalenderItem[]

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifieerToken, COOKIE_LEZER, COOKIE_ADMIN, COOKIE_MODERATOR } from '../../../lib/auth'
+import { verifieerToken, COOKIE_LEZER, COOKIE_ADMIN, COOKIE_MODERATOR } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
   const lezerToken = req.cookies.get(COOKIE_LEZER)?.value

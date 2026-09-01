@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 
 const nieuweKey = () => Math.random().toString(36).substring(2) + Date.now().toString(36)
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { Agendapunt, Subpunt } from '../lib/types'
+import { Agendapunt, Subpunt } from '@/lib/types'
 import IngekomenStukkenInvoer from './IngekomentukkenInvoer'
 
 interface AgendaEditorProps {

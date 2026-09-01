@@ -4,20 +4,20 @@ export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useVergaderingen } from '../../../hooks/useVergaderingen'
-import { useAuth } from '../../../hooks/useAuth'
-import { ApiDocument } from '../../../lib/types'
-import AgendaEditor from '../../../components/AgendaEditor'
-import { CentraalKalenderItem } from '../../../lib/kalender'
-import DocumentenSelector from '../../../components/DocumentenSelector'
-import Leesweergave from '../../../components/Leesweergave'
-import Melding from '../../../components/Melding'
-import Actielijst from '../../../components/Actielijst'
-import SupabaseFout, { OpslaanFoutBanner } from '../../../components/SupabaseFout'
-import Stemlijst from '../../../components/Stemlijst'
-import KalenderTab from '../../../components/KalenderTab'
-import AanwezigheidChecklist from '../../../components/AanwezigheidChecklist'
-import Kalender from '../../../components/Kalender'
+import { useVergaderingen } from '@/hooks/useVergaderingen'
+import { useAuth } from '@/hooks/useAuth'
+import { ApiDocument } from '@/lib/types'
+import AgendaEditor from '@/components/AgendaEditor'
+import { CentraalKalenderItem } from '@/lib/kalender'
+import DocumentenSelector from '@/components/DocumentenSelector'
+import Leesweergave from '@/components/Leesweergave'
+import Melding from '@/components/Melding'
+import Actielijst from '@/components/Actielijst'
+import SupabaseFout, { OpslaanFoutBanner } from '@/components/SupabaseFout'
+import Stemlijst from '@/components/Stemlijst'
+import KalenderTab from '@/components/KalenderTab'
+import AanwezigheidChecklist from '@/components/AanwezigheidChecklist'
+import Kalender from '@/components/Kalender'
 
 interface Props { params: { id: string } }
 type Tabblad = 'details' | 'agenda' | 'acties' | 'kalender' | 'stemlijst' | 'documenten' | 'lees'
@@ -31,7 +31,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
     updatePunt, verwijderPunt, voegPuntToe,
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
     herorden,
-    voegActieToe, toggleActie, verwijderActie, neemActiesOver, updateActie,
+    voegActieToe, toggleActie, verwijderActie, neemActiesOver, updateActie, publiceer,
     voegKalenderItemToe, verwijderKalenderItem, updateKalenderItem,
   } = useVergaderingen()
 

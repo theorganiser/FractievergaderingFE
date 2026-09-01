@@ -3,9 +3,9 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
-import { useVergaderingOpToken } from '../../../hooks/useVergaderingen'
-import { formatDatum, formatDatumNL } from '../../../lib/datum'
-import { Vergadering } from '../../../lib/types'
+import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
+import { formatDatum, formatDatumNL } from '@/lib/datum'
+import { Vergadering } from '@/lib/types'
 
 interface Props { params: { token: string } }
 
@@ -262,7 +262,7 @@ function CentraleKalenderSectie({ donkerModus, kaartRand, basisFs, GOUD, GOUD_LI
   const [items, setItems] = useState<{ id: string; datum: string; omschrijving: string; locatie: string; personen: string }[]>([])
 
   useEffect(() => {
-    import('../../../lib/kalender').then(({ haalKalenderItems }) => {
+    import('@/lib/kalender').then(({ haalKalenderItems }) => {
       haalKalenderItems(true).then(data => setItems(data)).catch(() => {})
     })
   }, [])

@@ -4,13 +4,13 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useVergaderingen } from '../hooks/useVergaderingen'
-import { useAuth } from '../hooks/useAuth'
-import { formatDatum, sorteerOpDatum, eersteVolgendeMaandag, vandaag } from '../lib/datum'
-import { getSprekerNaam } from '../components/Toegangspoort'
-import Melding from '../components/Melding'
-import SupabaseFout, { OpslaanFoutBanner } from '../components/SupabaseFout'
-import { Vergadering } from '../lib/types'
+import { useVergaderingen } from '@/hooks/useVergaderingen'
+import { useAuth } from '@/hooks/useAuth'
+import { formatDatum, sorteerOpDatum, eersteVolgendeMaandag, vandaag } from '@/lib/datum'
+import { getSprekerNaam } from '@/components/Toegangspoort'
+import Melding from '@/components/Melding'
+import SupabaseFout, { OpslaanFoutBanner } from '@/components/SupabaseFout'
+import { Vergadering } from '@/lib/types'
 
 const MAX_WOORDEN = 15
 
@@ -313,6 +313,9 @@ export default function OverzichtPagina() {
             </div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', flexShrink: 0 }}>
               <Knop variant="outline" klein onClick={() => router.push(`/lees/${v.deeltoken}`)}>👁 Bekijken</Knop>
+              {v.notulen && (
+                <Knop variant="outline" klein onClick={() => router.push(`/lees/${v.deeltoken}#notulen`)}>📝 Notulen</Knop>
+              )}
               {/* Agendapunt indienen — voor iedereen bij toekomstige vergaderingen */}
               {toekomstig && (
                 <Knop variant="indienen" klein onClick={() => openIndienen(v)}>📝 Punt indienen</Knop>

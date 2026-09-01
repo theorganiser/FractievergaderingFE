@@ -3,9 +3,9 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '../../hooks/useAuth'
-import { supabase } from '../../lib/supabase'
-import { getSprekerNaam } from '../../components/Toegangspoort'
+import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
+import { getSprekerNaam } from '@/components/Toegangspoort'
 
 type Stap = 1 | 2 | 3
 
