@@ -28,18 +28,18 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (!gebruiker) {
-    return NextResponse.json(
-      { fout: 'Naam niet gevonden. Neem contact op met de beheerder.' },
-      { status: 401 }
-    )
+    return NextResponse.json({ fout: 'Naam niet gevonden. Neem contact op met de beheerder.' }, { status: 401 })
+  }
+  if (!gebruiker.actief) {
+    return NextResponse.json({ fout: 'Dit account is gedeactiveerd. Neem contact op met de beheerder.' }, { status: 401 })
   }
 
-  if (!gebruiker.actief) {
-    return NextResponse.json(
-      { fout: 'Dit account is gedeactiveerd. Neem contact op met de beheerder.' },
-      { status: 401 }
-    )
-  }
+  // Log de inlogpoging
+  await supabase.from('login_log').insert({
+    naam: gebruiker.naam,
+    rol: gebruiker.rol,
+    ingelogd_op: new Date().toISOString(),
+  })
 
   const lezerCookie = await maakLezerCookie(gebruiker.naam)
   const response = NextResponse.json({ ok: true, naam: gebruiker.naam, rol: gebruiker.rol })

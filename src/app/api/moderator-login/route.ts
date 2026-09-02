@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { maakModeratorCookie, maakLezerCookie } from '@/lib/auth'
 import { checkRateLimit } from '@/lib/ratelimit'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'onbekend'
@@ -18,8 +19,16 @@ export async function POST(req: NextRequest) {
   if (!juistWachtwoord) return NextResponse.json({ fout: 'Server configuratiefout.' }, { status: 500 })
   if (wachtwoord !== juistWachtwoord) return NextResponse.json({ fout: `Onjuist wachtwoord. Nog ${resterend} poging(en).` }, { status: 401 })
 
+  const gelogdeNaam = naam?.trim() || 'Moderator'
+
+  await supabase.from('login_log').insert({
+    naam: gelogdeNaam,
+    rol: 'moderator',
+    ingelogd_op: new Date().toISOString(),
+  })
+
   const moderatorCookie = await maakModeratorCookie()
-  const lezerCookie = await maakLezerCookie(naam || 'Moderator')
+  const lezerCookie = await maakLezerCookie(gelogdeNaam)
   const response = NextResponse.json({ ok: true })
   response.headers.append('Set-Cookie', moderatorCookie)
   response.headers.append('Set-Cookie', lezerCookie)

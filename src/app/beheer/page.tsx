@@ -4,14 +4,14 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useAuth } from '../../hooks/useAuth'
-import { useVergaderingen } from '../../hooks/useVergaderingen'
-import { testVerbinding, haalSyncLog } from '../../lib/api'
-import { supabase } from '../../lib/supabase'
-import Melding from '../../components/Melding'
-import ExcelUpload from '../../components/ExcelUpload'
+import { useAuth } from '@/hooks/useAuth'
+import { useVergaderingen } from '@/hooks/useVergaderingen'
+import { testVerbinding, haalSyncLog } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
+import Melding from '@/components/Melding'
+import ExcelUpload from '@/components/ExcelUpload'
 
-type BeheerTab = 'algemeen' | 'excel' | 'gebruikers'
+type BeheerTab = 'algemeen' | 'excel' | 'gebruikers' | 'loginlog'
 
 export default function BeheerPagina() {
   return (
@@ -28,14 +28,15 @@ function BeheerInhoud() {
   const { vergaderingen } = useVergaderingen()
   const [actieveTab, setActieveTab] = useState<BeheerTab>(() =>
     searchParams.get('tab') === 'excel' ? 'excel' :
-    searchParams.get('tab') === 'gebruikers' ? 'gebruikers' : 'algemeen'
+    searchParams.get('tab') === 'gebruikers' ? 'gebruikers' :
+    searchParams.get('tab') === 'loginlog' ? 'loginlog' : 'algemeen'
   )
   const [apiStatus, setApiStatus] = useState<'idle' | 'laden' | 'ok' | 'fout'>('idle')
   const [syncLog, setSyncLog] = useState<unknown[]>([])
   const [melding, setMelding] = useState<{ type: 'succes' | 'fout'; tekst: string } | null>(null)
 
   if (geladen && !isAdmin) {
-    router.push('/login')
+    router.push('/inloggen?admin=1')
     return null
   }
 
@@ -79,6 +80,7 @@ function BeheerInhoud() {
           { key: 'algemeen', label: '⚙️ Algemeen' },
           { key: 'excel', label: '📊 Excel upload' },
           { key: 'gebruikers', label: '👥 Gebruikers' },
+          { key: 'loginlog', label: '🕓 Login logboek' },
         ] as { key: BeheerTab; label: string }[]).map(t => (
           <button key={t.key} onClick={() => setActieveTab(t.key)}
             style={{ flex: 1, padding: '8px 12px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial', fontWeight: actieveTab === t.key ? '700' : '400', background: actieveTab === t.key ? '#4a1a5c' : 'transparent', color: actieveTab === t.key ? 'white' : 'var(--tekst-zacht)', transition: 'all 0.15s' }}>
@@ -188,6 +190,109 @@ function BeheerInhoud() {
         <GebruikersBeheer />
       )}
 
+      {/* Tab: Login logboek */}
+      {actieveTab === 'loginlog' && (
+        <LoginLogboek />
+      )}
+
+    </div>
+  )
+}
+
+const PAGINA_GROOTTE = 50
+
+function LoginLogboek() {
+  const [regels, setRegels] = useState<{ id: string; naam: string; rol: string; ingelogd_op: string }[]>([])
+  const [laden, setLaden] = useState(true)
+  const [meerLaden, setMeerLaden] = useState(false)
+  const [alleGeladen, setAlleGeladen] = useState(false)
+  const [naamFilter, setNaamFilter] = useState('alle')
+
+  const laad = async (pagina: number) => {
+    const { supabase } = await import('@/lib/supabase')
+    const van = pagina * PAGINA_GROOTTE
+    const tot = van + PAGINA_GROOTTE - 1
+    const { data } = await supabase
+      .from('login_log')
+      .select('*')
+      .order('ingelogd_op', { ascending: false })
+      .range(van, tot)
+    return data || []
+  }
+
+  useEffect(() => {
+    (async () => {
+      const eersteRegels = await laad(0)
+      setRegels(eersteRegels)
+      setAlleGeladen(eersteRegels.length < PAGINA_GROOTTE)
+      setLaden(false)
+    })()
+  }, [])
+
+  const laadMeer = async () => {
+    setMeerLaden(true)
+    const volgendeRegels = await laad(Math.floor(regels.length / PAGINA_GROOTTE))
+    setRegels(prev => [...prev, ...volgendeRegels])
+    setAlleGeladen(volgendeRegels.length < PAGINA_GROOTTE)
+    setMeerLaden(false)
+  }
+
+  const rolKleur = (rol: string) => ({
+    beheerder: { bg: '#f0e8ff', kleur: '#4a1a5c', rand: '#c0a0d8', label: '⚙️ Beheerder' },
+    moderator: { bg: '#e8f0f8', kleur: '#1a4a7a', rand: '#a0c0e0', label: '✏️ Moderator' },
+    fractielid: { bg: '#f0f8f0', kleur: '#1a5c2a', rand: '#a0d8b0', label: '👤 Fractielid' },
+  }[rol] || { bg: '#f5f5f5', kleur: '#888', rand: '#ddd', label: rol })
+
+  const namen = Array.from(new Set(regels.map(r => r.naam))).sort()
+  const zichtbareRegels = naamFilter === 'alle' ? regels : regels.filter(r => r.naam === naamFilter)
+
+  return (
+    <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid var(--rand)', marginTop: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+        <h2 style={{ fontSize: '16px', color: 'var(--blauw)', fontFamily: 'Arial', fontWeight: '600', margin: 0 }}>
+          🕓 Login logboek
+        </h2>
+        {namen.length > 0 && (
+          <select value={naamFilter} onChange={e => setNaamFilter(e.target.value)}
+            style={{ padding: '5px 10px', border: '1px solid var(--rand)', borderRadius: '6px', fontSize: '12px', fontFamily: 'Arial' }}>
+            <option value="alle">Alle namen</option>
+            {namen.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        )}
+      </div>
+
+      {laden ? (
+        <div style={{ color: 'var(--tekst-zacht)', fontFamily: 'Arial', fontSize: '13px' }}>Laden...</div>
+      ) : zichtbareRegels.length === 0 ? (
+        <div style={{ color: 'var(--tekst-zacht)', fontFamily: 'Arial', fontSize: '13px' }}>Nog geen logins geregistreerd.</div>
+      ) : (
+        <>
+          <div style={{ border: '1px solid var(--rand)', borderRadius: '8px', overflow: 'hidden' }}>
+            {zichtbareRegels.map((r, idx) => {
+              const rk = rolKleur(r.rol)
+              const datum = new Date(r.ingelogd_op)
+              return (
+                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderBottom: idx < zichtbareRegels.length - 1 ? '1px solid #f0ede8' : 'none' }}>
+                  <span style={{ flex: 1, fontSize: '14px', fontFamily: 'Arial', fontWeight: '600', color: 'var(--blauw)' }}>{r.naam}</span>
+                  <span style={{ fontSize: '11px', background: rk.bg, color: rk.kleur, border: `1px solid ${rk.rand}`, padding: '2px 8px', borderRadius: '5px', fontFamily: 'Arial' }}>{rk.label}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', flexShrink: 0, minWidth: '140px', textAlign: 'right' }}>
+                    {datum.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })} · {datum.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+
+          {!alleGeladen && naamFilter === 'alle' && (
+            <div style={{ textAlign: 'center', marginTop: '14px' }}>
+              <button onClick={laadMeer} disabled={meerLaden}
+                style={{ background: 'white', color: 'var(--blauw)', border: '1px solid var(--blauw)', padding: '7px 16px', borderRadius: '8px', cursor: meerLaden ? 'not-allowed' : 'pointer', fontSize: '13px', fontFamily: 'Arial', opacity: meerLaden ? 0.6 : 1 }}>
+                {meerLaden ? '⏳ Laden...' : 'Meer laden'}
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

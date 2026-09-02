@@ -31,7 +31,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
     updatePunt, verwijderPunt, voegPuntToe,
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
     herorden,
-    voegActieToe, toggleActie, verwijderActie, neemActiesOver, updateActie,
+    voegActieToe, toggleActie, verwijderActie, neemActiesOver, updateActie, publiceer,
     voegKalenderItemToe, verwijderKalenderItem, updateKalenderItem,
   } = useVergaderingen()
 

@@ -43,3 +43,7 @@ SELECT 'Kalender tabel aangemaakt ✓' as status;
 -- Voeg starttijd kolom toe aan bestaande tabel
 ALTER TABLE kalender_items ADD COLUMN IF NOT EXISTS starttijd TEXT DEFAULT '';
 SELECT 'Starttijd kolom toegevoegd ✓' as status;
+
+-- Voeg categorie kolom toe aan kalender_items
+ALTER TABLE kalender_items ADD COLUMN IF NOT EXISTS categorie TEXT DEFAULT '';
+SELECT 'Categorie kolom toegevoegd aan kalender_items ✓' as status;

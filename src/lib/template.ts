@@ -14,34 +14,15 @@ export const TEMPLATE_PUNTEN: Agendapunt[] = [
   },
   { id: 5, titel: 'Permanente campagne ideeën / bespreekpunten', toelichting: '', subpunten: [] },
   { id: 6, titel: 'Poll', toelichting: '', subpunten: [] },
-  { id: 7, titel: 'Te bespreken', toelichting: '', subpunten: [] },
-  { id: 8, titel: 'Actualiteiten', toelichting: '', subpunten: [] },
-  { id: 9, titel: 'Raadsmededelingen', toelichting: '', subpunten: [], apiType: 'raadsmededelingen' },
-  { id: 10, titel: 'Technische en schriftelijke vragen', toelichting: '', subpunten: [], apiType: 'vragen' },
-  { id: 11, titel: 'Ingekomen stukken / e-mails', toelichting: '', subpunten: [] },
-  { id: 12, titel: 'Rondvraag', toelichting: '(geen nieuwe onderwerpen)', subpunten: [] },
-  { id: 13, titel: 'Sluiting', toelichting: '', subpunten: [] },
+  { id: 7, titel: 'Terugkoppeling gesprekken', toelichting: '', subpunten: [] },
+  { id: 8, titel: 'Te bespreken', toelichting: '', subpunten: [] },
+  { id: 9, titel: 'Actualiteiten', toelichting: '', subpunten: [] },
+  { id: 10, titel: 'Raadsmededelingen', toelichting: '', subpunten: [], apiType: 'raadsmededelingen' },
+  { id: 11, titel: 'Technische en schriftelijke vragen', toelichting: '', subpunten: [], apiType: 'vragen' },
+  { id: 12, titel: 'Ingekomen stukken / e-mails', toelichting: '', subpunten: [] },
+  { id: 13, titel: 'Rondvraag', toelichting: '(geen nieuwe onderwerpen)', subpunten: [] },
+  { id: 14, titel: 'Sluiting', toelichting: '', subpunten: [] },
 ]
-
-export const POLITIEKE_AVOND_PUNT = (datum: string, url: string): Agendapunt => ({
-  id: 0,
-  titel: `Politieke Avond ${datum}`,
-  toelichting: '',
-  url: url || undefined,
-  puntType: 'politieke_avond',
-  rvDatum: datum,
-  subpunten: [],
-})
-
-export const RAADSVERGADERING_PUNT = (datum: string, url: string): Agendapunt => ({
-  id: 0,
-  titel: `Raadsvergadering ${datum}`,
-  toelichting: '',
-  url: url || undefined,
-  puntType: 'raadsvergadering',
-  rvDatum: datum,
-  subpunten: [],
-})
 
 export function bouwPuntenMetOpties(
   heeftPA: boolean, paDatum: string, paUrl: string,
@@ -49,8 +30,14 @@ export function bouwPuntenMetOpties(
 ): Agendapunt[] {
   const basis = JSON.parse(JSON.stringify(TEMPLATE_PUNTEN)) as Agendapunt[]
   const extra: Agendapunt[] = []
-  if (heeftPA) extra.push(POLITIEKE_AVOND_PUNT(paDatum, paUrl))
-  if (heeftRV) extra.push(RAADSVERGADERING_PUNT(rvDatum, rvUrl))
+  if (heeftPA) extra.push({
+    id: 0, titel: `Politieke Avond ${paDatum}`, toelichting: '',
+    url: paUrl || undefined, puntType: 'politieke_avond', rvDatum: paDatum, subpunten: [],
+  })
+  if (heeftRV) extra.push({
+    id: 0, titel: `Raadsvergadering ${rvDatum}`, toelichting: '',
+    url: rvUrl || undefined, puntType: 'raadsvergadering', rvDatum: rvDatum, subpunten: [],
+  })
   if (extra.length === 0) {
     basis.forEach((p, i) => { p.id = i + 1 })
     return basis

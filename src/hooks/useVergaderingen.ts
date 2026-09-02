@@ -31,10 +31,10 @@ export function useVergaderingen() {
 
   useEffect(() => { laad() }, [laad])
 
-  const slaOp = useCallback((vergadering: Vergadering) => {
+  const slaOp = useCallback((vergadering: Vergadering, verhoogVersie = false) => {
     const bijgewerkt = {
       ...vergadering,
-      versie: (vergadering.versie || 1) + 1,
+      versie: verhoogVersie ? (vergadering.versie || 1) + 1 : (vergadering.versie || 1),
       bijgewerkt: new Date().toISOString(),
     }
     setVergaderingen(huidig =>
@@ -269,6 +269,16 @@ export function useVergaderingen() {
     return vergaderingen.find(v => v.deeltoken === token)
   }, [vergaderingen])
 
+  const publiceer = useCallback(async (vergaderingId: string): Promise<number> => {
+    const v = vergaderingen.find(x => x.id === vergaderingId)
+    if (!v) return 0
+    const nieuweVersie = (v.versie || 1) + 1
+    const bijgewerkt = { ...v, versie: nieuweVersie, bijgewerkt: new Date().toISOString() }
+    setVergaderingen(huidig => huidig.map(x => x.id === vergaderingId ? bijgewerkt : x))
+    await slaVergaderingOp(bijgewerkt)
+    return nieuweVersie
+  }, [vergaderingen])
+
   return {
     vergaderingen, geladen, opslaan, supabaseFout, opslaanFout,
     herlaad: laad,
@@ -276,7 +286,7 @@ export function useVergaderingen() {
     maakNieuwe, kopieer, verwijder, update, updatePunten, herorden, vernieuwToken,
     voegPuntToe, verwijderPunt, updatePunt,
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
-    voegActieToe, toggleActie, verwijderActie, updateActie, neemActiesOver,
+    voegActieToe, toggleActie, verwijderActie, updateActie, neemActiesOver, publiceer,
     voegKalenderItemToe, verwijderKalenderItem, updateKalenderItem,
     vindOpToken,
   }

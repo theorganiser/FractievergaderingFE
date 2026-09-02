@@ -5,14 +5,25 @@ export const dynamic = 'force-dynamic'
 import { useState } from 'react'
 import { useKalender } from '@/hooks/useKalender'
 import { useAuth } from '@/hooks/useAuth'
-import { CentraalKalenderItem } from '@/lib/kalender'
+import { CentraalKalenderItem, KalenderCategorie } from '@/lib/kalender'
 import { eersteVolgendeMaandag } from '@/lib/datum'
+
+const CATEGORIE_OPTIES: { waarde: KalenderCategorie; label: string; bg: string; kleur: string; rand: string }[] = [
+  { waarde: 'belangrijk', label: '🔴 Belangrijk', bg: '#fdf0ef', kleur: '#c0392b', rand: '#e8a090' },
+  { waarde: 'uitnodiging_regio', label: '🔵 Uitnodigingen regio', bg: '#e8f0f8', kleur: '#1a4a7a', rand: '#a0c0e0' },
+  { waarde: 'overige_uitnodigingen', label: '🟣 Overige uitnodigingen', bg: '#f5eeff', kleur: '#4a1a5c', rand: '#c0a0d8' },
+]
+
+function categorieInfo(categorie: string) {
+  return CATEGORIE_OPTIES.find(c => c.waarde === categorie) || null
+}
 
 export default function KalenderPagina() {
   const { items, geladen, bezig, voegToe, update, verwijder } = useKalender(false)
   const { isAdmin, geladen: authGeladen } = useAuth()
   const [toonHistorisch, setToonHistorisch] = useState(false)
   const [toonFormulier, setToonFormulier] = useState(false)
+  const [categorieFilter, setCategorieFilter] = useState('')
   const [bewerkId, setBewerkId] = useState<string | null>(null)
   const [formulier, setFormulier] = useState({
     datum: eersteVolgendeMaandag(),
@@ -20,25 +31,22 @@ export default function KalenderPagina() {
     omschrijving: '',
     locatie: 'Gemeentehuis Bussum',
     personen: '',
+    categorie: '' as import('@/lib/kalender').KalenderCategorie,
   })
 
   const vandaag = new Date().toISOString().split('T')[0]
 
-  const zichtbareItems = toonHistorisch
-    ? items
-    : items.filter(i => i.datum >= vandaag)
-
-  const verledenItems = items.filter(i => i.datum < vandaag)
-  const toekomstItems = items.filter(i => i.datum >= vandaag)
+  const verledenItems = items.filter(i => i.datum < vandaag).filter(i => !categorieFilter || i.categorie === categorieFilter)
+  const toekomstItems = items.filter(i => i.datum >= vandaag).filter(i => !categorieFilter || i.categorie === categorieFilter)
 
   const resetFormulier = () => {
-    setFormulier({ datum: eersteVolgendeMaandag(), starttijd: '', omschrijving: '', locatie: 'Gemeentehuis Bussum', personen: '' })
+    setFormulier({ datum: eersteVolgendeMaandag(), starttijd: '', omschrijving: '', locatie: 'Gemeentehuis Bussum', personen: '', categorie: '' as import('@/lib/kalender').KalenderCategorie })
     setToonFormulier(false)
     setBewerkId(null)
   }
 
   const openBewerken = (item: CentraalKalenderItem) => {
-    setFormulier({ datum: item.datum, starttijd: item.starttijd || '', omschrijving: item.omschrijving, locatie: item.locatie, personen: item.personen })
+    setFormulier({ datum: item.datum, starttijd: item.starttijd || '', omschrijving: item.omschrijving, locatie: item.locatie, personen: item.personen, categorie: (item.categorie || '') as import('@/lib/kalender').KalenderCategorie })
     setBewerkId(item.id)
     setToonFormulier(true)
   }
@@ -98,6 +106,30 @@ export default function KalenderPagina() {
 
       <div style={{ height: '2px', background: 'linear-gradient(to right, var(--blauw), #a89060, transparent)', margin: '12px 0 20px' }} />
 
+      {/* Categorie filters */}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <button onClick={() => setCategorieFilter('')}
+          style={{
+            padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial', fontWeight: categorieFilter === '' ? '700' : '400',
+            background: categorieFilter === '' ? 'var(--blauw)' : 'white',
+            color: categorieFilter === '' ? 'white' : 'var(--tekst-zacht)',
+            border: `1px solid ${categorieFilter === '' ? 'var(--blauw)' : 'var(--rand)'}`,
+          }}>
+          Alle evenementen
+        </button>
+        {CATEGORIE_OPTIES.map(c => (
+          <button key={c.waarde} onClick={() => setCategorieFilter(categorieFilter === c.waarde ? '' : c.waarde)}
+            style={{
+              padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial', fontWeight: categorieFilter === c.waarde ? '700' : '400',
+              background: categorieFilter === c.waarde ? c.kleur : c.bg,
+              color: categorieFilter === c.waarde ? 'white' : c.kleur,
+              border: `1px solid ${c.rand}`,
+            }}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+
       {/* Formulier */}
       {toonFormulier && (
         <div style={{ background: 'white', border: '2px solid var(--blauw)', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
@@ -119,6 +151,16 @@ export default function KalenderPagina() {
               <label style={labelStijl}>Locatie</label>
               <input style={invoerStijl} placeholder="Locatie" value={formulier.locatie}
                 onChange={e => setFormulier(f => ({ ...f, locatie: e.target.value }))} />
+            </div>
+            <div>
+              <label style={labelStijl}>Categorie</label>
+              <select style={invoerStijl} value={formulier.categorie}
+                onChange={e => setFormulier(f => ({ ...f, categorie: e.target.value as KalenderCategorie }))}>
+                <option value="">Geen categorie</option>
+                {CATEGORIE_OPTIES.map(c => (
+                  <option key={c.waarde} value={c.waarde}>{c.label}</option>
+                ))}
+              </select>
             </div>
           </div>
           <div style={{ marginBottom: '12px' }}>
@@ -196,6 +238,7 @@ function KalenderRij({ item, isAdmin, isVandaag, isMorgen, historisch, formatDat
   onBewerk: () => void
   onVerwijder: () => void
 }) {
+  const categorieBadge = item.categorie ? categorieInfo(item.categorie) : null
   return (
     <div style={{
       background: isVandaag ? '#fff8e8' : isMorgen ? '#f5eeff' : 'white',
@@ -226,6 +269,11 @@ function KalenderRij({ item, isAdmin, isVandaag, isMorgen, historisch, formatDat
           {item.starttijd && (
             <span style={{ fontSize: '13px', fontFamily: 'Arial', fontWeight: '700', color: isVandaag ? '#a86a00' : 'var(--blauw)', background: isVandaag ? '#fff0c0' : '#eee8f8', padding: '2px 8px', borderRadius: '4px', flexShrink: 0 }}>
               🕐 {item.starttijd}
+            </span>
+          )}
+          {categorieBadge && (
+            <span style={{ fontSize: '10px', background: categorieBadge.bg, color: categorieBadge.kleur, border: `1px solid ${categorieBadge.rand}`, padding: '2px 7px', borderRadius: '3px', fontFamily: 'Arial', fontWeight: 'bold', flexShrink: 0 }}>
+              {categorieBadge.label}
             </span>
           )}
           <span style={{ fontSize: '15px', fontFamily: 'Georgia, serif', color: 'var(--tekst)' }}>

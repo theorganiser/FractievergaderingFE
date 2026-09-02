@@ -1,5 +1,7 @@
 import { supabase } from './supabase'
 
+export type KalenderCategorie = 'belangrijk' | 'uitnodiging_regio' | 'overige_uitnodigingen' | ''
+
 export interface CentraalKalenderItem {
   id: string
   datum: string
@@ -7,6 +9,7 @@ export interface CentraalKalenderItem {
   omschrijving: string
   locatie: string
   personen: string
+  categorie: KalenderCategorie
   aangemaakt_op: string
   bijgewerkt_op: string
 }

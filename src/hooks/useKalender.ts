@@ -55,6 +55,7 @@ export function useKalender(alleenToekomst = false) {
     omschrijving: '',
     locatie: '',
     personen: '',
+    categorie: '' as import('@/lib/kalender').KalenderCategorie,
   })
 
   return { items, geladen, bezig, laad, voegToe, update, verwijder, nieuwItem }
