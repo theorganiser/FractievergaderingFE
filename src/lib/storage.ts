@@ -81,6 +81,7 @@ function rijNaarVergadering(rij: Record<string, unknown>): Vergadering {
     deeltoken: rij.deeltoken as string,
     aangemaakt: rij.aangemaakt as string,
     bijgewerkt: rij.bijgewerkt as string,
+    notulen: (rij.notulen as string) || '',
   }
 }
 
@@ -106,6 +107,7 @@ function vergaderingNaarRij(v: Vergadering): Record<string, unknown> {
     raadsvergadering_url: v.raadsvergaderingUrl,
     deeltoken: v.deeltoken,
     aangemaakt: v.aangemaakt,
+    notulen: v.notulen || '',
   }
 }
 
