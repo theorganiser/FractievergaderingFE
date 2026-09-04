@@ -76,5 +76,6 @@ ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS politieke_avond_url TEXT DEFA
 ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS heeft_raadsvergadering BOOLEAN DEFAULT false;
 ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS raadsvergadering_datum TEXT DEFAULT '';
 ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS raadsvergadering_url TEXT DEFAULT '';
+ALTER TABLE vergaderingen ADD COLUMN IF NOT EXISTS notulen TEXT DEFAULT '';
 
 SELECT 'Update v2 uitgevoerd ✓' as status;

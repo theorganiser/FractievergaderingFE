@@ -94,6 +94,7 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false }: 
                           )}
                           {sub.rvNummer && <span style={{ fontSize: '13px', fontFamily: 'Arial', color: '#5a1a8a', fontWeight: 'bold', flexShrink: 0, minWidth: '60px' }}>{sub.rvNummer}</span>}
                           <span style={{ fontSize: '14px', flex: 1 }}>{sub.titel}</span>
+                          {sub.woordvoerder && <span style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontStyle: 'italic', fontFamily: 'Arial', flexShrink: 0 }}>({sub.woordvoerder})</span>}
                           {sub.inStemlijst && <span style={{ fontSize: '10px', background: '#e8f5ed', color: '#2d7a4f', border: '1px solid #a8d8b5', padding: '1px 5px', borderRadius: '3px', fontFamily: 'Arial', flexShrink: 0 }}>Stemlijst</span>}
                         </div>
                       )

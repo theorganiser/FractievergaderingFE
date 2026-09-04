@@ -199,8 +199,8 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
                             {sub.titel}
                           </span>
                         )}
-                        {/* PA: toon woordvoerder */}
-                        {isPA && sub.woordvoerder && (
+                        {/* PA + RV: toon woordvoerder */}
+                        {(isPA || isRV) && sub.woordvoerder && (
                           <span style={{ fontSize: '12px', color: donkerModus ? 'rgba(255,255,255,0.5)' : '#888', fontStyle: 'italic', fontFamily: 'Arial', flexShrink: 0 }}>
                             {sub.woordvoerder}
                           </span>

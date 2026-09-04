@@ -314,7 +314,7 @@ export default function OverzichtPagina() {
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', flexShrink: 0 }}>
               <Knop variant="outline" klein onClick={() => router.push(`/lees/${v.deeltoken}`)}>👁 Bekijken</Knop>
               {v.notulen && (
-                <Knop variant="outline" klein onClick={() => router.push(`/lees/${v.deeltoken}#notulen`)}>📝 Notulen</Knop>
+                <Knop variant="outline" klein onClick={() => router.push(`/notulen/${v.deeltoken}`)}>📝 Notulen</Knop>
               )}
               {/* Agendapunt indienen — voor iedereen bij toekomstige vergaderingen */}
               {toekomstig && (

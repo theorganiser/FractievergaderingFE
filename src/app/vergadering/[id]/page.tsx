@@ -38,6 +38,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
   const [tabblad, setTabblad] = useState<Tabblad>('details')
   const [melding, setMelding] = useState<{ type: 'succes' | 'info' | 'fout'; tekst: string } | null>(null)
   const [toonOvernemen, setToonOvernemen] = useState(false)
+  const [publiceerBezig, setPubliceerBezig] = useState(false)
 
   if (!geladen || !authGeladen) return <div style={{ textAlign: 'center', padding: '80px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>⏳ Laden...</div>
   if (!isAdmin && !isModerator) { router.push('/inloggen?admin=1'); return null }
@@ -55,6 +56,17 @@ export default function VergaderingEditorPagina({ params }: Props) {
       setMelding({ type: 'succes', tekst: 'Deellink gekopieerd!' })
       setTimeout(() => setMelding(null), 3000)
     })
+  }
+
+  const handlePubliceer = async () => {
+    if (!confirm(`Publiceren maakt van deze agenda versie ${(v.versie || 1) + 1}. Doorgaan?`)) return
+    setPubliceerBezig(true)
+    const nieuweVersie = await publiceer(id)
+    setPubliceerBezig(false)
+    if (nieuweVersie) {
+      setMelding({ type: 'succes', tekst: `✓ Gepubliceerd als versie ${nieuweVersie}` })
+      setTimeout(() => setMelding(null), 4000)
+    }
   }
 
   const voegDocsDirectToe = async (geselecteerd: ApiDocument[], doelType: 'raadsmededelingen' | 'vragen') => {
@@ -131,6 +143,12 @@ export default function VergaderingEditorPagina({ params }: Props) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <h1 style={{ fontSize: '20px', color: 'var(--blauw)', fontWeight: 'normal', margin: 0 }}>{v.titel || 'Vergadering'}</h1>
             <span style={{ fontSize: '11px', background: '#f0ede8', color: 'var(--tekst-zacht)', padding: '2px 7px', borderRadius: '3px', fontFamily: 'Arial' }}>versie {v.versie || 1}</span>
+            {isAdmin && (
+              <button onClick={handlePubliceer} disabled={publiceerBezig}
+                style={{ fontSize: '11px', background: '#e8f5ed', color: '#2d7a4f', border: '1px solid #a8d8b5', padding: '3px 9px', borderRadius: '4px', fontFamily: 'Arial', fontWeight: '600', cursor: publiceerBezig ? 'not-allowed' : 'pointer', opacity: publiceerBezig ? 0.6 : 1 }}>
+                {publiceerBezig ? '⏳ Bezig...' : '🚀 Publiceer'}
+              </button>
+            )}
           </div>
         </div>
         {opslaan && <span style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>💾 Opslaan...</span>}

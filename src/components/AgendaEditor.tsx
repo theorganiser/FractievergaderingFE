@@ -315,7 +315,21 @@ function RVEditor({ punt, onUpdate, onUpdateSub, onVerwijderSub }: {
     const rvNr = `${prefix}26-${50 + bestaande}`
     // Koppel automatisch aan het raadsvoorstel waar de + M/A op geklikt is
     const ouderRvNummer = punt.subpunten[parentIndex]?.rvNummer || ''
-    onUpdate({ subpunten: [...punt.subpunten, { id: `${type}-${parentIndex}-${bestaande}`, titel: '', rvNummer: rvNr, inStemlijst: true, subtype: type, url: '', gekoppeldAanRv: ouderRvNummer, stemlijstKey: nieuweKey() }] })
+    const nieuweItem = { id: `${type}-${parentIndex}-${bestaande}`, titel: '', rvNummer: rvNr, inStemlijst: true, subtype: type, url: '', gekoppeldAanRv: ouderRvNummer, stemlijstKey: nieuweKey() }
+
+    // Invoegpositie: direct na de laatste al bestaande motie/amendement die bij
+    // hetzelfde raadsvoorstel hoort, of anders direct na het raadsvoorstel zelf.
+    // Stopt zodra het volgende raadsvoorstel (normaal subpunt) begint.
+    let invoegIndex = parentIndex + 1
+    for (let i = parentIndex + 1; i < punt.subpunten.length; i++) {
+      const item = punt.subpunten[i]
+      if (!item.subtype || item.subtype === 'normaal') break
+      if (item.gekoppeldAanRv === ouderRvNummer) invoegIndex = i + 1
+    }
+
+    const nieuweSubpunten = [...punt.subpunten]
+    nieuweSubpunten.splice(invoegIndex, 0, nieuweItem)
+    onUpdate({ subpunten: nieuweSubpunten })
   }
 
   return (
@@ -363,10 +377,16 @@ function RVEditor({ punt, onUpdate, onUpdateSub, onVerwijderSub }: {
                   placeholder="Woordvoerder" />
               )}
               {isSubtype && (
+                <input className="invoer-inline" style={{ width: '90px', flexShrink: 0, fontSize: '12px' }}
+                  value={sub.woordvoerder || ''} onChange={e => onUpdateSub(si, { woordvoerder: e.target.value })}
+                  onMouseDown={e => e.stopPropagation()}
+                  placeholder="Woordvoerder" />
+              )}
+              {isSubtype && (
                 <select
                   value={sub.gekoppeldAanRv || ''}
                   onChange={e => onUpdateSub(si, { gekoppeldAanRv: e.target.value })}
-                  style={{ fontSize: '11px', padding: '4px 6px', border: '1px solid var(--rand)', borderRadius: '5px', fontFamily: 'Arial', color: 'var(--tekst-zacht)', background: 'white', flexShrink: 0, maxWidth: '100px' }}
+                  style={{ fontSize: '11px', padding: '4px 6px', border: '1px solid var(--rand)', borderRadius: '5px', fontFamily: 'Arial', color: 'var(--tekst-zacht)', background: 'white', flexShrink: 0, maxWidth: '90px' }}
                   title="Koppel aan raadsvoorstel"
                 >
                   <option value="">Los</option>

@@ -49,6 +49,7 @@ export default function Topbalk() {
     { href: '/', label: '📅 Vergaderingen' },
     { href: '/documenten', label: '📄 Documenten' },
     { href: '/kalender', label: '🗓 Kalender' },
+    { href: '/portefeuilles', label: '🗂 Portefeuilles' },
     ...(isAdmin ? [{ href: '/nieuws', label: '📰 Nieuws' }] : []),
     { href: '/persberichten', label: '✍️ Persberichten' },
     ...(isAdmin ? [{ href: '/beheer', label: '⚙️ Beheer' }] : []),
