@@ -315,5 +315,25 @@ export function useVergaderingOpToken(token: string) {
     await slaVergaderingOp(bijgewerkt)
   }, [vergadering])
 
-  return { vergadering, geladen, fout, herlaad: laad, updateNotulen }
+  // Voegt een losse notitie toe aan een hoofdpunt (subIndex null) of een subpunt (subIndex gezet).
+  // Zichtbaar en toevoegbaar door alle fractieleden, niet alleen beheerder/moderator.
+  const voegNotitieToe = useCallback(async (puntId: number, subIndex: number | null, naam: string, tekst: string) => {
+    if (!vergadering || !tekst.trim()) return
+    const nieuwePunten = JSON.parse(JSON.stringify(vergadering.punten)) as Vergadering['punten']
+    const punt = nieuwePunten.find(p => p.id === puntId)
+    if (!punt) return
+    const nieuweNotitie = { id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, naam: naam || 'Onbekend', tekst: tekst.trim(), datum: new Date().toISOString() }
+    if (subIndex === null) {
+      punt.notities = [...(punt.notities || []), nieuweNotitie]
+    } else {
+      const sub = punt.subpunten[subIndex]
+      if (!sub) return
+      sub.notities = [...(sub.notities || []), nieuweNotitie]
+    }
+    const bijgewerkt = { ...vergadering, punten: nieuwePunten, bijgewerkt: new Date().toISOString() }
+    setVergadering(bijgewerkt)
+    await slaVergaderingOp(bijgewerkt)
+  }, [vergadering])
+
+  return { vergadering, geladen, fout, herlaad: laad, updateNotulen, voegNotitieToe }
 }

@@ -1,3 +1,10 @@
+export interface Notitie {
+  id: string
+  naam: string
+  tekst: string
+  datum: string // ISO timestamp
+}
+
 export interface Subpunt {
   id: string
   titel: string
@@ -14,6 +21,7 @@ export interface Subpunt {
   subtype?: 'motie' | 'amendement' | 'normaal'
   gekoppeldAanRv?: string  // rvNummer van het gekoppelde raadsvoorstel (voor moties/amendementen)
   stemlijstKey?: string    // unieke key voor stemlijst opslag (UUID, nooit veranderend)
+  notities?: Notitie[]     // losse notities per fractielid, zichtbaar voor iedereen
 }
 
 export interface Agendapunt {
@@ -27,6 +35,7 @@ export interface Agendapunt {
   puntType?: 'algemeen' | 'politieke_avond' | 'raadsvergadering'
   // Raadsvergadering datum
   rvDatum?: string
+  notities?: Notitie[]     // losse notities per fractielid, zichtbaar voor iedereen
 }
 
 export interface ActieItem {

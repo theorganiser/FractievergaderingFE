@@ -192,7 +192,7 @@ export default function KalenderPagina() {
         <div style={{ textAlign: 'center', padding: '60px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>
           <div style={{ fontSize: '48px', marginBottom: '12px' }}>📅</div>
           <p>Geen aankomende evenementen.</p>
-          {isAdmin && <p style={{ marginTop: '8px', fontSize: '13px' }}>Gebruik de knop rechtsboven om er een toe te voegen.</p>}
+          {authGeladen && <p style={{ marginTop: '8px', fontSize: '13px' }}>Gebruik de knop rechtsboven om er een toe te voegen.</p>}
         </div>
       ) : (
         <div>
@@ -301,17 +301,17 @@ function KalenderRij({ item, isAdmin, isVandaag, isMorgen, historisch, formatDat
         </div>
       </div>
 
-      {/* Acties - alleen admin */}
-      {isAdmin && (
-        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-          <button onClick={onBewerk} style={{ background: 'none', border: '1px solid var(--rand)', color: 'var(--tekst-zacht)', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial' }}>
-            ✎ Bewerken
-          </button>
+      {/* Bewerken: iedereen. Verwijderen: alleen beheerder. */}
+      <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+        <button onClick={onBewerk} style={{ background: 'none', border: '1px solid var(--rand)', color: 'var(--tekst-zacht)', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial' }}>
+          ✎ Bewerken
+        </button>
+        {isAdmin && (
           <button onClick={onVerwijder} style={{ background: 'none', border: '1px solid #e8a090', color: 'var(--rood)', padding: '5px 8px', borderRadius: '5px', cursor: 'pointer', fontSize: '12px' }}>
             ✕
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

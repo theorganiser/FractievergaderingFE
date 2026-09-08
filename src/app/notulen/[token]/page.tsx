@@ -12,7 +12,7 @@ interface Props { params: { token: string } }
 export default function NotulenPagina({ params }: Props) {
   const { token } = params
   const { vergadering, geladen, fout, herlaad, updateNotulen } = useVergaderingOpToken(token)
-  const { isAdmin, isModerator } = useAuth()
+  const { heeftToegang } = useAuth()
 
   if (!geladen) return (
     <div style={{ textAlign: 'center', padding: '80px', fontFamily: 'Arial', color: 'var(--tekst-zacht)' }}>
@@ -58,8 +58,8 @@ export default function NotulenPagina({ params }: Props) {
 
       <Notulen
         notulen={vergadering.notulen || ''}
-        onUpdate={(isAdmin || isModerator) ? updateNotulen : undefined}
-        magBewerken={isAdmin || isModerator}
+        onUpdate={heeftToegang ? updateNotulen : undefined}
+        magBewerken={heeftToegang}
       />
     </div>
   )

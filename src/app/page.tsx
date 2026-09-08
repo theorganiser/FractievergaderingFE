@@ -63,17 +63,14 @@ export default function OverzichtPagina() {
 
   const isToekomstig = (datum: string) => datum >= vandaag()
 
-  // Laatste maandag berekenen voor archief grens
-  const getLaatsteMaandag = (): string => {
-    const nu = new Date()
-    const dag = nu.getDay()
-    const dagenTerug = dag === 0 ? 6 : dag - 1
-    const maandag = new Date(nu)
-    maandag.setDate(nu.getDate() - dagenTerug)
-    return maandag.toISOString().split('T')[0]
+  // Archief grens: 1 maand na de vergaderdatum, zodat recente notulen makkelijk vindbaar blijven
+  const getArchiefGrens = (): string => {
+    const grens = new Date()
+    grens.setMonth(grens.getMonth() - 1)
+    return grens.toISOString().split('T')[0]
   }
-  const laatsteMaandag = getLaatsteMaandag()
-  const isArchief = (datum: string) => datum < laatsteMaandag
+  const archiefGrens = getArchiefGrens()
+  const isArchief = (datum: string) => datum < archiefGrens
 
   const aantalWoorden = (tekst: string) => tekst.trim().split(/\s+/).filter(Boolean).length
 
@@ -355,7 +352,7 @@ export default function OverzichtPagina() {
                   <span>📁 Archief</span>
                   <span style={{ background: '#f0ede8', color: 'var(--tekst-zacht)', fontSize: '11px', padding: '1px 7px', borderRadius: '10px' }}>{archiefLijst.length}</span>
                   <span style={{ flex: 1 }} />
-                  <span style={{ fontSize: '12px' }}>voor {new Date(laatsteMaandag + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  <span style={{ fontSize: '12px' }}>voor {new Date(archiefGrens + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                 </button>
                 {archiefOpen && archiefLijst.map(v => renderVergadering(v))}
               </div>

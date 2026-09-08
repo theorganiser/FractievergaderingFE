@@ -11,8 +11,8 @@ interface Props { params: { token: string } }
 
 export default function LeesPagina({ params }: Props) {
   const { token } = params
-  const { vergadering, geladen, fout, herlaad, updateNotulen } = useVergaderingOpToken(token)
-  const { isAdmin, isModerator } = useAuth()
+  const { vergadering, geladen, fout, herlaad, updateNotulen, voegNotitieToe } = useVergaderingOpToken(token)
+  const { isAdmin, heeftToegang, naam } = useAuth()
 
   if (!geladen) return (
     <div style={{ textAlign: 'center', padding: '80px', fontFamily: 'Arial', color: 'var(--tekst-zacht)' }}>
@@ -61,11 +61,12 @@ export default function LeesPagina({ params }: Props) {
           </button>
         )}
       </div>
-      <LeesweergaveVolledig vergadering={vergadering} toonPrintKnop />
+      <LeesweergaveVolledig vergadering={vergadering} toonPrintKnop naam={naam}
+        onNotitieToevoegen={(puntId, subIndex, tekst) => voegNotitieToe(puntId, subIndex, naam, tekst)} />
       <Notulen
         notulen={vergadering.notulen || ''}
-        onUpdate={(isAdmin || isModerator) ? updateNotulen : undefined}
-        magBewerken={isAdmin || isModerator}
+        onUpdate={heeftToegang ? updateNotulen : undefined}
+        magBewerken={heeftToegang}
       />
     </div>
   )

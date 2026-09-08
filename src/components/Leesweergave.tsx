@@ -3,13 +3,15 @@
 import { useState, useEffect } from 'react'
 import { Vergadering, Agendapunt } from '@/lib/types'
 import { formatDatum, formatDatumNL } from '@/lib/datum'
+import { RegelMetNotitie } from './NotitiesSectie'
 
 function normaliseerPunt(punt: Agendapunt): Agendapunt {
   return { ...punt, subpunten: Array.isArray(punt.subpunten) ? punt.subpunten : [] }
 }
 
-export default function Leesweergave({ vergadering: v, toonPrintKnop = false }: {
-  vergadering: Vergadering; toonPrintKnop?: boolean
+export default function Leesweergave({ vergadering: v, toonPrintKnop = false, naam = '', onNotitieToevoegen }: {
+  vergadering: Vergadering; toonPrintKnop?: boolean; naam?: string
+  onNotitieToevoegen?: (puntId: number, subIndex: number | null, tekst: string) => void
 }) {
   const punten = Array.isArray(v.punten) ? v.punten.map(normaliseerPunt) : []
 
@@ -50,30 +52,37 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false }: 
             <div style={{ display: 'flex', gap: '14px', padding: '5px 0' }}>
               <span style={{ minWidth: '28px', fontSize: '14px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>{punt.id}.</span>
               <div style={{ flex: 1 }}>
-                <span style={{ fontSize: '15px' }}>
-                  {punt.url ? (
-                    <a href={punt.url} target="_blank" rel="noopener noreferrer"
-                      style={{ color: isPA ? '#1a5c8a' : isRV ? '#5a1a8a' : 'var(--blauw)', textDecoration: 'none', borderBottom: '1px solid currentColor' }}>
-                      {punt.titel}
-                    </a>
-                  ) : (
-                    <span style={{ color: isPA ? '#1a5c8a' : isRV ? '#5a1a8a' : 'inherit' }}>{punt.titel}</span>
-                  )}
-                  {punt.toelichting && !isPA && !isRV && (
-                    <span style={{ fontSize: '13px', color: 'var(--tekst-zacht)', fontStyle: 'italic', marginLeft: '8px' }}>{punt.toelichting}</span>
-                  )}
-                </span>
+                <RegelMetNotitie rowStyle={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}
+                  notities={punt.notities} naam={naam}
+                  onToevoegen={onNotitieToevoegen ? (tekst) => onNotitieToevoegen(punt.id, null, tekst) : undefined}>
+                  <span style={{ fontSize: '15px' }}>
+                    {punt.url ? (
+                      <a href={punt.url} target="_blank" rel="noopener noreferrer"
+                        style={{ color: isPA ? '#1a5c8a' : isRV ? '#5a1a8a' : 'var(--blauw)', textDecoration: 'none', borderBottom: '1px solid currentColor' }}>
+                        {punt.titel}
+                      </a>
+                    ) : (
+                      <span style={{ color: isPA ? '#1a5c8a' : isRV ? '#5a1a8a' : 'inherit' }}>{punt.titel}</span>
+                    )}
+                    {punt.toelichting && !isPA && !isRV && (
+                      <span style={{ fontSize: '13px', color: 'var(--tekst-zacht)', fontStyle: 'italic', marginLeft: '8px' }}>{punt.toelichting}</span>
+                    )}
+                  </span>
+                </RegelMetNotitie>
 
                 {/* Politieke Avond subpunten */}
                 {isPA && punt.subpunten.length > 0 && (
                   <div style={{ marginTop: '4px' }}>
                     {punt.subpunten.map((sub, si) => (
-                      <div key={si} style={{ display: 'flex', gap: '10px', padding: '3px 0 3px 14px', alignItems: 'baseline' }}>
+                      <RegelMetNotitie key={si}
+                        rowStyle={{ display: 'flex', gap: '10px', padding: '3px 0 3px 14px', alignItems: 'baseline' }}
+                        notities={sub.notities} naam={naam}
+                        onToevoegen={onNotitieToevoegen ? (tekst) => onNotitieToevoegen(punt.id, si, tekst) : undefined}>
                         <span style={{ minWidth: '20px', fontSize: '13px', color: 'var(--tekst-zacht)', fontStyle: 'italic', fontFamily: 'Arial', flexShrink: 0 }}>{String.fromCharCode(97 + si)}.</span>
                         {sub.starttijd && <span style={{ fontSize: '13px', fontFamily: 'Arial', color: '#1a5c8a', fontWeight: 'bold', flexShrink: 0 }}>{sub.starttijd}</span>}
                         <span style={{ fontSize: '14px', flex: 1 }}>{sub.titel}</span>
                         {sub.woordvoerder && <span style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontStyle: 'italic', fontFamily: 'Arial', flexShrink: 0 }}>({sub.woordvoerder})</span>}
-                      </div>
+                      </RegelMetNotitie>
                     ))}
                   </div>
                 )}
@@ -86,7 +95,10 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false }: 
                       const isAmendement = sub.subtype === 'amendement'
                       const isSubtype = isMotie || isAmendement
                       return (
-                        <div key={si} style={{ display: 'flex', gap: '10px', padding: '3px 0 3px 14px', alignItems: 'baseline', paddingLeft: isSubtype ? '32px' : '14px' }}>
+                        <RegelMetNotitie key={si}
+                          rowStyle={{ display: 'flex', gap: '10px', padding: '3px 0 3px 14px', alignItems: 'baseline', paddingLeft: isSubtype ? '32px' : '14px' }}
+                          notities={sub.notities} naam={naam}
+                          onToevoegen={onNotitieToevoegen ? (tekst) => onNotitieToevoegen(punt.id, si, tekst) : undefined}>
                           {isSubtype && (
                             <span style={{ fontSize: '10px', background: isMotie ? '#fff0e8' : '#f0e8ff', color: isMotie ? '#8a4000' : '#5a1a8a', border: `1px solid ${isMotie ? '#e8a060' : '#c0a0d8'}`, padding: '1px 5px', borderRadius: '3px', flexShrink: 0, fontFamily: 'Arial' }}>
                               {isMotie ? 'Motie' : 'Amendement'}
@@ -96,7 +108,7 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false }: 
                           <span style={{ fontSize: '14px', flex: 1 }}>{sub.titel}</span>
                           {sub.woordvoerder && <span style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontStyle: 'italic', fontFamily: 'Arial', flexShrink: 0 }}>({sub.woordvoerder})</span>}
                           {sub.inStemlijst && <span style={{ fontSize: '10px', background: '#e8f5ed', color: '#2d7a4f', border: '1px solid #a8d8b5', padding: '1px 5px', borderRadius: '3px', fontFamily: 'Arial', flexShrink: 0 }}>Stemlijst</span>}
-                        </div>
+                        </RegelMetNotitie>
                       )
                     })}
                   </div>
@@ -106,7 +118,10 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false }: 
                 {!isPA && !isRV && punt.subpunten.length > 0 && (
                   <div style={{ marginTop: '4px' }}>
                     {punt.subpunten.map((sub, si) => (
-                      <div key={sub.id || si} style={{ display: 'flex', gap: '10px', padding: '3px 0 3px 14px' }}>
+                      <RegelMetNotitie key={sub.id || si}
+                        rowStyle={{ display: 'flex', gap: '10px', padding: '3px 0 3px 14px' }}
+                        notities={sub.notities} naam={naam}
+                        onToevoegen={onNotitieToevoegen ? (tekst) => onNotitieToevoegen(punt.id, si, tekst) : undefined}>
                         <span style={{ minWidth: '20px', fontSize: '13px', color: 'var(--tekst-zacht)', fontStyle: 'italic', fontFamily: 'Arial', flexShrink: 0 }}>{String.fromCharCode(97 + si)}.</span>
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
@@ -128,7 +143,7 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false }: 
                             </div>
                           )}
                         </div>
-                      </div>
+                      </RegelMetNotitie>
                     ))}
                   </div>
                 )}
@@ -154,8 +169,9 @@ function MetaRij({ label, waarde }: { label: string; waarde: string }) {
   )
 }
 
-export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop }: {
-  vergadering: Vergadering; toonPrintKnop?: boolean
+export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop, naam = '', onNotitieToevoegen }: {
+  vergadering: Vergadering; toonPrintKnop?: boolean; naam?: string
+  onNotitieToevoegen?: (puntId: number, subIndex: number | null, tekst: string) => void
 }) {
   const actielijst = Array.isArray(v.actielijst) ? v.actielijst : []
   const kalender = Array.isArray(v.kalender) ? v.kalender : []
@@ -170,7 +186,7 @@ export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop }: {
 
   return (
     <div>
-      <Leesweergave vergadering={v} toonPrintKnop={toonPrintKnop} />
+      <Leesweergave vergadering={v} toonPrintKnop={toonPrintKnop} naam={naam} onNotitieToevoegen={onNotitieToevoegen} />
 
       {actielijst.length > 0 && (
         <div style={{ marginTop: '32px', borderTop: '2px solid var(--blauw)', paddingTop: '20px' }}>
