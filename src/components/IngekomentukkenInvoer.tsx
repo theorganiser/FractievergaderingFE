@@ -2,15 +2,17 @@
 
 import { useState } from 'react'
 import { Subpunt } from '@/lib/types'
+import MailOphalenPaneel from './MailOphalenPaneel'
 
 interface IngekomenStukkenInvoerProps {
   subpunten: Subpunt[]
+  isAdmin: boolean
   onVoegToe: (subpunt: Omit<Subpunt, 'id'>) => void
   onVerwijder: (index: number) => void
   onUpdate: (index: number, wijzigingen: Partial<Subpunt>) => void
 }
 
-export default function IngekomenStukkenInvoer({ subpunten, onVoegToe, onVerwijder, onUpdate }: IngekomenStukkenInvoerProps) {
+export default function IngekomenStukkenInvoer({ subpunten, isAdmin, onVoegToe, onVerwijder, onUpdate }: IngekomenStukkenInvoerProps) {
   const [modus, setModus] = useState<'velden' | 'plakken'>('velden')
   const [afzender, setAfzender] = useState('')
   const [onderwerp, setOnderwerp] = useState('')
@@ -78,6 +80,18 @@ export default function IngekomenStukkenInvoer({ subpunten, onVoegToe, onVerwijd
 
   return (
     <div>
+      {isAdmin && (
+        <div style={{ marginBottom: '14px' }}>
+          <MailOphalenPaneel soort="ingekomen"
+            onToevoegen={(velden) => {
+              const afzender = (velden.afzender || '').trim()
+              const onderwerp = (velden.onderwerp || '').trim()
+              const titel = afzender ? `${afzender} — ${onderwerp}` : onderwerp
+              if (titel) onVoegToe({ titel, url: '', afgedaan: false })
+            }} />
+        </div>
+      )}
+
       {/* Huidige subpunten */}
       {subpunten.map((sub, si) => (
         <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: '1px solid #f0ede8' }}>

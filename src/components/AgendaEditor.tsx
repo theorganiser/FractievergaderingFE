@@ -10,6 +10,7 @@ import IngekomenStukkenInvoer from './IngekomentukkenInvoer'
 interface AgendaEditorProps {
   vergaderingId: string
   punten: Agendapunt[]
+  isAdmin: boolean
   onUpdatePunt: (puntIndex: number, wijzigingen: Partial<Agendapunt>) => void
   onVerwijderPunt: (puntIndex: number) => void
   onVoegPuntToe: () => void
@@ -24,7 +25,7 @@ interface AgendaEditorProps {
 type NieuwPuntType = 'algemeen' | 'politieke_avond' | 'raadsvergadering'
 
 export default function AgendaEditor({
-  punten, onUpdatePunt, onVerwijderPunt, onVoegPuntToe,
+  punten, isAdmin, onUpdatePunt, onVerwijderPunt, onVoegPuntToe,
   onVoegSubpuntToe, onVerwijderSubpunt, onUpdateSubpunt,
   onSyncDocumenten, ladenSync, onHerorden,
 }: AgendaEditorProps) {
@@ -100,7 +101,7 @@ export default function AgendaEditor({
                     <div ref={provided.innerRef} {...provided.draggableProps}
                       style={{ ...provided.draggableProps.style, marginBottom: '8px', boxShadow: snapshot.isDragging ? '0 8px 24px rgba(74,26,92,0.2)' : 'none', borderRadius: '8px' }}>
                       <PuntEditor
-                        punt={punt} puntIndex={pi}
+                        punt={punt} puntIndex={pi} isAdmin={isAdmin}
                         dragHandleProps={provided.dragHandleProps}
                         isDragging={snapshot.isDragging}
                         onUpdate={(w) => onUpdatePunt(pi, w)}
@@ -144,14 +145,14 @@ export default function AgendaEditor({
 }
 
 interface PuntEditorProps {
-  punt: Agendapunt; puntIndex: number
+  punt: Agendapunt; puntIndex: number; isAdmin: boolean
   dragHandleProps: object | null | undefined; isDragging: boolean
   onUpdate: (w: Partial<Agendapunt>) => void; onVerwijder: () => void
   onVoegSubToe: () => void; onVerwijderSub: (si: number) => void
   onUpdateSub: (si: number, w: Partial<Subpunt>) => void
 }
 
-function PuntEditor({ punt, dragHandleProps, isDragging, onUpdate, onVerwijder, onVoegSubToe, onVerwijderSub, onUpdateSub }: PuntEditorProps) {
+function PuntEditor({ punt, isAdmin, dragHandleProps, isDragging, onUpdate, onVerwijder, onVoegSubToe, onVerwijderSub, onUpdateSub }: PuntEditorProps) {
   const [ingeklapt, setIngeklapt] = useState(false)
   const isIngekomen = punt.titel.toLowerCase().includes('ingekomen')
   const isMededelingen = punt.titel.toLowerCase().includes('mededeling')
@@ -222,6 +223,7 @@ function PuntEditor({ punt, dragHandleProps, isDragging, onUpdate, onVerwijder, 
             <div style={{ padding: '10px 14px' }}>
               <IngekomenStukkenInvoer
                 subpunten={punt.subpunten}
+                isAdmin={isAdmin}
                 onVoegToe={(sub) => { const letter = String.fromCharCode(97 + punt.subpunten.length); onUpdate({ subpunten: [...punt.subpunten, { ...sub, id: letter }] }) }}
                 onVerwijder={(idx) => { const nieuw = punt.subpunten.filter((_, i) => i !== idx); nieuw.forEach((s, i) => { s.id = String.fromCharCode(97 + i) }); onUpdate({ subpunten: nieuw }) }}
                 onUpdate={(idx, w) => { const nieuw = punt.subpunten.map((s, i) => i === idx ? { ...s, ...w } : s); onUpdate({ subpunten: nieuw }) }}
