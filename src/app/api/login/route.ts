@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { maakLezerCookie, maakAdminCookie, maakModeratorCookie } from '@/lib/auth'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { supabase } from '@/lib/supabase'
+import { schrijfLoginLog } from '@/lib/loginlog'
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'onbekend'
@@ -34,12 +35,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ fout: 'Dit account is gedeactiveerd. Neem contact op met de beheerder.' }, { status: 401 })
   }
 
-  // Log de inlogpoging
-  await supabase.from('login_log').insert({
-    naam: gebruiker.naam,
-    rol: gebruiker.rol,
-    ingelogd_op: new Date().toISOString(),
-  })
+  // Log de inlogpoging — met foutcontrole en één retry, zodat een mislukte
+  // logregel niet stilletjes verdwijnt zonder dat iemand het ooit merkt.
+  await schrijfLoginLog({ naam: gebruiker.naam, rol: gebruiker.rol })
 
   const lezerCookie = await maakLezerCookie(gebruiker.naam)
   const response = NextResponse.json({ ok: true, naam: gebruiker.naam, rol: gebruiker.rol })

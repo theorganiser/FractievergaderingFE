@@ -41,6 +41,16 @@ export async function laadVergaderingOpToken(token: string): Promise<Vergadering
   return rijNaarVergadering(data)
 }
 
+export async function laadVergaderingOpId(id: string): Promise<Vergadering | null> {
+  const { data, error } = await supabase
+    .from('vergaderingen')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (error) return null
+  return rijNaarVergadering(data)
+}
+
 export async function slaVergaderingOp(vergadering: Vergadering): Promise<boolean> {
   const { error } = await supabase
     .from('vergaderingen')

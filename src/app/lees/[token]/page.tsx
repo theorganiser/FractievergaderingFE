@@ -5,13 +5,14 @@ export const dynamic = 'force-dynamic'
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
 import { LeesweergaveVolledig } from '@/components/Leesweergave'
 import Notulen from '@/components/Notulen'
+import AanwezigheidVraag from '@/components/AanwezigheidVraag'
 import { useAuth } from '@/hooks/useAuth'
 
 interface Props { params: { token: string } }
 
 export default function LeesPagina({ params }: Props) {
   const { token } = params
-  const { vergadering, geladen, fout, herlaad, updateNotulen, voegNotitieToe } = useVergaderingOpToken(token)
+  const { vergadering, geladen, fout, herlaad, updateNotulen, voegNotitieToe, zetAanwezigheid, voegVrijPuntToe } = useVergaderingOpToken(token)
   const { isAdmin, heeftToegang, naam } = useAuth()
 
   if (!geladen) return (
@@ -43,8 +44,18 @@ export default function LeesPagina({ params }: Props) {
     p.puntType === 'raadsvergadering' && p.subpunten?.some(s => s.inStemlijst)
   )
 
+  const vandaag = new Date().toISOString().split('T')[0]
+  const isAankomend = !!vergadering.datum && vergadering.datum >= vandaag
+
+  const terugkoppelingPunt = vergadering.punten?.find(p => p.titel.toLowerCase().includes('terugkoppeling'))
+
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto' }} className="print-full">
+      {isAankomend && heeftToegang && (
+        <AanwezigheidVraag
+          aanwezig={vergadering.aanwezig || ''} online={vergadering.online || ''} afwezig={vergadering.afwezig || ''}
+          naam={naam} onKiezen={(status) => zetAanwezigheid(naam, status)} />
+      )}
       <div className="no-print" style={{ marginBottom: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
         {heeftStemlijst && (
           <a href={`/stemlijst/${token}`} target="_blank"
@@ -62,7 +73,8 @@ export default function LeesPagina({ params }: Props) {
         )}
       </div>
       <LeesweergaveVolledig vergadering={vergadering} toonPrintKnop naam={naam}
-        onNotitieToevoegen={(puntId, subIndex, tekst) => voegNotitieToe(puntId, subIndex, naam, tekst)} />
+        onNotitieToevoegen={(puntId, subIndex, tekst) => voegNotitieToe(puntId, subIndex, naam, tekst)}
+        onVrijPuntToevoegen={terugkoppelingPunt ? (tekst) => voegVrijPuntToe(terugkoppelingPunt.id, naam, tekst) : undefined} />
       <Notulen
         notulen={vergadering.notulen || ''}
         onUpdate={heeftToegang ? updateNotulen : undefined}

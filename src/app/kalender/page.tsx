@@ -50,6 +50,9 @@ export default function KalenderPagina() {
     setFormulier({ datum: item.datum, starttijd: item.starttijd || '', omschrijving: item.omschrijving, locatie: item.locatie, personen: item.personen, categorie: (item.categorie || '') as import('@/lib/kalender').KalenderCategorie })
     setBewerkId(item.id)
     setToonFormulier(true)
+    // Formulier staat boven de lijst — zonder dit lijkt het alsof er niks gebeurt
+    // als je op Bewerken klikt bij een item onderin een lange, gescrollde lijst.
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleOpslaan = async () => {
@@ -97,13 +100,11 @@ export default function KalenderPagina() {
         </div>
         {authGeladen && (
           <div style={{ display: 'flex', gap: '8px' }}>
-            {isAdmin && (
-              <MailOphalenPaneel soort="events"
-                onToevoegen={(velden) => voegToe({
-                  datum: velden.datum || '', starttijd: velden.starttijd || '', omschrijving: velden.omschrijving || '',
-                  locatie: velden.locatie || 'Gemeentehuis Bussum', personen: '', categorie: (velden.categorie as KalenderCategorie) || '',
-                })} />
-            )}
+            <MailOphalenPaneel soort="events"
+              onToevoegen={(velden) => voegToe({
+                datum: velden.datum || '', starttijd: velden.starttijd || '', omschrijving: velden.omschrijving || '',
+                locatie: velden.locatie || 'Gemeentehuis Bussum', personen: '', categorie: (velden.categorie as KalenderCategorie) || '',
+              })} />
             <button
               onClick={() => { resetFormulier(); setToonFormulier(true) }}
               style={{ background: 'var(--blauw)', color: 'white', border: 'none', padding: '9px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial', fontWeight: '600' }}

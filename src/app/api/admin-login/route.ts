@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { maakAdminCookie, maakLezerCookie } from '@/lib/auth'
 import { checkRateLimit } from '@/lib/ratelimit'
-import { supabase } from '@/lib/supabase'
+import { schrijfLoginLog } from '@/lib/loginlog'
 
 export async function POST(req: NextRequest) {
   // Rate limiting: max 5 pogingen per minuut per IP
@@ -22,11 +22,7 @@ export async function POST(req: NextRequest) {
 
   const gelogdeNaam = naam?.trim() || 'Beheerder'
 
-  await supabase.from('login_log').insert({
-    naam: gelogdeNaam,
-    rol: 'beheerder',
-    ingelogd_op: new Date().toISOString(),
-  })
+  await schrijfLoginLog({ naam: gelogdeNaam, rol: 'beheerder' })
 
   const adminCookie = await maakAdminCookie()
   const lezerCookie = await maakLezerCookie(gelogdeNaam)

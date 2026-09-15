@@ -37,22 +37,22 @@ export async function verifieerToken(
 }
 
 export async function maakLezerCookie(naam: string): Promise<string> {
-  const token = await maakToken({ rol: 'lezer', naam }, '7d')
-  const maxAge = 7 * 24 * 60 * 60
+  const token = await maakToken({ rol: 'lezer', naam }, '24h')
+  const maxAge = 24 * 60 * 60
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
   return `${COOKIE_LEZER}=${token}; Max-Age=${maxAge}; ${COOKIE_OPTIES}${secure}`
 }
 
 export async function maakAdminCookie(): Promise<string> {
-  const token = await maakToken({ rol: 'admin' }, '8h')
-  const maxAge = 8 * 60 * 60
+  const token = await maakToken({ rol: 'admin' }, '24h')
+  const maxAge = 24 * 60 * 60
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
   return `${COOKIE_ADMIN}=${token}; Max-Age=${maxAge}; ${COOKIE_OPTIES}${secure}`
 }
 
 export async function maakModeratorCookie(): Promise<string> {
-  const token = await maakToken({ rol: 'moderator' }, '8h')
-  const maxAge = 8 * 60 * 60
+  const token = await maakToken({ rol: 'moderator' }, '24h')
+  const maxAge = 24 * 60 * 60
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
   return `${COOKIE_MODERATOR}=${token}; Max-Age=${maxAge}; ${COOKIE_OPTIES}${secure}`
 }

@@ -9,9 +9,10 @@ function normaliseerPunt(punt: Agendapunt): Agendapunt {
   return { ...punt, subpunten: Array.isArray(punt.subpunten) ? punt.subpunten : [] }
 }
 
-export default function Leesweergave({ vergadering: v, toonPrintKnop = false, naam = '', onNotitieToevoegen }: {
+export default function Leesweergave({ vergadering: v, toonPrintKnop = false, naam = '', onNotitieToevoegen, onVrijPuntToevoegen }: {
   vergadering: Vergadering; toonPrintKnop?: boolean; naam?: string
   onNotitieToevoegen?: (puntId: number, subIndex: number | null, tekst: string) => void
+  onVrijPuntToevoegen?: (tekst: string) => void
 }) {
   const punten = Array.isArray(v.punten) ? v.punten.map(normaliseerPunt) : []
 
@@ -46,6 +47,7 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false, na
       {punten.map((punt) => {
         const isPA = punt.puntType === 'politieke_avond'
         const isRV = punt.puntType === 'raadsvergadering'
+        const isTerugkoppeling = punt.titel.toLowerCase().includes('terugkoppeling')
 
         return (
           <div key={punt.id} style={{ marginBottom: '4px' }}>
@@ -147,6 +149,11 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false, na
                     ))}
                   </div>
                 )}
+
+                {/* Vrij punt toevoegen — bijv. bij "Terugkoppeling gesprekken", open voor iedereen */}
+                {isTerugkoppeling && onVrijPuntToevoegen && (
+                  <TerugkoppelingInvoer onToevoegen={onVrijPuntToevoegen} />
+                )}
               </div>
             </div>
           </div>
@@ -169,9 +176,10 @@ function MetaRij({ label, waarde }: { label: string; waarde: string }) {
   )
 }
 
-export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop, naam = '', onNotitieToevoegen }: {
+export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop, naam = '', onNotitieToevoegen, onVrijPuntToevoegen }: {
   vergadering: Vergadering; toonPrintKnop?: boolean; naam?: string
   onNotitieToevoegen?: (puntId: number, subIndex: number | null, tekst: string) => void
+  onVrijPuntToevoegen?: (tekst: string) => void
 }) {
   const actielijst = Array.isArray(v.actielijst) ? v.actielijst : []
   const kalender = Array.isArray(v.kalender) ? v.kalender : []
@@ -186,7 +194,7 @@ export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop, naam = '',
 
   return (
     <div>
-      <Leesweergave vergadering={v} toonPrintKnop={toonPrintKnop} naam={naam} onNotitieToevoegen={onNotitieToevoegen} />
+      <Leesweergave vergadering={v} toonPrintKnop={toonPrintKnop} naam={naam} onNotitieToevoegen={onNotitieToevoegen} onVrijPuntToevoegen={onVrijPuntToevoegen} />
 
       {actielijst.length > 0 && (
         <div style={{ marginTop: '32px', borderTop: '2px solid var(--blauw)', paddingTop: '20px' }}>
@@ -223,6 +231,35 @@ export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop, naam = '',
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function TerugkoppelingInvoer({ onToevoegen }: { onToevoegen: (tekst: string) => void }) {
+  const [tekst, setTekst] = useState('')
+  const [bezig, setBezig] = useState(false)
+
+  const plaats = async () => {
+    if (!tekst.trim()) return
+    setBezig(true)
+    await onToevoegen(tekst)
+    setTekst('')
+    setBezig(false)
+  }
+
+  return (
+    <div className="no-print" style={{ display: 'flex', gap: '8px', padding: '8px 0 4px 14px', flexWrap: 'wrap' as const }}>
+      <input
+        value={tekst}
+        onChange={e => setTekst(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && plaats()}
+        placeholder="+ Terugkoppeling toevoegen (bijv. gesprek met een inwoner)..."
+        style={{ flex: 1, minWidth: '220px', padding: '7px 10px', border: '1px solid var(--rand)', borderRadius: '6px', fontSize: '13px', fontFamily: 'Arial', outline: 'none', boxSizing: 'border-box' as const }}
+      />
+      <button onClick={plaats} disabled={!tekst.trim() || bezig}
+        style={{ background: 'var(--blauw)', color: 'white', border: 'none', padding: '7px 14px', borderRadius: '6px', fontSize: '12px', fontFamily: 'Arial', fontWeight: '600', cursor: (!tekst.trim() || bezig) ? 'not-allowed' : 'pointer', opacity: (!tekst.trim() || bezig) ? 0.5 : 1 }}>
+        {bezig ? '...' : 'Toevoegen'}
+      </button>
     </div>
   )
 }

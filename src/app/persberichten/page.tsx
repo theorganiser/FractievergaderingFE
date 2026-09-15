@@ -208,6 +208,10 @@ export default function PersberichtenPagina() {
             </div>
           </div>
 
+          <div style={{ background: '#fdf6e3', border: '2px solid #e8c84a', borderRadius: '12px', padding: '16px 20px', marginBottom: '16px', fontSize: '13px', fontFamily: 'Arial', color: '#5a4200', lineHeight: 1.6 }}>
+            📧 <strong>Let op:</strong> Raisehand plaatst dit artikel niet automatisch op de website. Zodra de tekst akkoord is: kopieer 'm en mail 'm naar <strong>Pieter en Vera (publiciteitscommissie)</strong>, zij zorgen voor de daadwerkelijke plaatsing.
+          </div>
+
           {resultaat?.feedback && (
             <div style={{ background: '#fffdf0', border: '2px solid #e8c84a', borderRadius: '12px', padding: '20px' }}>
               <h3 style={{ fontSize: '15px', color: '#7a5000', fontFamily: 'Arial', fontWeight: '700', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>

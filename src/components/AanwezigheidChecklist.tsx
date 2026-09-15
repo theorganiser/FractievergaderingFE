@@ -11,7 +11,7 @@ interface AanwezigheidChecklistProps {
   onUpdate: (w: { aanwezig?: string; afwezig?: string; online?: string }) => void
 }
 
-type Status = 'aanwezig' | 'online' | 'afwezig'
+type Status = 'aanwezig' | 'online' | 'afwezig' | null
 
 export default function AanwezigheidChecklist({ aanwezig, afwezig, online, onUpdate }: AanwezigheidChecklistProps) {
   const [gast, setGast] = useState('')
@@ -23,10 +23,11 @@ export default function AanwezigheidChecklist({ aanwezig, afwezig, online, onUpd
   const getStatus = (naam: string): Status => {
     if (parseNamen(aanwezig).includes(naam)) return 'aanwezig'
     if (parseNamen(online).includes(naam)) return 'online'
-    return 'afwezig'
+    if (parseNamen(afwezig).includes(naam)) return 'afwezig'
+    return null // nog niet doorgegeven — bewust anders dan 'afwezig'
   }
 
-  const setStatus = (naam: string, status: Status) => {
+  const setStatus = (naam: string, status: Exclude<Status, null>) => {
     const alleNamen = [...VASTE_LEDEN, ...gasten]
     const nieuweAanwezig = alleNamen.filter(n => n === naam ? status === 'aanwezig' : getStatus(n) === 'aanwezig')
     const nieuweOnline = alleNamen.filter(n => n === naam ? status === 'online' : getStatus(n) === 'online')
@@ -63,6 +64,7 @@ export default function AanwezigheidChecklist({ aanwezig, afwezig, online, onUpd
   const aantalAanwezig = alleNamen.filter(n => getStatus(n) === 'aanwezig').length
   const aantalOnline = alleNamen.filter(n => getStatus(n) === 'online').length
   const aantalAfwezig = alleNamen.filter(n => getStatus(n) === 'afwezig').length
+  const aantalOnbekend = alleNamen.filter(n => getStatus(n) === null).length
 
   return (
     <div>
@@ -71,6 +73,7 @@ export default function AanwezigheidChecklist({ aanwezig, afwezig, online, onUpd
         <Pill kleur="#2d7a4f" bg="#e8f5ed">✓ {aantalAanwezig} aanwezig</Pill>
         {aantalOnline > 0 && <Pill kleur="#1a5c8a" bg="#e8f0f8">💻 {aantalOnline} online</Pill>}
         {aantalAfwezig > 0 && <Pill kleur="#c0392b" bg="#fdf0ef">✗ {aantalAfwezig} afwezig</Pill>}
+        {aantalOnbekend > 0 && <Pill kleur="#888" bg="#f0ede8">❔ {aantalOnbekend} nog niet gereageerd</Pill>}
       </div>
 
       {/* Checklijst */}
@@ -83,11 +86,12 @@ export default function AanwezigheidChecklist({ aanwezig, afwezig, online, onUpd
               display: 'flex', alignItems: 'center', gap: '10px',
               padding: '10px 14px',
               borderBottom: idx < alleNamen.length - 1 ? '1px solid #f0ede8' : 'none',
-              background: status === 'aanwezig' ? '#f0faf2' : status === 'online' ? '#f0f8ff' : '#fdf5f5',
+              background: status === 'aanwezig' ? '#f0faf2' : status === 'online' ? '#f0f8ff' : status === 'afwezig' ? '#fdf5f5' : '#fafafa',
             }}>
               <span style={{ flex: 1, fontSize: '14px', fontFamily: 'Arial', color: 'var(--tekst)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 {naam}
                 {isGast && <span style={{ fontSize: '10px', background: '#f5eeff', color: '#4a1a5c', border: '1px solid #c0a0d8', padding: '1px 5px', borderRadius: '3px' }}>Gast</span>}
+                {status === null && <span style={{ fontSize: '10px', color: '#999', fontStyle: 'italic' }}>nog niet gereageerd</span>}
               </span>
 
               {/* Status knoppen */}
