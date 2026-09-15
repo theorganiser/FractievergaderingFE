@@ -393,7 +393,50 @@ export function useVergaderingOpToken(token: string) {
     const bijgewerkt = { ...basis, punten: nieuwePunten, bijgewerkt: new Date().toISOString() }
     setVergadering(bijgewerkt)
     await slaVergaderingOp(bijgewerkt)
-  }, [vergadering])
+  }, [vergadering, token])
 
-  return { vergadering, geladen, fout, herlaad: laad, updateNotulen, voegNotitieToe, zetAanwezigheid, voegVrijPuntToe }
+  // Voegt een bijlage-verwijzing toe (het bestand zelf staat al in Supabase Storage,
+  // dit registreert alleen de metadata bij het punt/subpunt). Door alle fractieleden.
+  const voegBijlageToe = useCallback(async (puntId: number, subIndex: number | null, bijlage: { naam: string; pad: string; type: string; grootte: number; uploader: string }) => {
+    if (!vergadering) return
+    const vers = await dbLaadOpToken(token)
+    const basis = vers || vergadering
+    const nieuwePunten = JSON.parse(JSON.stringify(basis.punten)) as Vergadering['punten']
+    const punt = nieuwePunten.find(p => p.id === puntId)
+    if (!punt) return
+    const nieuweBijlage = { id: `b-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, ...bijlage, datum: new Date().toISOString() }
+    if (subIndex === null) {
+      punt.bijlagen = [...(punt.bijlagen || []), nieuweBijlage]
+    } else {
+      const sub = punt.subpunten[subIndex]
+      if (!sub) return
+      sub.bijlagen = [...(sub.bijlagen || []), nieuweBijlage]
+    }
+    const bijgewerkt2 = { ...basis, punten: nieuwePunten, bijgewerkt: new Date().toISOString() }
+    setVergadering(bijgewerkt2)
+    await slaVergaderingOp(bijgewerkt2)
+  }, [vergadering, token])
+
+  // Verwijdert een bijlage-verwijzing. Het onderliggende bestand in Storage wordt
+  // los verwijderd door de aanroeper (via /api/bijlagen/verwijderen).
+  const verwijderBijlage = useCallback(async (puntId: number, subIndex: number | null, bijlageId: string) => {
+    if (!vergadering) return
+    const vers = await dbLaadOpToken(token)
+    const basis = vers || vergadering
+    const nieuwePunten = JSON.parse(JSON.stringify(basis.punten)) as Vergadering['punten']
+    const punt = nieuwePunten.find(p => p.id === puntId)
+    if (!punt) return
+    if (subIndex === null) {
+      punt.bijlagen = (punt.bijlagen || []).filter(b => b.id !== bijlageId)
+    } else {
+      const sub = punt.subpunten[subIndex]
+      if (!sub) return
+      sub.bijlagen = (sub.bijlagen || []).filter(b => b.id !== bijlageId)
+    }
+    const bijgewerkt2 = { ...basis, punten: nieuwePunten, bijgewerkt: new Date().toISOString() }
+    setVergadering(bijgewerkt2)
+    await slaVergaderingOp(bijgewerkt2)
+  }, [vergadering, token])
+
+  return { vergadering, geladen, fout, herlaad: laad, updateNotulen, voegNotitieToe, zetAanwezigheid, voegVrijPuntToe, voegBijlageToe, verwijderBijlage }
 }

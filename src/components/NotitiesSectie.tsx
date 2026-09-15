@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Notitie } from '@/lib/types'
+import { Notitie, Bijlage } from '@/lib/types'
+import { BijlageKnop, BijlagePaneel } from './BijlagenSectie'
 
 // Compact inline trigger — bedoeld om als badge in dezelfde regel te staan
 // als woordvoerder/stemlijst-badges, niet als aparte blokknop eronder.
@@ -78,17 +79,24 @@ export function NotitiePaneel({ notities, naam, onToevoegen, tekst, setTekst, be
 // Combineert een bestaande regel (badges/titel als children, laatste flex-item wordt de
 // notitie-badge) met het uitklappaneel eronder. Eén component per regel = eigen state,
 // dus de badge staat inline en het paneel neemt alleen ruimte in als hij open staat.
-export function RegelMetNotitie({ children, rowStyle, notities, naam, onToevoegen }: {
+export function RegelMetNotitie({ children, rowStyle, notities, naam, onToevoegen, bijlagen, vergaderingId, onBijlageToevoegen, onBijlageVerwijderen }: {
   children: React.ReactNode
   rowStyle: React.CSSProperties
   notities?: Notitie[]
   naam: string
   onToevoegen?: (tekst: string) => void
+  bijlagen?: Bijlage[]
+  vergaderingId?: string
+  onBijlageToevoegen?: (bijlage: { naam: string; pad: string; type: string; grootte: number; uploader: string }) => void
+  onBijlageVerwijderen?: (bijlageId: string) => void
 }) {
   const [open, setOpen] = useState(false)
   const [tekst, setTekst] = useState('')
   const [bezig, setBezig] = useState(false)
   const aantal = notities?.length || 0
+
+  const [bijlageOpen, setBijlageOpen] = useState(false)
+  const aantalBijlagen = bijlagen?.length || 0
 
   const plaats = async () => {
     if (!tekst.trim() || !onToevoegen) return
@@ -105,10 +113,17 @@ export function RegelMetNotitie({ children, rowStyle, notities, naam, onToevoege
         {(aantal > 0 || onToevoegen) && (
           <NotitieKnop aantal={aantal} open={open} onClick={() => setOpen(!open)} />
         )}
+        {(aantalBijlagen > 0 || (onBijlageToevoegen && vergaderingId)) && (
+          <BijlageKnop aantal={aantalBijlagen} open={bijlageOpen} onClick={() => setBijlageOpen(!bijlageOpen)} />
+        )}
       </div>
       {open && (
         <NotitiePaneel notities={notities} naam={naam} onToevoegen={!!onToevoegen}
           tekst={tekst} setTekst={setTekst} bezig={bezig} onPlaats={plaats} />
+      )}
+      {bijlageOpen && vergaderingId && onBijlageToevoegen && onBijlageVerwijderen && (
+        <BijlagePaneel bijlagen={bijlagen} vergaderingId={vergaderingId} naam={naam}
+          onToegevoegd={onBijlageToevoegen} onVerwijderd={onBijlageVerwijderen} />
       )}
     </>
   )

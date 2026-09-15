@@ -9,10 +9,12 @@ function normaliseerPunt(punt: Agendapunt): Agendapunt {
   return { ...punt, subpunten: Array.isArray(punt.subpunten) ? punt.subpunten : [] }
 }
 
-export default function Leesweergave({ vergadering: v, toonPrintKnop = false, naam = '', onNotitieToevoegen, onVrijPuntToevoegen }: {
+export default function Leesweergave({ vergadering: v, toonPrintKnop = false, naam = '', onNotitieToevoegen, onVrijPuntToevoegen, onBijlageToevoegen, onBijlageVerwijderen }: {
   vergadering: Vergadering; toonPrintKnop?: boolean; naam?: string
   onNotitieToevoegen?: (puntId: number, subIndex: number | null, tekst: string) => void
   onVrijPuntToevoegen?: (tekst: string) => void
+  onBijlageToevoegen?: (puntId: number, subIndex: number | null, bijlage: { naam: string; pad: string; type: string; grootte: number; uploader: string }) => void
+  onBijlageVerwijderen?: (puntId: number, subIndex: number | null, bijlageId: string) => void
 }) {
   const punten = Array.isArray(v.punten) ? v.punten.map(normaliseerPunt) : []
 
@@ -56,7 +58,10 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false, na
               <div style={{ flex: 1 }}>
                 <RegelMetNotitie rowStyle={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}
                   notities={punt.notities} naam={naam}
-                  onToevoegen={onNotitieToevoegen ? (tekst) => onNotitieToevoegen(punt.id, null, tekst) : undefined}>
+                  onToevoegen={onNotitieToevoegen ? (tekst) => onNotitieToevoegen(punt.id, null, tekst) : undefined}
+                  bijlagen={punt.bijlagen} vergaderingId={v.id}
+                  onBijlageToevoegen={onBijlageToevoegen ? (bijlage) => onBijlageToevoegen(punt.id, null, bijlage) : undefined}
+                  onBijlageVerwijderen={onBijlageVerwijderen ? (bijlageId) => onBijlageVerwijderen(punt.id, null, bijlageId) : undefined}>
                   <span style={{ fontSize: '15px' }}>
                     {punt.url ? (
                       <a href={punt.url} target="_blank" rel="noopener noreferrer"
@@ -79,7 +84,10 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false, na
                       <RegelMetNotitie key={si}
                         rowStyle={{ display: 'flex', gap: '10px', padding: '3px 0 3px 14px', alignItems: 'baseline' }}
                         notities={sub.notities} naam={naam}
-                        onToevoegen={onNotitieToevoegen ? (tekst) => onNotitieToevoegen(punt.id, si, tekst) : undefined}>
+                        onToevoegen={onNotitieToevoegen ? (tekst) => onNotitieToevoegen(punt.id, si, tekst) : undefined}
+                        bijlagen={sub.bijlagen} vergaderingId={v.id}
+                        onBijlageToevoegen={onBijlageToevoegen ? (bijlage) => onBijlageToevoegen(punt.id, si, bijlage) : undefined}
+                        onBijlageVerwijderen={onBijlageVerwijderen ? (bijlageId) => onBijlageVerwijderen(punt.id, si, bijlageId) : undefined}>
                         <span style={{ minWidth: '20px', fontSize: '13px', color: 'var(--tekst-zacht)', fontStyle: 'italic', fontFamily: 'Arial', flexShrink: 0 }}>{String.fromCharCode(97 + si)}.</span>
                         {sub.starttijd && <span style={{ fontSize: '13px', fontFamily: 'Arial', color: '#1a5c8a', fontWeight: 'bold', flexShrink: 0 }}>{sub.starttijd}</span>}
                         <span style={{ fontSize: '14px', flex: 1 }}>{sub.titel}</span>
@@ -100,7 +108,10 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false, na
                         <RegelMetNotitie key={si}
                           rowStyle={{ display: 'flex', gap: '10px', padding: '3px 0 3px 14px', alignItems: 'baseline', paddingLeft: isSubtype ? '32px' : '14px' }}
                           notities={sub.notities} naam={naam}
-                          onToevoegen={onNotitieToevoegen ? (tekst) => onNotitieToevoegen(punt.id, si, tekst) : undefined}>
+                          onToevoegen={onNotitieToevoegen ? (tekst) => onNotitieToevoegen(punt.id, si, tekst) : undefined}
+                          bijlagen={sub.bijlagen} vergaderingId={v.id}
+                          onBijlageToevoegen={onBijlageToevoegen ? (bijlage) => onBijlageToevoegen(punt.id, si, bijlage) : undefined}
+                          onBijlageVerwijderen={onBijlageVerwijderen ? (bijlageId) => onBijlageVerwijderen(punt.id, si, bijlageId) : undefined}>
                           {isSubtype && (
                             <span style={{ fontSize: '10px', background: isMotie ? '#fff0e8' : '#f0e8ff', color: isMotie ? '#8a4000' : '#5a1a8a', border: `1px solid ${isMotie ? '#e8a060' : '#c0a0d8'}`, padding: '1px 5px', borderRadius: '3px', flexShrink: 0, fontFamily: 'Arial' }}>
                               {isMotie ? 'Motie' : 'Amendement'}
@@ -123,7 +134,10 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false, na
                       <RegelMetNotitie key={sub.id || si}
                         rowStyle={{ display: 'flex', gap: '10px', padding: '3px 0 3px 14px' }}
                         notities={sub.notities} naam={naam}
-                        onToevoegen={onNotitieToevoegen ? (tekst) => onNotitieToevoegen(punt.id, si, tekst) : undefined}>
+                        onToevoegen={onNotitieToevoegen ? (tekst) => onNotitieToevoegen(punt.id, si, tekst) : undefined}
+                        bijlagen={sub.bijlagen} vergaderingId={v.id}
+                        onBijlageToevoegen={onBijlageToevoegen ? (bijlage) => onBijlageToevoegen(punt.id, si, bijlage) : undefined}
+                        onBijlageVerwijderen={onBijlageVerwijderen ? (bijlageId) => onBijlageVerwijderen(punt.id, si, bijlageId) : undefined}>
                         <span style={{ minWidth: '20px', fontSize: '13px', color: 'var(--tekst-zacht)', fontStyle: 'italic', fontFamily: 'Arial', flexShrink: 0 }}>{String.fromCharCode(97 + si)}.</span>
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
@@ -176,10 +190,12 @@ function MetaRij({ label, waarde }: { label: string; waarde: string }) {
   )
 }
 
-export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop, naam = '', onNotitieToevoegen, onVrijPuntToevoegen }: {
+export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop, naam = '', onNotitieToevoegen, onVrijPuntToevoegen, onBijlageToevoegen, onBijlageVerwijderen }: {
   vergadering: Vergadering; toonPrintKnop?: boolean; naam?: string
   onNotitieToevoegen?: (puntId: number, subIndex: number | null, tekst: string) => void
   onVrijPuntToevoegen?: (tekst: string) => void
+  onBijlageToevoegen?: (puntId: number, subIndex: number | null, bijlage: { naam: string; pad: string; type: string; grootte: number; uploader: string }) => void
+  onBijlageVerwijderen?: (puntId: number, subIndex: number | null, bijlageId: string) => void
 }) {
   const actielijst = Array.isArray(v.actielijst) ? v.actielijst : []
   const kalender = Array.isArray(v.kalender) ? v.kalender : []
@@ -194,7 +210,8 @@ export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop, naam = '',
 
   return (
     <div>
-      <Leesweergave vergadering={v} toonPrintKnop={toonPrintKnop} naam={naam} onNotitieToevoegen={onNotitieToevoegen} onVrijPuntToevoegen={onVrijPuntToevoegen} />
+      <Leesweergave vergadering={v} toonPrintKnop={toonPrintKnop} naam={naam} onNotitieToevoegen={onNotitieToevoegen} onVrijPuntToevoegen={onVrijPuntToevoegen}
+        onBijlageToevoegen={onBijlageToevoegen} onBijlageVerwijderen={onBijlageVerwijderen} />
 
       {actielijst.length > 0 && (
         <div style={{ marginTop: '32px', borderTop: '2px solid var(--blauw)', paddingTop: '20px' }}>

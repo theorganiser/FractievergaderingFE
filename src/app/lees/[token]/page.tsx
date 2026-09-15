@@ -12,7 +12,7 @@ interface Props { params: { token: string } }
 
 export default function LeesPagina({ params }: Props) {
   const { token } = params
-  const { vergadering, geladen, fout, herlaad, updateNotulen, voegNotitieToe, zetAanwezigheid, voegVrijPuntToe } = useVergaderingOpToken(token)
+  const { vergadering, geladen, fout, herlaad, updateNotulen, voegNotitieToe, zetAanwezigheid, voegVrijPuntToe, voegBijlageToe, verwijderBijlage } = useVergaderingOpToken(token)
   const { isAdmin, heeftToegang, naam } = useAuth()
 
   if (!geladen) return (
@@ -74,7 +74,9 @@ export default function LeesPagina({ params }: Props) {
       </div>
       <LeesweergaveVolledig vergadering={vergadering} toonPrintKnop naam={naam}
         onNotitieToevoegen={(puntId, subIndex, tekst) => voegNotitieToe(puntId, subIndex, naam, tekst)}
-        onVrijPuntToevoegen={terugkoppelingPunt ? (tekst) => voegVrijPuntToe(terugkoppelingPunt.id, naam, tekst) : undefined} />
+        onVrijPuntToevoegen={terugkoppelingPunt ? (tekst) => voegVrijPuntToe(terugkoppelingPunt.id, naam, tekst) : undefined}
+        onBijlageToevoegen={(puntId, subIndex, bijlage) => voegBijlageToe(puntId, subIndex, bijlage)}
+        onBijlageVerwijderen={(puntId, subIndex, bijlageId) => verwijderBijlage(puntId, subIndex, bijlageId)} />
       <Notulen
         notulen={vergadering.notulen || ''}
         onUpdate={heeftToegang ? updateNotulen : undefined}

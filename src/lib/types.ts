@@ -5,6 +5,16 @@ export interface Notitie {
   datum: string // ISO timestamp
 }
 
+export interface Bijlage {
+  id: string
+  naam: string      // oorspronkelijke bestandsnaam
+  pad: string        // pad in Supabase Storage bucket "bijlagen"
+  type: string        // MIME-type
+  grootte: number     // bytes
+  uploader: string
+  datum: string        // ISO timestamp
+}
+
 export interface Subpunt {
   id: string
   titel: string
@@ -22,6 +32,7 @@ export interface Subpunt {
   gekoppeldAanRv?: string  // rvNummer van het gekoppelde raadsvoorstel (voor moties/amendementen)
   stemlijstKey?: string    // unieke key voor stemlijst opslag (UUID, nooit veranderend)
   notities?: Notitie[]     // losse notities per fractielid, zichtbaar voor iedereen
+  bijlagen?: Bijlage[]     // bijlagen (PDF/afbeelding), toe te voegen en te verwijderen door iedereen
 }
 
 export interface Agendapunt {
@@ -36,6 +47,7 @@ export interface Agendapunt {
   // Raadsvergadering datum
   rvDatum?: string
   notities?: Notitie[]     // losse notities per fractielid, zichtbaar voor iedereen
+  bijlagen?: Bijlage[]     // bijlagen (PDF/afbeelding), toe te voegen en te verwijderen door iedereen
 }
 
 export interface ActieItem {
