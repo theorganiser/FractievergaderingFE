@@ -6,10 +6,12 @@ const nieuweKey = () => Math.random().toString(36).substring(2) + Date.now().toS
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Agendapunt, Subpunt } from '@/lib/types'
 import IngekomenStukkenInvoer from './IngekomentukkenInvoer'
+import { berekenTijden, isInformeer } from '@/lib/tijdsblok'
 
 interface AgendaEditorProps {
   vergaderingId: string
   punten: Agendapunt[]
+  aanvang?: string
   isAdmin: boolean
   onUpdatePunt: (puntIndex: number, wijzigingen: Partial<Agendapunt>) => void
   onVerwijderPunt: (puntIndex: number) => void
@@ -25,7 +27,7 @@ interface AgendaEditorProps {
 type NieuwPuntType = 'algemeen' | 'politieke_avond' | 'raadsvergadering'
 
 export default function AgendaEditor({
-  punten, isAdmin, onUpdatePunt, onVerwijderPunt, onVoegPuntToe,
+  punten, aanvang = '', isAdmin, onUpdatePunt, onVerwijderPunt, onVoegPuntToe,
   onVoegSubpuntToe, onVerwijderSubpunt, onUpdateSubpunt,
   onSyncDocumenten, ladenSync, onHerorden,
 }: AgendaEditorProps) {
@@ -41,6 +43,27 @@ export default function AgendaEditor({
     nieuw.forEach((p, i) => { p.id = i + 1 })
     onHerorden(nieuw)
   }
+
+  // Wisselt een punt tussen bespreekpunt en informeerpunt. Informeerpunten staan onderaan de agenda,
+  // dus het punt wordt verplaatst (naar het einde, of terug vóór de Rondvraag).
+  const wisselSoort = (pi: number) => {
+    const nieuw = punten.map(p => ({ ...p }))
+    const [punt] = nieuw.splice(pi, 1)
+    if (isInformeer(punt)) {
+      punt.soort = 'bespreek'
+      let idx = nieuw.findIndex(p => !isInformeer(p) && p.titel.toLowerCase().includes('rondvraag'))
+      if (idx === -1) idx = nieuw.findIndex(p => isInformeer(p))
+      if (idx === -1) idx = nieuw.length
+      nieuw.splice(idx, 0, punt)
+    } else {
+      punt.soort = 'informeer'
+      nieuw.push(punt)
+    }
+    nieuw.forEach((p, i) => { p.id = i + 1 })
+    onHerorden(nieuw)
+  }
+
+  const tijden = berekenTijden(punten, aanvang)
 
   const voegNieuwPuntToe = (type: NieuwPuntType) => {
     setToonTypeKiezer(false)
@@ -85,6 +108,11 @@ export default function AgendaEditor({
           )}
         </div>
         <div style={{ flex: 1 }} />
+        {tijden.totaalMinuten > 0 && (
+          <span title="Som van de tijdsblokken van de bespreekpunten" style={{ fontSize: '12px', fontFamily: 'Arial', color: '#1a5c8a', background: '#eaf3fa', border: '1px solid #bcd6ea', padding: '4px 10px', borderRadius: '8px' }}>
+            ⏱ {tijden.totaalMinuten} min{tijden.einde ? ` · einde ± ${tijden.einde}` : ''}
+          </span>
+        )}
         <button onClick={onSyncDocumenten} disabled={ladenSync} style={btnAccent}>
           {ladenSync ? '⏳ Bezig...' : '📋 Documenten selecteren'}
         </button>
@@ -104,6 +132,8 @@ export default function AgendaEditor({
                         punt={punt} puntIndex={pi} isAdmin={isAdmin}
                         dragHandleProps={provided.dragHandleProps}
                         isDragging={snapshot.isDragging}
+                        starttijd={tijden.perPunt[punt.id]?.start || null}
+                        onWisselSoort={() => wisselSoort(pi)}
                         onUpdate={(w) => onUpdatePunt(pi, w)}
                         onVerwijder={() => onVerwijderPunt(pi)}
                         onVoegSubToe={() => onVoegSubpuntToe(pi)}
@@ -147,12 +177,13 @@ export default function AgendaEditor({
 interface PuntEditorProps {
   punt: Agendapunt; puntIndex: number; isAdmin: boolean
   dragHandleProps: object | null | undefined; isDragging: boolean
+  starttijd: string | null; onWisselSoort: () => void
   onUpdate: (w: Partial<Agendapunt>) => void; onVerwijder: () => void
   onVoegSubToe: () => void; onVerwijderSub: (si: number) => void
   onUpdateSub: (si: number, w: Partial<Subpunt>) => void
 }
 
-function PuntEditor({ punt, isAdmin, dragHandleProps, isDragging, onUpdate, onVerwijder, onVoegSubToe, onVerwijderSub, onUpdateSub }: PuntEditorProps) {
+function PuntEditor({ punt, isAdmin, dragHandleProps, isDragging, starttijd, onWisselSoort, onUpdate, onVerwijder, onVoegSubToe, onVerwijderSub, onUpdateSub }: PuntEditorProps) {
   const [ingeklapt, setIngeklapt] = useState(false)
   const isIngekomen = punt.titel.toLowerCase().includes('ingekomen')
   const isMededelingen = punt.titel.toLowerCase().includes('mededeling')
@@ -162,6 +193,7 @@ function PuntEditor({ punt, isAdmin, dragHandleProps, isDragging, onUpdate, onVe
   const typeKleur = isPA ? '#1a5c8a' : isRV ? '#5a1a8a' : 'var(--blauw)'
   const typeBg = isPA ? '#e8f0f8' : isRV ? '#f0e8f8' : 'var(--blauw-licht)'
   const typeLabel = isPA ? '🏛 PA' : isRV ? '⚖️ RV' : null
+  const informeer = isInformeer(punt)
 
   return (
     <div style={{ border: `1px solid ${isDragging ? '#4a1a5c' : 'var(--rand)'}`, borderRadius: '8px', overflow: 'hidden', background: 'white' }}>
@@ -172,6 +204,20 @@ function PuntEditor({ punt, isAdmin, dragHandleProps, isDragging, onUpdate, onVe
         {typeLabel && <span style={{ fontSize: '10px', background: 'white', border: `1px solid ${typeKleur}`, color: typeKleur, padding: '1px 6px', borderRadius: '3px', flexShrink: 0 }}>{typeLabel}</span>}
         <input className="invoer-inline" style={{ fontWeight: 'bold', color: typeKleur, borderColor: 'rgba(74,26,92,0.25)', flex: 1 }}
           value={punt.titel} onChange={e => onUpdate({ titel: e.target.value })} />
+        {!informeer && starttijd && (
+          <span title="Verwachte starttijd" style={{ fontSize: '11px', fontFamily: 'Arial', color: '#1a5c8a', flexShrink: 0 }}>{starttijd}</span>
+        )}
+        <input type="number" min={0} max={480} step={5} title="Tijdsblok in minuten" placeholder="min"
+          className="invoer-inline" style={{ width: '58px', flexShrink: 0, textAlign: 'right' as const }}
+          value={punt.minuten ?? ''}
+          onChange={e => onUpdate({ minuten: e.target.value === '' ? undefined : Math.max(0, Number(e.target.value)) })} />
+        {!isPA && !isRV && (
+          <button onClick={onWisselSoort}
+            title={informeer ? 'Ter informatie — klik om er een bespreekpunt van te maken' : 'Bespreekpunt — klik om het ter informatie (onderaan de agenda) te zetten'}
+            style={{ ...iconKnop, fontSize: '11px', fontFamily: 'Arial', padding: '3px 8px', borderRadius: '5px', border: `1px solid ${informeer ? '#bcd6ea' : 'var(--rand)'}`, background: informeer ? '#eaf3fa' : 'white', color: informeer ? '#1a5c8a' : 'var(--tekst-zacht)' }}>
+            {informeer ? 'ℹ️ Info' : 'Bespreek'}
+          </button>
+        )}
         <button onClick={() => setIngeklapt(!ingeklapt)} style={iconKnop} title={ingeklapt ? 'Uitklappen' : 'Inklappen'}>
           {ingeklapt ? '▸' : '▾'}
         </button>

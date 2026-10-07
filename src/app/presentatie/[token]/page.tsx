@@ -2,16 +2,24 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
 import { formatDatum, formatDatumNL } from '@/lib/datum'
-import { Vergadering } from '@/lib/types'
+import { Vergadering, Notitie } from '@/lib/types'
+import { berekenTijden, isInformeer } from '@/lib/tijdsblok'
+import { KALENDER_VOORUIT_DAGEN } from '@/components/Leesweergave'
 
 interface Props { params: { token: string } }
 
 export default function PresentatiePagina({ params }: Props) {
   const { token } = params
-  const { vergadering, geladen } = useVergaderingOpToken(token)
+  const { vergadering, geladen, stilleHerlaad } = useVergaderingOpToken(token)
+
+  // Elke 20 seconden stil verversen, zodat nieuwe opmerkingen tijdens de vergadering verschijnen
+  useEffect(() => {
+    const timer = setInterval(stilleHerlaad, 20000)
+    return () => clearInterval(timer)
+  }, [stilleHerlaad])
 
   if (!geladen) return (
     <div style={{ background: '#2d0a40', color: 'white', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontFamily: 'Arial' }}>
@@ -47,7 +55,11 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
   const toggleAfgehandeld = (id: number) => { setAfgehandeld(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n }); setHuidig(id) }
 
   // Normaliseer arrays zodat Supabase data nooit undefined geeft
-  const punten = (v.punten || []).map(p => ({ ...p, subpunten: Array.isArray(p.subpunten) ? p.subpunten : [] }))
+  const alle = (v.punten || []).map(p => ({ ...p, subpunten: Array.isArray(p.subpunten) ? p.subpunten : [] }))
+  // Bespreekpunten eerst, informeerpunten ("ter informatie") onderaan
+  const punten = [...alle.filter(p => !isInformeer(p)), ...alle.filter(p => isInformeer(p))]
+  const eersteInformeerIdx = punten.findIndex(p => isInformeer(p))
+  const tijden = berekenTijden(punten, v.aanvang)
   const actielijst = Array.isArray(v.actielijst) ? v.actielijst : []
   const kalender = Array.isArray(v.kalender) ? v.kalender : []
 
@@ -98,14 +110,21 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
         </div>
 
         {/* Agendapunten */}
-        {punten.map((punt) => {
+        {punten.map((punt, pIdx) => {
+          const tijd = tijden.perPunt[punt.id]
           const isDone = afgehandeld.has(punt.id)
           const isActive = huidig === punt.id && !isDone
           const isKlapt = ingeklapt.has(punt.id)
           const puntUrl = (punt as { url?: string }).url
 
           return (
-            <div key={punt.id} style={{
+            <Fragment key={punt.id}>
+            {pIdx === eersteInformeerIdx && (
+              <div style={{ margin: '24px 4px 10px', paddingTop: '14px', borderTop: `1px solid ${kaartRand}`, color: GOUD, fontFamily: 'Arial', fontWeight: 'bold', fontSize: '15px' }}>
+                ℹ️ Ter informatie
+              </div>
+            )}
+            <div style={{
               background: isDone
                 ? (donkerModus ? '#0a1a0a' : '#f0faf2')
                 : isActive
@@ -140,6 +159,11 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
                       {punt.toelichting}
                     </span>
                   )}
+                  {tijd && tijd.minuten > 0 && (
+                    <span style={{ fontSize: '12px', fontFamily: 'Arial', marginLeft: '10px', color: GOUD_LICHT, border: `1px solid ${GOUD}`, padding: '1px 8px', borderRadius: '9px', whiteSpace: 'nowrap' }}>
+                      ⏱ {tijd.start ? `${tijd.start} · ` : ''}{tijd.minuten} min
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: '6px' }} onClick={e => e.stopPropagation()}>
                   {punt.subpunten.length > 0 && (
@@ -154,6 +178,8 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
                 </div>
               </div>
 
+              <PresNotities notities={punt.notities} donker={donkerModus} basisFs={basisFs} inspring="52px" />
+
               {/* Subpunten */}
               {!isKlapt && punt.subpunten.length > 0 && (
                 <div style={{ borderTop: `1px solid ${kaartRand}` }}>
@@ -163,7 +189,8 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
                     const isMotie = sub.subtype === 'motie'
                     const isAmendement = sub.subtype === 'amendement'
                     return (
-                      <div key={sub.id || si} onClick={() => toggleSub(punt.id, si)} style={{ padding: '9px 16px 9px 60px', borderBottom: si < punt.subpunten.length - 1 ? `1px solid ${donkerModus ? 'rgba(255,255,255,0.06)' : '#f0ede8'}` : 'none', display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: (isMotie || isAmendement) ? '80px' : '60px', background: afgehandeldeSubs.has(`${punt.id}-${si}`) ? (donkerModus ? 'rgba(0,50,0,0.3)' : 'rgba(0,100,0,0.06)') : (isMotie || isAmendement) ? (donkerModus ? 'rgba(0,0,0,0.15)' : 'rgba(90,26,138,0.04)') : 'transparent', cursor: 'pointer', opacity: afgehandeldeSubs.has(`${punt.id}-${si}`) ? 0.6 : 1, transition: 'all 0.2s' }}>
+                      <Fragment key={sub.id || si}>
+                      <div onClick={() => toggleSub(punt.id, si)} style={{ padding: '9px 16px 9px 60px', borderBottom: si < punt.subpunten.length - 1 ? `1px solid ${donkerModus ? 'rgba(255,255,255,0.06)' : '#f0ede8'}` : 'none', display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: (isMotie || isAmendement) ? '80px' : '60px', background: afgehandeldeSubs.has(`${punt.id}-${si}`) ? (donkerModus ? 'rgba(0,50,0,0.3)' : 'rgba(0,100,0,0.06)') : (isMotie || isAmendement) ? (donkerModus ? 'rgba(0,0,0,0.15)' : 'rgba(90,26,138,0.04)') : 'transparent', cursor: 'pointer', opacity: afgehandeldeSubs.has(`${punt.id}-${si}`) ? 0.6 : 1, transition: 'all 0.2s' }}>
                         {/* PA: toon starttijd */}
                         {isPA && sub.starttijd && (
                           <span style={{ fontSize: '13px', fontWeight: 'bold', color: GOUD, fontFamily: 'Arial', flexShrink: 0, minWidth: '50px' }}>
@@ -210,12 +237,20 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
                             Afgedaan
                           </span>
                         )}
+                        {sub.bespreekKey && !sub.bespreekKopie && (
+                          <span style={{ fontSize: '10px', background: '#fff3cc', color: '#8a6800', border: '1px solid #e8c860', padding: '1px 5px', borderRadius: '3px', fontFamily: 'Arial' }}>
+                            🗣 Wordt besproken
+                          </span>
+                        )}
                       </div>
+                      <PresNotities notities={sub.notities} donker={donkerModus} basisFs={basisFs} inspring={(isMotie || isAmendement) ? '80px' : '60px'} />
+                      </Fragment>
                     )
                   })}
                 </div>
               )}
             </div>
+            </Fragment>
           )
         })}
         <div style={{ height: '40px' }} />
@@ -256,6 +291,23 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
   )
 }
 
+// Opmerkingen van fractieleden bij een punt of subpunt — alleen lezen in de presentatiemodus
+function PresNotities({ notities, donker, basisFs, inspring }: { notities?: Notitie[]; donker: boolean; basisFs: string; inspring: string }) {
+  if (!notities || notities.length === 0) return null
+  return (
+    <div style={{ padding: `4px 16px 10px ${inspring}` }}>
+      {notities.map(n => (
+        <div key={n.id} style={{ display: 'flex', gap: '8px', alignItems: 'baseline', padding: '4px 10px', marginTop: '3px', borderLeft: '3px solid #e8c860', background: donker ? 'rgba(232,200,96,0.10)' : '#fff8e0', borderRadius: '0 6px 6px 0' }}>
+          <span style={{ fontSize: '12px', flexShrink: 0 }}>💬</span>
+          <span style={{ fontSize: `calc(${basisFs} - 4px)`, fontFamily: 'Arial', color: donker ? '#f0e8f8' : '#1a0a2e', whiteSpace: 'pre-wrap' }}>
+            <strong>{n.naam}:</strong> {n.tekst}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function CentraleKalenderSectie({ donkerModus, kaartRand, basisFs, GOUD, GOUD_LICHT }: {
   donkerModus: boolean; kaartRand: string; basisFs: string; GOUD: string; GOUD_LICHT: string
 }) {
@@ -263,7 +315,7 @@ function CentraleKalenderSectie({ donkerModus, kaartRand, basisFs, GOUD, GOUD_LI
 
   useEffect(() => {
     import('@/lib/kalender').then(({ haalKalenderItems }) => {
-      haalKalenderItems(true).then(data => setItems(data)).catch(() => {})
+      haalKalenderItems(true, KALENDER_VOORUIT_DAGEN).then(data => setItems(data)).catch(() => {})
     })
   }, [])
 
@@ -273,7 +325,7 @@ function CentraleKalenderSectie({ donkerModus, kaartRand, basisFs, GOUD, GOUD_LI
     <div style={{ maxWidth: '860px', margin: '0 auto', padding: '0 20px 40px' }}>
       <div style={{ borderTop: `1px solid ${kaartRand}`, paddingTop: '20px' }}>
         <h2 style={{ fontSize: '15px', color: GOUD, fontFamily: 'Arial', fontWeight: 'bold', marginBottom: '12px' }}>
-          📅 Fractiekalender — aankomende evenementen
+          📅 Fractiekalender — komende 2 weken
         </h2>
         {items.map(item => (
           <div key={item.id} style={{ display: 'flex', gap: '16px', padding: '6px 0', borderBottom: `1px solid ${donkerModus ? 'rgba(255,255,255,0.06)' : '#f0ede8'}`, alignItems: 'baseline' }}>

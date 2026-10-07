@@ -210,7 +210,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
             </div>
           )}
           <AgendaEditor
-          vergaderingId={id} punten={v.punten} isAdmin={isAdmin}
+          vergaderingId={id} punten={v.punten} aanvang={v.aanvang} isAdmin={isAdmin}
           onUpdatePunt={(pi, w) => updatePunt(id, pi, w)}
           onVerwijderPunt={(pi) => verwijderPunt(id, pi)}
           onVoegPuntToe={() => voegPuntToe(id)}

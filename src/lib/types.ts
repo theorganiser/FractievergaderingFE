@@ -3,6 +3,7 @@ export interface Notitie {
   naam: string
   tekst: string
   datum: string // ISO timestamp
+  bewerkt?: string // ISO timestamp van de laatste wijziging door de auteur
 }
 
 export interface Bijlage {
@@ -33,6 +34,10 @@ export interface Subpunt {
   stemlijstKey?: string    // unieke key voor stemlijst opslag (UUID, nooit veranderend)
   notities?: Notitie[]     // losse notities per fractielid, zichtbaar voor iedereen
   bijlagen?: Bijlage[]     // bijlagen (PDF/afbeelding), toe te voegen en te verwijderen door iedereen
+  // Informeerpunten: koppelt een te-bespreken-verzoek aan zijn kopie onder "Te bespreken"
+  bespreekKey?: string
+  bespreekDoor?: string    // wie wil dit bespreken (alleen op het origineel bij het informeerpunt)
+  bespreekKopie?: boolean  // true = dit is de kopie onder "Te bespreken"
 }
 
 export interface Agendapunt {
@@ -46,7 +51,10 @@ export interface Agendapunt {
   puntType?: 'algemeen' | 'politieke_avond' | 'raadsvergadering'
   // Raadsvergadering datum
   rvDatum?: string
-  notities?: Notitie[]     // losse notities per fractielid, zichtbaar voor iedereen
+  // 'informeer' = ter informatie (staat onderaan de agenda); leeg/'bespreek' = bespreekpunt
+  soort?: 'bespreek' | 'informeer'
+  minuten?: number         // tijdsblok in minuten
+  notities?: Notitie[]    // losse notities per fractielid, zichtbaar voor iedereen
   bijlagen?: Bijlage[]     // bijlagen (PDF/afbeelding), toe te voegen en te verwijderen door iedereen
 }
 

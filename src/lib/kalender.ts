@@ -15,7 +15,8 @@ export interface CentraalKalenderItem {
 }
 
 // Haal alle kalenderitems op gesorteerd op datum
-export async function haalKalenderItems(alleenToekomst = false): Promise<CentraalKalenderItem[]> {
+// maxDagenVooruit: beperkt tot items binnen dat aantal dagen vanaf vandaag (alleen met alleenToekomst)
+export async function haalKalenderItems(alleenToekomst = false, maxDagenVooruit?: number): Promise<CentraalKalenderItem[]> {
   let query = supabase
     .from('kalender_items')
     .select('*')
@@ -24,6 +25,11 @@ export async function haalKalenderItems(alleenToekomst = false): Promise<Centraa
   if (alleenToekomst) {
     const vandaag = new Date().toISOString().split('T')[0]
     query = query.gte('datum', vandaag)
+    if (maxDagenVooruit !== undefined) {
+      const eind = new Date()
+      eind.setDate(eind.getDate() + maxDagenVooruit)
+      query = query.lte('datum', eind.toISOString().split('T')[0])
+    }
   }
 
   const { data, error } = await query

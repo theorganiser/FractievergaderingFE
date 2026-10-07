@@ -27,9 +27,12 @@ export function NotitieKnop({ aantal, open, onClick }: { aantal: number; open: b
 
 // Het uitklapbare paneel — los van de knop, zodat de aanroeper 'm buiten de
 // flex-regel kan renderen (voorkomt dat elke regel standaard extra hoogte inneemt).
-export function NotitiePaneel({ notities, naam, onToevoegen, tekst, setTekst, bezig, onPlaats }: {
+export function NotitiePaneel({ notities, naam, isAdmin, onToevoegen, onWijzig, onVerwijder, tekst, setTekst, bezig, onPlaats }: {
   notities?: Notitie[]
   naam: string
+  isAdmin?: boolean
+  onWijzig?: (notitieId: string, tekst: string) => Promise<void> | void
+  onVerwijder?: (notitieId: string) => Promise<void> | void
   onToevoegen?: boolean
   tekst: string
   setTekst: (t: string) => void
@@ -42,12 +45,9 @@ export function NotitiePaneel({ notities, naam, onToevoegen, tekst, setTekst, be
       {aantal > 0 && (
         <div style={{ marginBottom: onToevoegen ? '10px' : 0 }}>
           {notities!.map(n => (
-            <div key={n.id} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #ece7e0' }}>
-              <div style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>
-                <strong>{n.naam}</strong> · {new Date(n.datum).toLocaleDateString('nl-NL')} {new Date(n.datum).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
-              </div>
-              <div style={{ fontSize: '13px', fontFamily: 'Arial', color: 'var(--tekst)', whiteSpace: 'pre-wrap' as const, marginTop: '1px' }}>{n.tekst}</div>
-            </div>
+            <NotitieRegel key={n.id} notitie={n}
+              magAanpassen={((!!naam && n.naam === naam) || !!isAdmin) && !!(onWijzig || onVerwijder)}
+              onWijzig={onWijzig} onVerwijder={onVerwijder} />
           ))}
         </div>
       )}
@@ -76,15 +76,83 @@ export function NotitiePaneel({ notities, naam, onToevoegen, tekst, setTekst, be
   )
 }
 
+// Eén notitie, met (voor de auteur en de beheerder) bewerken en verwijderen.
+function NotitieRegel({ notitie: n, magAanpassen, onWijzig, onVerwijder }: {
+  notitie: Notitie
+  magAanpassen: boolean
+  onWijzig?: (notitieId: string, tekst: string) => Promise<void> | void
+  onVerwijder?: (notitieId: string) => Promise<void> | void
+}) {
+  const [bewerken, setBewerken] = useState(false)
+  const [tekst, setTekst] = useState(n.tekst)
+  const [bezig, setBezig] = useState(false)
+
+  const start = () => { setTekst(n.tekst); setBewerken(true) }
+  const bewaar = async () => {
+    if (!tekst.trim() || !onWijzig) return
+    setBezig(true)
+    await onWijzig(n.id, tekst)
+    setBezig(false)
+    setBewerken(false)
+  }
+  const verwijder = async () => {
+    if (!onVerwijder) return
+    if (!confirm('Deze opmerking verwijderen?')) return
+    setBezig(true)
+    await onVerwijder(n.id)
+    setBezig(false)
+  }
+
+  const linkStijl: React.CSSProperties = { background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '11px', fontFamily: 'Arial', color: 'var(--tekst-zacht)', textDecoration: 'underline' }
+
+  return (
+    <div style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #ece7e0' }}>
+      <div style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', display: 'flex', gap: '8px', alignItems: 'baseline', flexWrap: 'wrap' }}>
+        <span>
+          <strong>{n.naam}</strong> · {new Date(n.datum).toLocaleDateString('nl-NL')} {new Date(n.datum).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+          {n.bewerkt && <em> · aangepast</em>}
+        </span>
+        {magAanpassen && !bewerken && (
+          <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: '10px' }}>
+            {onWijzig && <button onClick={start} disabled={bezig} style={linkStijl}>Bewerken</button>}
+            {onVerwijder && <button onClick={verwijder} disabled={bezig} style={{ ...linkStijl, color: 'var(--rood)' }}>Verwijderen</button>}
+          </span>
+        )}
+      </div>
+      {bewerken ? (
+        <div style={{ marginTop: '4px' }}>
+          <textarea rows={3} value={tekst} onChange={e => setTekst(e.target.value)} autoFocus
+            style={{ width: '100%', fontSize: '13px', fontFamily: 'Arial', padding: '7px 9px', border: '1px solid var(--rand)', borderRadius: '6px', resize: 'vertical' as const, outline: 'none', boxSizing: 'border-box' as const }} />
+          <div style={{ display: 'flex', gap: '8px', marginTop: '4px', justifyContent: 'flex-end' }}>
+            <button onClick={() => setBewerken(false)} disabled={bezig}
+              style={{ background: 'white', color: 'var(--tekst-zacht)', border: '1px solid var(--rand)', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontFamily: 'Arial', cursor: 'pointer' }}>
+              Annuleren
+            </button>
+            <button onClick={bewaar} disabled={!tekst.trim() || bezig}
+              style={{ background: 'var(--blauw)', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontFamily: 'Arial', fontWeight: '600', cursor: (!tekst.trim() || bezig) ? 'not-allowed' : 'pointer', opacity: (!tekst.trim() || bezig) ? 0.5 : 1 }}>
+              {bezig ? '...' : 'Opslaan'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ fontSize: '13px', fontFamily: 'Arial', color: 'var(--tekst)', whiteSpace: 'pre-wrap' as const, marginTop: '1px' }}>{n.tekst}</div>
+      )}
+    </div>
+  )
+}
+
 // Combineert een bestaande regel (badges/titel als children, laatste flex-item wordt de
 // notitie-badge) met het uitklappaneel eronder. Eén component per regel = eigen state,
 // dus de badge staat inline en het paneel neemt alleen ruimte in als hij open staat.
-export function RegelMetNotitie({ children, rowStyle, notities, naam, onToevoegen, bijlagen, vergaderingId, onBijlageToevoegen, onBijlageVerwijderen }: {
+export function RegelMetNotitie({ children, rowStyle, notities, naam, isAdmin, onToevoegen, onNotitieWijzig, onNotitieVerwijder, bijlagen, vergaderingId, onBijlageToevoegen, onBijlageVerwijderen }: {
   children: React.ReactNode
   rowStyle: React.CSSProperties
   notities?: Notitie[]
   naam: string
+  isAdmin?: boolean
   onToevoegen?: (tekst: string) => void
+  onNotitieWijzig?: (notitieId: string, tekst: string) => Promise<void> | void
+  onNotitieVerwijder?: (notitieId: string) => Promise<void> | void
   bijlagen?: Bijlage[]
   vergaderingId?: string
   onBijlageToevoegen?: (bijlage: { naam: string; pad: string; type: string; grootte: number; uploader: string }) => void
@@ -118,7 +186,8 @@ export function RegelMetNotitie({ children, rowStyle, notities, naam, onToevoege
         )}
       </div>
       {open && (
-        <NotitiePaneel notities={notities} naam={naam} onToevoegen={!!onToevoegen}
+        <NotitiePaneel notities={notities} naam={naam} isAdmin={isAdmin} onToevoegen={!!onToevoegen}
+          onWijzig={onNotitieWijzig} onVerwijder={onNotitieVerwijder}
           tekst={tekst} setTekst={setTekst} bezig={bezig} onPlaats={plaats} />
       )}
       {bijlageOpen && vergaderingId && onBijlageToevoegen && onBijlageVerwijderen && (

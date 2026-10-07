@@ -316,6 +316,13 @@ export function useVergaderingOpToken(token: string) {
 
   useEffect(() => { laad() }, [laad])
 
+  // Ververst op de achtergrond (zonder laadscherm), bijv. voor de presentatiemodus
+  // zodat opmerkingen die tijdens de vergadering worden toegevoegd vanzelf verschijnen.
+  const stilleHerlaad = useCallback(() => {
+    if (!token) return
+    dbLaadOpToken(token).then(data => { if (data) setVergadering(data) }).catch(() => {})
+  }, [token])
+
   const updateNotulen = useCallback(async (notulen: string) => {
     if (!vergadering) return
     // Vers ophalen vlak voor het schrijven, zodat we niet een verouderde lokale
@@ -347,6 +354,94 @@ export function useVergaderingOpToken(token: string) {
       if (!sub) return
       sub.notities = [...(sub.notities || []), nieuweNotitie]
     }
+    const bijgewerkt = { ...basis, punten: nieuwePunten, bijgewerkt: new Date().toISOString() }
+    setVergadering(bijgewerkt)
+    await slaVergaderingOp(bijgewerkt)
+  }, [vergadering, token])
+
+  // Past de tekst van een bestaande notitie aan. Alleen de auteur zelf (zelfde naam) of
+  // een beheerder mag dat; de controle staat hier zodat ook een verouderde UI dit niet omzeilt.
+  const wijzigNotitie = useCallback(async (puntId: number, subIndex: number | null, notitieId: string, tekst: string, naam: string, isAdmin: boolean) => {
+    if (!vergadering || !tekst.trim()) return
+    const vers = await dbLaadOpToken(token)
+    const basis = vers || vergadering
+    const nieuwePunten = JSON.parse(JSON.stringify(basis.punten)) as Vergadering['punten']
+    const punt = nieuwePunten.find(p => p.id === puntId)
+    if (!punt) return
+    const doel = subIndex === null ? punt : punt.subpunten[subIndex]
+    if (!doel) return
+    const notitie = (doel.notities || []).find(n => n.id === notitieId)
+    if (!notitie) return
+    if (notitie.naam !== naam && !isAdmin) return
+    notitie.tekst = tekst.trim()
+    notitie.bewerkt = new Date().toISOString()
+    const bijgewerkt = { ...basis, punten: nieuwePunten, bijgewerkt: new Date().toISOString() }
+    setVergadering(bijgewerkt)
+    await slaVergaderingOp(bijgewerkt)
+  }, [vergadering, token])
+
+  const verwijderNotitie = useCallback(async (puntId: number, subIndex: number | null, notitieId: string, naam: string, isAdmin: boolean) => {
+    if (!vergadering) return
+    const vers = await dbLaadOpToken(token)
+    const basis = vers || vergadering
+    const nieuwePunten = JSON.parse(JSON.stringify(basis.punten)) as Vergadering['punten']
+    const punt = nieuwePunten.find(p => p.id === puntId)
+    if (!punt) return
+    const doel = subIndex === null ? punt : punt.subpunten[subIndex]
+    if (!doel) return
+    const notitie = (doel.notities || []).find(n => n.id === notitieId)
+    if (!notitie) return
+    if (notitie.naam !== naam && !isAdmin) return
+    doel.notities = (doel.notities || []).filter(n => n.id !== notitieId)
+    const bijgewerkt = { ...basis, punten: nieuwePunten, bijgewerkt: new Date().toISOString() }
+    setVergadering(bijgewerkt)
+    await slaVergaderingOp(bijgewerkt)
+  }, [vergadering, token])
+
+  // Zet een subpunt van een informeerpunt "te bespreken" aan of uit. Aan: er komt een kopie onder
+  // het bespreekpunt "Te bespreken" (gekoppeld via bespreekKey) en het origineel krijgt een markering.
+  // Uit: de kopie verdwijnt weer en de markering gaat eraf.
+  const zetBespreken = useCallback(async (puntId: number, subIndex: number, naam: string, aan: boolean) => {
+    if (!vergadering) return
+    const vers = await dbLaadOpToken(token)
+    const basis = vers || vergadering
+    const nieuwePunten = JSON.parse(JSON.stringify(basis.punten)) as Vergadering['punten']
+    const punt = nieuwePunten.find(p => p.id === puntId)
+    const sub = punt?.subpunten[subIndex]
+    if (!punt || !sub) return
+    const hernoem = (subs: Vergadering['punten'][number]['subpunten']) => subs.forEach((s, i) => { s.id = String.fromCharCode(97 + i) })
+
+    if (aan) {
+      if (sub.bespreekKey) return
+      const sleutel = `bk-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+      let doel = nieuwePunten.find(p => p.soort !== 'informeer' && p.titel.trim().toLowerCase() === 'te bespreken')
+        || nieuwePunten.find(p => p.soort !== 'informeer' && p.titel.toLowerCase().includes('te bespreken'))
+      if (!doel) {
+        // Oudere/aangepaste agenda zonder "Te bespreken": maak het punt aan, vóór de informeerpunten.
+        doel = { id: 0, titel: 'Te bespreken', toelichting: '', subpunten: [] }
+        const eerste = nieuwePunten.findIndex(p => p.soort === 'informeer')
+        nieuwePunten.splice(eerste === -1 ? nieuwePunten.length : eerste, 0, doel)
+        nieuwePunten.forEach((p, i) => { p.id = i + 1 })
+      }
+      sub.bespreekKey = sleutel
+      sub.bespreekDoor = naam || 'Onbekend'
+      doel.subpunten.push({
+        id: String.fromCharCode(97 + doel.subpunten.length),
+        titel: sub.titel, url: sub.url || '', afgedaan: false,
+        toelichting: `Ingebracht door ${naam || 'Onbekend'} vanuit "${punt.titel}"`,
+        bespreekKey: sleutel, bespreekKopie: true,
+      })
+    } else {
+      const sleutel = sub.bespreekKey
+      if (!sleutel) return
+      nieuwePunten.forEach(p => {
+        const over = p.subpunten.filter(s => !(s.bespreekKopie && s.bespreekKey === sleutel))
+        if (over.length !== p.subpunten.length) { hernoem(over); p.subpunten = over }
+      })
+      sub.bespreekKey = undefined
+      sub.bespreekDoor = undefined
+    }
+
     const bijgewerkt = { ...basis, punten: nieuwePunten, bijgewerkt: new Date().toISOString() }
     setVergadering(bijgewerkt)
     await slaVergaderingOp(bijgewerkt)
@@ -438,5 +533,5 @@ export function useVergaderingOpToken(token: string) {
     await slaVergaderingOp(bijgewerkt2)
   }, [vergadering, token])
 
-  return { vergadering, geladen, fout, herlaad: laad, updateNotulen, voegNotitieToe, zetAanwezigheid, voegVrijPuntToe, voegBijlageToe, verwijderBijlage }
+  return { vergadering, geladen, fout, herlaad: laad, stilleHerlaad, updateNotulen, voegNotitieToe, wijzigNotitie, verwijderNotitie, zetBespreken, zetAanwezigheid, voegVrijPuntToe, voegBijlageToe, verwijderBijlage }
 }

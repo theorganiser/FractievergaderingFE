@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
+import Link from 'next/link'
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
 import Notulen from '@/components/Notulen'
 import { useAuth } from '@/hooks/useAuth'
@@ -40,11 +41,15 @@ export default function NotulenPagina({ params }: Props) {
 
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto' }} className="print-full">
-      <div className="no-print" style={{ marginBottom: '16px' }}>
-        <a href={`/lees/${token}`}
+      <div className="no-print" style={{ marginBottom: '16px', display: 'flex', gap: '18px', flexWrap: 'wrap' }}>
+        <Link href="/"
           style={{ fontSize: '13px', color: 'var(--blauw)', fontFamily: 'Arial', textDecoration: 'none' }}>
-          ← Terug naar volledige agenda
-        </a>
+          ← Alle vergaderingen
+        </Link>
+        <Link href={`/lees/${token}`}
+          style={{ fontSize: '13px', color: 'var(--blauw)', fontFamily: 'Arial', textDecoration: 'none' }}>
+          Naar de volledige agenda
+        </Link>
       </div>
 
       <div style={{ marginBottom: '8px' }}>

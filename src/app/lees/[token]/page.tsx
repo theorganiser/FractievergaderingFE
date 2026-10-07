@@ -12,7 +12,7 @@ interface Props { params: { token: string } }
 
 export default function LeesPagina({ params }: Props) {
   const { token } = params
-  const { vergadering, geladen, fout, herlaad, updateNotulen, voegNotitieToe, zetAanwezigheid, voegVrijPuntToe, voegBijlageToe, verwijderBijlage } = useVergaderingOpToken(token)
+  const { vergadering, geladen, fout, herlaad, updateNotulen, voegNotitieToe, wijzigNotitie, verwijderNotitie, zetBespreken, zetAanwezigheid, voegVrijPuntToe, voegBijlageToe, verwijderBijlage } = useVergaderingOpToken(token)
   const { isAdmin, heeftToegang, naam } = useAuth()
 
   if (!geladen) return (
@@ -47,7 +47,6 @@ export default function LeesPagina({ params }: Props) {
   const vandaag = new Date().toISOString().split('T')[0]
   const isAankomend = !!vergadering.datum && vergadering.datum >= vandaag
 
-  const terugkoppelingPunt = vergadering.punten?.find(p => p.titel.toLowerCase().includes('terugkoppeling'))
 
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto' }} className="print-full">
@@ -72,9 +71,12 @@ export default function LeesPagina({ params }: Props) {
           </button>
         )}
       </div>
-      <LeesweergaveVolledig vergadering={vergadering} toonPrintKnop naam={naam}
+      <LeesweergaveVolledig vergadering={vergadering} toonPrintKnop naam={naam} isAdmin={isAdmin}
         onNotitieToevoegen={(puntId, subIndex, tekst) => voegNotitieToe(puntId, subIndex, naam, tekst)}
-        onVrijPuntToevoegen={terugkoppelingPunt ? (tekst) => voegVrijPuntToe(terugkoppelingPunt.id, naam, tekst) : undefined}
+        onNotitieWijzig={(puntId, subIndex, notitieId, tekst) => wijzigNotitie(puntId, subIndex, notitieId, tekst, naam, isAdmin)}
+        onNotitieVerwijder={(puntId, subIndex, notitieId) => verwijderNotitie(puntId, subIndex, notitieId, naam, isAdmin)}
+        onVrijPuntToevoegen={(puntId, tekst) => voegVrijPuntToe(puntId, naam, tekst)}
+        onBespreekZet={(puntId, subIndex, aan) => zetBespreken(puntId, subIndex, naam, aan)}
         onBijlageToevoegen={(puntId, subIndex, bijlage) => voegBijlageToe(puntId, subIndex, bijlage)}
         onBijlageVerwijderen={(puntId, subIndex, bijlageId) => verwijderBijlage(puntId, subIndex, bijlageId)} />
       <Notulen
