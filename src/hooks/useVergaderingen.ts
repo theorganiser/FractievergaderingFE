@@ -21,7 +21,10 @@ export function useVergaderingen() {
   const [opslaan, setOpslaan] = useState(false)
   const [supabaseFout, setSupabaseFout] = useState(false)
   const [opslaanFout, setOpslaanFout] = useState(false)
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Eén debounce-timer per vergadering: een wijziging op B mag de nog lopende opslag van A
+  // niet annuleren.
+  const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  const lopendeSchrijfacties = useRef(0)
   // Wijzigingen die nog niet geschreven zijn, per vergadering-id opgeteld — zodat meerdere
   // snelle bewerkingen binnen hetzelfde debounce-venster niet verloren gaan.
   const pendingWijzigingen = useRef<Record<string, Partial<Vergadering>>>({})
@@ -45,21 +48,30 @@ export function useVergaderingen() {
 
     pendingWijzigingen.current[id] = { ...pendingWijzigingen.current[id], ...wijzigingen }
 
-    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    if (debounceTimers.current[id]) clearTimeout(debounceTimers.current[id])
     setOpslaan(true)
     setOpslaanFout(false)
-    debounceTimer.current = setTimeout(async () => {
+    debounceTimers.current[id] = setTimeout(async () => {
+      delete debounceTimers.current[id]
       const teSchrijven = pendingWijzigingen.current[id] || {}
       delete pendingWijzigingen.current[id]
-      // Vers ophalen vlak voor het schrijven, zodat we niet een verouderde lokale
-      // kopie van de hele vergadering terugschrijven en daarmee wijzigingen van een
-      // ander fractielid (bijv. een notitie of notulen) overschrijven.
-      const vers = await dbLaadOpId(id)
-      if (!vers) { setOpslaan(false); setOpslaanFout(true); return }
-      const bijgewerkt = { ...vers, ...teSchrijven, bijgewerkt: new Date().toISOString() }
-      const ok = await slaVergaderingOp(bijgewerkt)
-      setOpslaan(false)
-      if (!ok) setOpslaanFout(true)
+      lopendeSchrijfacties.current++
+      try {
+        // Vers ophalen vlak voor het schrijven, zodat we niet een verouderde lokale
+        // kopie van de hele vergadering terugschrijven en daarmee wijzigingen van een
+        // ander fractielid (bijv. een notitie of notulen) overschrijven.
+        const vers = await dbLaadOpId(id)
+        if (!vers) { setOpslaanFout(true); return }
+        const bijgewerkt = { ...vers, ...teSchrijven, bijgewerkt: new Date().toISOString() }
+        const ok = await slaVergaderingOp(bijgewerkt)
+        if (!ok) setOpslaanFout(true)
+      } finally {
+        lopendeSchrijfacties.current--
+        // "Opslaan…" pas uit als er voor geen enkele vergadering meer iets openstaat
+        if (lopendeSchrijfacties.current === 0 && Object.keys(debounceTimers.current).length === 0) {
+          setOpslaan(false)
+        }
+      }
     }, 3000)
   }, [])
 
