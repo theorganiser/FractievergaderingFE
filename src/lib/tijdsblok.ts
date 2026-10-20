@@ -1,7 +1,13 @@
 import { Agendapunt } from './types'
+import { auteurVan, isTeBespreken } from './punten'
+
+// Tijd die automatisch gereserveerd wordt voor elk bespreekpunt dat een fractielid onder
+// "Te bespreken" heeft gezet of ingebracht (bovenop het tijdsblok van het punt zelf).
+export const EXTRA_MINUTEN_PER_INGEBRACHT_PUNT = 5
 
 export interface PuntTijd {
-  minuten: number        // duur van dit punt (0 = niet opgegeven)
+  minuten: number        // duur van dit punt, inclusief extra (0 = niet opgegeven)
+  extra: number          // waarvan automatisch gereserveerd voor ingebrachte punten
   start: string | null   // verwachte starttijd "HH:MM", of null als aanvang onbekend is
 }
 
@@ -35,12 +41,17 @@ export function berekenTijden(punten: Agendapunt[], aanvang: string): TijdOverzi
   const perPunt: Record<number, PuntTijd> = {}
   let lopend = 0
   for (const punt of punten) {
-    const minuten = Number.isFinite(punt.minuten) && (punt.minuten as number) > 0 ? Math.round(punt.minuten as number) : 0
+    const basis = Number.isFinite(punt.minuten) && (punt.minuten as number) > 0 ? Math.round(punt.minuten as number) : 0
     if (isInformeer(punt)) {
-      perPunt[punt.id] = { minuten, start: null }
+      perPunt[punt.id] = { minuten: basis, extra: 0, start: null }
       continue
     }
-    perPunt[punt.id] = { minuten, start: begin === null ? null : naarTijd(begin + lopend) }
+    const ingebracht = isTeBespreken(punt)
+      ? (punt.subpunten || []).filter(s => !!auteurVan(s) || s.bespreekKopie).length
+      : 0
+    const extra = ingebracht * EXTRA_MINUTEN_PER_INGEBRACHT_PUNT
+    const minuten = basis + extra
+    perPunt[punt.id] = { minuten, extra, start: begin === null ? null : naarTijd(begin + lopend) }
     lopend += minuten
   }
   return { perPunt, totaalMinuten: lopend, einde: begin === null ? null : naarTijd(begin + lopend) }

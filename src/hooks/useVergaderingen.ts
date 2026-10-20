@@ -13,6 +13,7 @@ import {
   nieuwToken,
 } from '@/lib/storage'
 import { bouwPuntenMetOpties } from '@/lib/template'
+import { auteurVan } from '@/lib/punten'
 
 export function useVergaderingen() {
   const [vergaderingen, setVergaderingen] = useState<Vergadering[]>([])
@@ -401,7 +402,7 @@ export function useVergaderingOpToken(token: string) {
   // Zet een subpunt van een informeerpunt "te bespreken" aan of uit. Aan: er komt een kopie onder
   // het bespreekpunt "Te bespreken" (gekoppeld via bespreekKey) en het origineel krijgt een markering.
   // Uit: de kopie verdwijnt weer en de markering gaat eraf.
-  const zetBespreken = useCallback(async (puntId: number, subIndex: number, naam: string, aan: boolean) => {
+  const zetBespreken = useCallback(async (puntId: number, subIndex: number, naam: string, aan: boolean, isAdmin = false) => {
     if (!vergadering) return
     const vers = await dbLaadOpToken(token)
     const basis = vers || vergadering
@@ -429,17 +430,73 @@ export function useVergaderingOpToken(token: string) {
         id: String.fromCharCode(97 + doel.subpunten.length),
         titel: sub.titel, url: sub.url || '', afgedaan: false,
         toelichting: `Ingebracht door ${naam || 'Onbekend'} vanuit "${punt.titel}"`,
-        bespreekKey: sleutel, bespreekKopie: true,
+        bespreekKey: sleutel, bespreekKopie: true, bespreekDoor: naam || 'Onbekend', auteur: naam || 'Onbekend',
       })
     } else {
       const sleutel = sub.bespreekKey
       if (!sleutel) return
+      // Alleen wie het punt op de bespreeklijst heeft gezet (of de beheerder) mag dat terugdraaien
+      if (sub.bespreekDoor !== naam && !isAdmin) return
       nieuwePunten.forEach(p => {
         const over = p.subpunten.filter(s => !(s.bespreekKopie && s.bespreekKey === sleutel))
         if (over.length !== p.subpunten.length) { hernoem(over); p.subpunten = over }
       })
       sub.bespreekKey = undefined
       sub.bespreekDoor = undefined
+    }
+
+    const bijgewerkt = { ...basis, punten: nieuwePunten, bijgewerkt: new Date().toISOString() }
+    setVergadering(bijgewerkt)
+    await slaVergaderingOp(bijgewerkt)
+  }, [vergadering, token])
+
+  // Past de titel aan van een subpunt dat je zelf hebt toegevoegd (alleen de auteur of een beheerder).
+  // Is het punt gekoppeld aan een bespreekverzoek, dan wordt de titel bij beide kanten bijgewerkt.
+  const wijzigEigenPunt = useCallback(async (puntId: number, subIndex: number, titel: string, naam: string, isAdmin: boolean) => {
+    if (!vergadering || !titel.trim()) return
+    const vers = await dbLaadOpToken(token)
+    const basis = vers || vergadering
+    const nieuwePunten = JSON.parse(JSON.stringify(basis.punten)) as Vergadering['punten']
+    const sub = nieuwePunten.find(p => p.id === puntId)?.subpunten[subIndex]
+    if (!sub) return
+    if (auteurVan(sub) !== naam && !isAdmin) return
+    sub.titel = titel.trim()
+    if (sub.bespreekKey) {
+      nieuwePunten.forEach(p => p.subpunten.forEach(s => { if (s.bespreekKey === sub.bespreekKey) s.titel = titel.trim() }))
+    }
+    const bijgewerkt = { ...basis, punten: nieuwePunten, bijgewerkt: new Date().toISOString() }
+    setVergadering(bijgewerkt)
+    await slaVergaderingOp(bijgewerkt)
+  }, [vergadering, token])
+
+  // Verwijdert een subpunt dat je zelf hebt toegevoegd. Heeft het een bespreekverzoek, dan gaat de
+  // kopie onder "Te bespreken" mee weg; is het zelf die kopie, dan verdwijnt de markering bij het origineel.
+  const verwijderEigenPunt = useCallback(async (puntId: number, subIndex: number, naam: string, isAdmin: boolean) => {
+    if (!vergadering) return
+    const vers = await dbLaadOpToken(token)
+    const basis = vers || vergadering
+    const nieuwePunten = JSON.parse(JSON.stringify(basis.punten)) as Vergadering['punten']
+    const punt = nieuwePunten.find(p => p.id === puntId)
+    const sub = punt?.subpunten[subIndex]
+    if (!punt || !sub) return
+    if (auteurVan(sub) !== naam && !isAdmin) return
+    const sleutel = sub.bespreekKey
+    const heropbouw = (subs: Vergadering['punten'][number]['subpunten']) => subs.forEach((x, i) => { x.id = String.fromCharCode(97 + i) })
+
+    punt.subpunten = punt.subpunten.filter((_, i) => i !== subIndex)
+    heropbouw(punt.subpunten)
+
+    if (sleutel) {
+      nieuwePunten.forEach(p => {
+        if (sub.bespreekKopie) {
+          // gewist was de kopie: haal de markering bij het origineel weg
+          p.subpunten.forEach(s => { if (s.bespreekKey === sleutel && !s.bespreekKopie) { s.bespreekKey = undefined; s.bespreekDoor = undefined } })
+        } else {
+          // gewist was het origineel: ruim de kopie op
+          const over = p.subpunten.filter(s => !(s.bespreekKopie && s.bespreekKey === sleutel))
+          if (over.length !== p.subpunten.length) { heropbouw(over); p.subpunten = over }
+        }
+      })
     }
 
     const bijgewerkt = { ...basis, punten: nieuwePunten, bijgewerkt: new Date().toISOString() }
@@ -484,6 +541,7 @@ export function useVergaderingOpToken(token: string) {
     const datumKort = new Date().toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
     punt.subpunten = [...punt.subpunten, {
       id: letter, titel: tekst.trim(), toelichting: `${naam || 'Onbekend'} — ${datumKort}`, url: '', afgedaan: false,
+      auteur: naam || 'Onbekend',
     }]
     const bijgewerkt = { ...basis, punten: nieuwePunten, bijgewerkt: new Date().toISOString() }
     setVergadering(bijgewerkt)
@@ -533,5 +591,5 @@ export function useVergaderingOpToken(token: string) {
     await slaVergaderingOp(bijgewerkt2)
   }, [vergadering, token])
 
-  return { vergadering, geladen, fout, herlaad: laad, stilleHerlaad, updateNotulen, voegNotitieToe, wijzigNotitie, verwijderNotitie, zetBespreken, zetAanwezigheid, voegVrijPuntToe, voegBijlageToe, verwijderBijlage }
+  return { vergadering, geladen, fout, herlaad: laad, stilleHerlaad, updateNotulen, voegNotitieToe, wijzigNotitie, verwijderNotitie, zetBespreken, wijzigEigenPunt, verwijderEigenPunt, zetAanwezigheid, voegVrijPuntToe, voegBijlageToe, verwijderBijlage }
 }

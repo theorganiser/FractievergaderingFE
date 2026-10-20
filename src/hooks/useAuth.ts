@@ -7,6 +7,8 @@ interface AuthStatus {
   isAdmin: boolean
   isModerator: boolean
   naam: string
+  heeftEigenWachtwoord: boolean
+  wachtwoordVerplicht: boolean
   geladen: boolean
 }
 
@@ -16,6 +18,8 @@ export function useAuth(): AuthStatus & { logout: () => Promise<void> } {
     isAdmin: false,
     isModerator: false,
     naam: '',
+    heeftEigenWachtwoord: false,
+    wachtwoordVerplicht: false,
     geladen: false,
   })
 
@@ -23,7 +27,7 @@ export function useAuth(): AuthStatus & { logout: () => Promise<void> } {
     fetch('/api/check-auth')
       .then(r => r.json())
       .then(data => setStatus({ ...data, geladen: true }))
-      .catch(() => setStatus({ heeftToegang: false, isAdmin: false, isModerator: false, naam: '', geladen: true }))
+      .catch(() => setStatus({ heeftToegang: false, isAdmin: false, isModerator: false, naam: '', heeftEigenWachtwoord: false, wachtwoordVerplicht: false, geladen: true }))
   }, [])
 
   const logout = async () => {

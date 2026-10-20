@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifieerToken, COOKIE_LEZER, COOKIE_ADMIN, COOKIE_MODERATOR } from '@/lib/auth'
+import { wachtwoordVerplicht } from '@/lib/wachtwoord'
 
 export async function GET(req: NextRequest) {
   const lezerToken = req.cookies.get(COOKIE_LEZER)?.value
@@ -13,5 +14,7 @@ export async function GET(req: NextRequest) {
     isAdmin: !!adminPayload,
     isModerator: !!moderatorPayload || !!adminPayload, // admin heeft ook moderator rechten
     naam: lezerPayload?.naam as string || '',
+    heeftEigenWachtwoord: lezerPayload?.eigen === '1',
+    wachtwoordVerplicht: wachtwoordVerplicht(),
   })
 }

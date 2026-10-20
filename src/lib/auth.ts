@@ -36,8 +36,10 @@ export async function verifieerToken(
   }
 }
 
-export async function maakLezerCookie(naam: string): Promise<string> {
-  const token = await maakToken({ rol: 'lezer', naam }, '24h')
+// eigenWachtwoord: de gebruiker heeft een persoonlijk wachtwoord (alleen voor de melding "stel een
+// eigen wachtwoord in"; de echte controle gebeurt bij het inloggen).
+export async function maakLezerCookie(naam: string, eigenWachtwoord = false): Promise<string> {
+  const token = await maakToken({ rol: 'lezer', naam, eigen: eigenWachtwoord ? '1' : '0' }, '24h')
   const maxAge = 24 * 60 * 60
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
   return `${COOKIE_LEZER}=${token}; Max-Age=${maxAge}; ${COOKIE_OPTIES}${secure}`

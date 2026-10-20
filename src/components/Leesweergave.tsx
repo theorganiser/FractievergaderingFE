@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Vergadering, Agendapunt } from '@/lib/types'
+import { Vergadering, Agendapunt, Subpunt } from '@/lib/types'
 import { formatDatum, formatDatumNL } from '@/lib/datum'
 import { RegelMetNotitie } from './NotitiesSectie'
-import { berekenTijden, isInformeer } from '@/lib/tijdsblok'
+import { berekenTijden, isInformeer, EXTRA_MINUTEN_PER_INGEBRACHT_PUNT } from '@/lib/tijdsblok'
+import { auteurVan, isTeBespreken } from '@/lib/punten'
 
 // Hoeveel dagen vooruit de fractiekalender in de leesweergave getoond wordt
 export const KALENDER_VOORUIT_DAGEN = 14
@@ -25,15 +26,16 @@ export interface LeesActies {
   onNotitieVerwijder?: (puntId: number, subIndex: number | null, notitieId: string) => Promise<void> | void
   onVrijPuntToevoegen?: (puntId: number, tekst: string) => void
   onBespreekZet?: (puntId: number, subIndex: number, aan: boolean) => void
+  onEigenPuntWijzig?: (puntId: number, subIndex: number, titel: string) => Promise<void> | void
+  onEigenPuntVerwijder?: (puntId: number, subIndex: number) => Promise<void> | void
   onBijlageToevoegen?: (puntId: number, subIndex: number | null, bijlage: NieuweBijlage) => void
   onBijlageVerwijderen?: (puntId: number, subIndex: number | null, bijlageId: string) => void
 }
 
-const isTeBespreken = (punt: Agendapunt) => !isInformeer(punt) && punt.titel.toLowerCase().includes('te bespreken')
 const isTerugkoppelingPunt = (punt: Agendapunt) => punt.titel.toLowerCase().includes('terugkoppeling')
 
 export default function Leesweergave({ vergadering: v, toonPrintKnop = false, naam = '', isAdmin = false,
-  onNotitieToevoegen, onNotitieWijzig, onNotitieVerwijder, onVrijPuntToevoegen, onBespreekZet, onBijlageToevoegen, onBijlageVerwijderen }: {
+  onNotitieToevoegen, onNotitieWijzig, onNotitieVerwijder, onVrijPuntToevoegen, onBespreekZet, onEigenPuntWijzig, onEigenPuntVerwijder, onBijlageToevoegen, onBijlageVerwijderen }: {
   vergadering: Vergadering; toonPrintKnop?: boolean
 } & LeesActies) {
   const punten = Array.isArray(v.punten) ? v.punten.map(normaliseerPunt) : []
@@ -41,12 +43,21 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false, na
   const informeerPunten = punten.filter(p => isInformeer(p))
   const tijden = berekenTijden(punten, v.aanvang)
 
+  // Een kopie onder "Te bespreken" toont live de opmerkingen van het oorspronkelijke informatiepunt
+  const origineelVan = (sub: Subpunt) => {
+    if (!sub.bespreekKopie || !sub.bespreekKey) return undefined
+    for (const p of punten) for (const s of p.subpunten) if (s.bespreekKey === sub.bespreekKey && !s.bespreekKopie) return s
+    return undefined
+  }
+
   // Props die elke notitie-/bijlage-regel (hoofdpunt of subpunt) nodig heeft
   const regelProps = (punt: Agendapunt, si: number | null) => {
     const doel = si === null ? punt : punt.subpunten[si]
     return {
       naam, isAdmin, vergaderingId: v.id,
       notities: doel?.notities, bijlagen: doel?.bijlagen,
+      extraNotities: si !== null && doel ? origineelVan(doel as Subpunt)?.notities : undefined,
+      extraLabel: 'Opmerkingen bij het oorspronkelijke punt (ter informatie)',
       onToevoegen: onNotitieToevoegen ? (tekst: string) => onNotitieToevoegen(punt.id, si, tekst) : undefined,
       onNotitieWijzig: onNotitieWijzig ? (id: string, tekst: string) => onNotitieWijzig(punt.id, si, id, tekst) : undefined,
       onNotitieVerwijder: onNotitieVerwijder ? (id: string) => onNotitieVerwijder(punt.id, si, id) : undefined,
@@ -83,8 +94,8 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false, na
                 )}
               </span>
               {tijd && tijd.minuten > 0 && (
-                <span title="Tijdsblok" style={{ fontSize: '11px', fontFamily: 'Arial', color: '#1a5c8a', background: '#eaf3fa', border: '1px solid #bcd6ea', padding: '1px 7px', borderRadius: '9px', flexShrink: 0 }}>
-                  ⏱ {tijd.start ? `${tijd.start} · ` : ''}{tijd.minuten} min
+                <span title={tijd.extra > 0 ? `Waarvan ${tijd.extra} min automatisch gereserveerd (${EXTRA_MINUTEN_PER_INGEBRACHT_PUNT} min per ingebracht punt)` : 'Tijdsblok'} style={{ fontSize: '11px', fontFamily: 'Arial', color: '#1a5c8a', background: '#eaf3fa', border: '1px solid #bcd6ea', padding: '1px 7px', borderRadius: '9px', flexShrink: 0 }}>
+                  ⏱ {tijd.start ? `${tijd.start} · ` : ''}{tijd.minuten} min{tijd.extra > 0 ? ` (incl. ${tijd.extra} voor ingebrachte punten)` : ''}
                 </span>
               )}
             </RegelMetNotitie>
@@ -152,15 +163,25 @@ export default function Leesweergave({ vergadering: v, toonPrintKnop = false, na
                         )}
                         {informeer && sub.bespreekKey && !sub.bespreekKopie && (
                           <span style={{ fontSize: '10px', background: '#fff3cc', color: '#8a6800', border: '1px solid #e8c860', padding: '1px 6px', borderRadius: '3px', fontFamily: 'Arial' }}>
-                            🗣 Wordt besproken{sub.bespreekDoor ? ` (${sub.bespreekDoor})` : ''}
+                            🗣 Wordt besproken{sub.bespreekDoor ? ` — gevraagd door ${sub.bespreekDoor}` : ''}
                           </span>
                         )}
-                        {informeer && onBespreekZet && !sub.bespreekKopie && (
+                        {sub.bespreekKopie && sub.bespreekDoor && (
+                          <span style={{ fontSize: '10px', background: '#fff3cc', color: '#8a6800', border: '1px solid #e8c860', padding: '1px 6px', borderRadius: '3px', fontFamily: 'Arial' }}>
+                            🗣 Door {sub.bespreekDoor}
+                          </span>
+                        )}
+                        {informeer && onBespreekZet && !sub.bespreekKopie && (!sub.bespreekKey || sub.bespreekDoor === naam || isAdmin) && (
                           <button className="no-print" onClick={() => onBespreekZet(punt.id, si, !sub.bespreekKey)}
                             title={sub.bespreekKey ? 'Haal dit punt weer uit Te bespreken' : 'Zet dit punt ook onder Te bespreken'}
                             style={{ fontSize: '11px', fontFamily: 'Arial', background: 'white', color: sub.bespreekKey ? 'var(--tekst-zacht)' : 'var(--blauw)', border: '1px solid var(--rand)', padding: '1px 8px', borderRadius: '9px', cursor: 'pointer' }}>
                             {sub.bespreekKey ? 'Toch niet bespreken' : 'Wil ik bespreken'}
                           </button>
+                        )}
+                        {(onEigenPuntWijzig || onEigenPuntVerwijder) && !!auteurVan(sub) && ((!!naam && auteurVan(sub) === naam) || isAdmin) && (
+                          <EigenPuntActies titel={sub.titel}
+                            onWijzig={onEigenPuntWijzig ? (t) => onEigenPuntWijzig(punt.id, si, t) : undefined}
+                            onVerwijder={onEigenPuntVerwijder ? () => onEigenPuntVerwijder(punt.id, si) : undefined} />
                         )}
                       </div>
                       {(sub.toelichting || sub.publicatiedatum) && (
@@ -323,6 +344,56 @@ export function LeesweergaveVolledig({ vergadering: v, toonPrintKnop, ...acties 
         </div>
       )}
     </div>
+  )
+}
+
+// Bewerken en verwijderen van een punt dat je zelf hebt toegevoegd
+function EigenPuntActies({ titel, onWijzig, onVerwijder }: {
+  titel: string
+  onWijzig?: (titel: string) => Promise<void> | void
+  onVerwijder?: () => Promise<void> | void
+}) {
+  const [bewerken, setBewerken] = useState(false)
+  const [tekst, setTekst] = useState(titel)
+  const [bezig, setBezig] = useState(false)
+
+  const bewaar = async () => {
+    if (!tekst.trim() || !onWijzig) return
+    setBezig(true)
+    await onWijzig(tekst)
+    setBezig(false)
+    setBewerken(false)
+  }
+  const verwijder = async () => {
+    if (!onVerwijder || !confirm('Dit punt verwijderen?')) return
+    setBezig(true)
+    await onVerwijder()
+    setBezig(false)
+  }
+  const link: React.CSSProperties = { background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '11px', fontFamily: 'Arial', color: 'var(--tekst-zacht)', textDecoration: 'underline' }
+
+  if (bewerken) {
+    return (
+      <div className="no-print" style={{ flexBasis: '100%', display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' as const, margin: '2px 0' }}>
+        <input value={tekst} onChange={e => setTekst(e.target.value)} autoFocus
+          onKeyDown={e => { if (e.key === 'Enter') bewaar(); if (e.key === 'Escape') setBewerken(false) }}
+          style={{ flex: 1, minWidth: '200px', padding: '5px 8px', border: '1px solid var(--rand)', borderRadius: '6px', fontSize: '13px', fontFamily: 'Arial', outline: 'none' }} />
+        <button onClick={bewaar} disabled={!tekst.trim() || bezig}
+          style={{ background: 'var(--blauw)', color: 'white', border: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '12px', fontFamily: 'Arial', cursor: 'pointer', opacity: (!tekst.trim() || bezig) ? 0.5 : 1 }}>
+          {bezig ? '...' : 'Opslaan'}
+        </button>
+        <button onClick={() => setBewerken(false)} disabled={bezig}
+          style={{ background: 'white', color: 'var(--tekst-zacht)', border: '1px solid var(--rand)', padding: '5px 10px', borderRadius: '6px', fontSize: '12px', fontFamily: 'Arial', cursor: 'pointer' }}>
+          Annuleren
+        </button>
+      </div>
+    )
+  }
+  return (
+    <span className="no-print" style={{ display: 'inline-flex', gap: '8px' }}>
+      {onWijzig && <button onClick={() => { setTekst(titel); setBewerken(true) }} disabled={bezig} style={link}>Bewerken</button>}
+      {onVerwijder && <button onClick={verwijder} disabled={bezig} style={{ ...link, color: 'var(--rood)' }}>Verwijderen</button>}
+    </span>
   )
 }
 

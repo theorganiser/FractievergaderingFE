@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { startSyncEnWacht, SyncLogItem } from '@/lib/api'
 
 export default function Topbalk() {
   const pathname = usePathname()
-  const { isAdmin, logout, naam: sprekerNaam } = useAuth()
+  const router = useRouter()
+  const { isAdmin, logout, naam: sprekerNaam, geladen: authGeladen, heeftToegang, heeftEigenWachtwoord, wachtwoordVerplicht } = useAuth()
   const [syncBezig, setSyncBezig] = useState(false)
   const [syncResultaat, setSyncResultaat] = useState<SyncLogItem | null>(null)
   const [toonResultaat, setToonResultaat] = useState(false)
@@ -18,6 +19,13 @@ export default function Topbalk() {
 
   // Sluit menu bij navigeren
   useEffect(() => { setMenuOpen(false) }, [pathname])
+
+  // Is een eigen wachtwoord verplicht gesteld (WACHTWOORD_VERPLICHT=true)? Dan eerst naar de accountpagina.
+  useEffect(() => {
+    if (authGeladen && heeftToegang && wachtwoordVerplicht && !heeftEigenWachtwoord && pathname !== '/account' && !pathname.startsWith('/inloggen')) {
+      router.replace('/account')
+    }
+  }, [authGeladen, heeftToegang, wachtwoordVerplicht, heeftEigenWachtwoord, pathname, router])
 
   if (pathname.startsWith('/presentatie/') || pathname.startsWith('/inloggen') || pathname.startsWith('/stemlijst/')) return null
 
@@ -49,6 +57,7 @@ export default function Topbalk() {
     { href: '/', label: '📅 Vergaderingen' },
     { href: '/documenten', label: '📄 Documenten' },
     { href: '/kalender', label: '🗓 Kalender' },
+    { href: '/democracity', label: '🏫 Democracity' },
     { href: '/portefeuilles', label: '🗂 Portefeuilles' },
     ...(isAdmin ? [{ href: '/nieuws', label: '📰 Nieuws' }] : []),
     { href: '/persberichten', label: '✍️ Persberichten' },
@@ -99,6 +108,12 @@ export default function Topbalk() {
               style={{ background: 'rgba(168,144,96,0.2)', border: '1px solid #a89060', color: '#e8d090', padding: '5px 12px', borderRadius: '6px', cursor: syncBezig ? 'not-allowed' : 'pointer', fontSize: '12px', fontFamily: 'Arial', display: 'flex', alignItems: 'center', gap: '5px', marginLeft: '4px' }}>
               {syncBezig ? <><Spinner /> Bezig...</> : '↻ Sync'}
             </button>
+          )}
+          {heeftToegang && (
+            <Link href="/account" title={heeftEigenWachtwoord ? 'Wachtwoord wijzigen' : 'Eigen wachtwoord instellen'}
+              style={{ color: heeftEigenWachtwoord ? 'rgba(255,255,255,0.6)' : '#e8d090', fontSize: '12px', fontFamily: 'Arial', textDecoration: 'none', padding: '5px 10px', borderRadius: '6px', marginLeft: '4px', border: `1px solid ${heeftEigenWachtwoord ? 'rgba(255,255,255,0.15)' : 'rgba(232,208,144,0.6)'}`, background: heeftEigenWachtwoord ? 'rgba(255,255,255,0.08)' : 'rgba(168,144,96,0.2)' }}>
+              🔑 {heeftEigenWachtwoord ? 'Wachtwoord' : 'Wachtwoord instellen'}
+            </Link>
           )}
           <button onClick={logout} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', borderRadius: '6px', marginLeft: '4px', fontFamily: 'Arial' }}>
             Uitloggen
@@ -179,6 +194,13 @@ export default function Topbalk() {
               onClick={() => setMenuOpen(false)}
               style={{ display: 'block', textAlign: 'center', color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '14px', borderRadius: '10px', textDecoration: 'none', fontSize: '14px', fontFamily: 'Arial', marginBottom: '8px' }}>
               🔐 Beheerder inloggen
+            </Link>
+          )}
+
+          {heeftToegang && (
+            <Link href="/account" onClick={() => setMenuOpen(false)}
+              style={{ display: 'block', textAlign: 'center', color: heeftEigenWachtwoord ? 'rgba(255,255,255,0.7)' : '#e8d090', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '14px', borderRadius: '10px', textDecoration: 'none', fontSize: '14px', fontFamily: 'Arial', marginBottom: '8px' }}>
+              🔑 {heeftEigenWachtwoord ? 'Wachtwoord wijzigen' : 'Eigen wachtwoord instellen'}
             </Link>
           )}
 

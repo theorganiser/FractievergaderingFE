@@ -34,6 +34,7 @@ export interface Subpunt {
   stemlijstKey?: string    // unieke key voor stemlijst opslag (UUID, nooit veranderend)
   notities?: Notitie[]     // losse notities per fractielid, zichtbaar voor iedereen
   bijlagen?: Bijlage[]     // bijlagen (PDF/afbeelding), toe te voegen en te verwijderen door iedereen
+  auteur?: string          // wie dit subpunt zelf heeft toegevoegd (bewerken/verwijderen alleen door de auteur)
   // Informeerpunten: koppelt een te-bespreken-verzoek aan zijn kopie onder "Te bespreken"
   bespreekKey?: string
   bespreekDoor?: string    // wie wil dit bespreken (alleen op het origineel bij het informeerpunt)

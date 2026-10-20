@@ -128,6 +128,7 @@ export default function OverzichtPagina() {
         titel: `${indienPunt.trim()} (${naam})`,
         url: '',
         afgedaan: false,
+        auteur: naam,
       })
     }
 

@@ -60,6 +60,12 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
   const punten = [...alle.filter(p => !isInformeer(p)), ...alle.filter(p => isInformeer(p))]
   const eersteInformeerIdx = punten.findIndex(p => isInformeer(p))
   const tijden = berekenTijden(punten, v.aanvang)
+  // Een kopie onder "Te bespreken" toont ook de opmerkingen van het oorspronkelijke informatiepunt
+  const origineelNotities = (sub: { bespreekKey?: string; bespreekKopie?: boolean }) => {
+    if (!sub.bespreekKopie || !sub.bespreekKey) return undefined
+    for (const p of punten) for (const s of p.subpunten) if (s.bespreekKey === sub.bespreekKey && !s.bespreekKopie) return s.notities
+    return undefined
+  }
   const actielijst = Array.isArray(v.actielijst) ? v.actielijst : []
   const kalender = Array.isArray(v.kalender) ? v.kalender : []
 
@@ -242,8 +248,13 @@ function PresentatieScherm({ vergadering: v }: { vergadering: Vergadering }) {
                             🗣 Wordt besproken
                           </span>
                         )}
+                        {sub.bespreekKopie && sub.bespreekDoor && (
+                          <span style={{ fontSize: '11px', background: '#fff3cc', color: '#8a6800', border: '1px solid #e8c860', padding: '1px 6px', borderRadius: '3px', fontFamily: 'Arial', flexShrink: 0 }}>
+                            🗣 Door {sub.bespreekDoor}
+                          </span>
+                        )}
                       </div>
-                      <PresNotities notities={sub.notities} donker={donkerModus} basisFs={basisFs} inspring={(isMotie || isAmendement) ? '80px' : '60px'} />
+                      <PresNotities notities={[...(origineelNotities(sub) || []), ...(sub.notities || [])]} donker={donkerModus} basisFs={basisFs} inspring={(isMotie || isAmendement) ? '80px' : '60px'} />
                       </Fragment>
                     )
                   })}

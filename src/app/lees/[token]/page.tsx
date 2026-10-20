@@ -12,7 +12,7 @@ interface Props { params: { token: string } }
 
 export default function LeesPagina({ params }: Props) {
   const { token } = params
-  const { vergadering, geladen, fout, herlaad, updateNotulen, voegNotitieToe, wijzigNotitie, verwijderNotitie, zetBespreken, zetAanwezigheid, voegVrijPuntToe, voegBijlageToe, verwijderBijlage } = useVergaderingOpToken(token)
+  const { vergadering, geladen, fout, herlaad, updateNotulen, voegNotitieToe, wijzigNotitie, verwijderNotitie, zetBespreken, wijzigEigenPunt, verwijderEigenPunt, zetAanwezigheid, voegVrijPuntToe, voegBijlageToe, verwijderBijlage } = useVergaderingOpToken(token)
   const { isAdmin, heeftToegang, naam } = useAuth()
 
   if (!geladen) return (
@@ -76,7 +76,9 @@ export default function LeesPagina({ params }: Props) {
         onNotitieWijzig={(puntId, subIndex, notitieId, tekst) => wijzigNotitie(puntId, subIndex, notitieId, tekst, naam, isAdmin)}
         onNotitieVerwijder={(puntId, subIndex, notitieId) => verwijderNotitie(puntId, subIndex, notitieId, naam, isAdmin)}
         onVrijPuntToevoegen={(puntId, tekst) => voegVrijPuntToe(puntId, naam, tekst)}
-        onBespreekZet={(puntId, subIndex, aan) => zetBespreken(puntId, subIndex, naam, aan)}
+        onBespreekZet={(puntId, subIndex, aan) => zetBespreken(puntId, subIndex, naam, aan, isAdmin)}
+        onEigenPuntWijzig={(puntId, subIndex, titel) => wijzigEigenPunt(puntId, subIndex, titel, naam, isAdmin)}
+        onEigenPuntVerwijder={(puntId, subIndex) => verwijderEigenPunt(puntId, subIndex, naam, isAdmin)}
         onBijlageToevoegen={(puntId, subIndex, bijlage) => voegBijlageToe(puntId, subIndex, bijlage)}
         onBijlageVerwijderen={(puntId, subIndex, bijlageId) => verwijderBijlage(puntId, subIndex, bijlageId)} />
       <Notulen

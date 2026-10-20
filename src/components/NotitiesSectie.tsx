@@ -27,8 +27,10 @@ export function NotitieKnop({ aantal, open, onClick }: { aantal: number; open: b
 
 // Het uitklapbare paneel — los van de knop, zodat de aanroeper 'm buiten de
 // flex-regel kan renderen (voorkomt dat elke regel standaard extra hoogte inneemt).
-export function NotitiePaneel({ notities, naam, isAdmin, onToevoegen, onWijzig, onVerwijder, tekst, setTekst, bezig, onPlaats }: {
+export function NotitiePaneel({ notities, extraNotities, extraLabel, naam, isAdmin, onToevoegen, onWijzig, onVerwijder, tekst, setTekst, bezig, onPlaats }: {
   notities?: Notitie[]
+  extraNotities?: Notitie[]   // opmerkingen van het oorspronkelijke punt, alleen lezen
+  extraLabel?: string
   naam: string
   isAdmin?: boolean
   onWijzig?: (notitieId: string, tekst: string) => Promise<void> | void
@@ -39,10 +41,24 @@ export function NotitiePaneel({ notities, naam, isAdmin, onToevoegen, onWijzig, 
   bezig: boolean
   onPlaats: () => void
 }) {
-  const aantal = notities?.length || 0
   return (
     <div className="no-print" style={{ margin: '2px 0 8px 14px', padding: '10px 12px', background: '#fafaf8', border: '1px solid var(--rand)', borderRadius: '8px', maxWidth: '520px' }}>
-      {aantal > 0 && (
+      {extraNotities && extraNotities.length > 0 && (
+        <div style={{ marginBottom: '10px', padding: '8px 10px', background: '#eef4fa', border: '1px solid #cfe0ef', borderRadius: '6px' }}>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.4px', color: '#1a5c8a', fontFamily: 'Arial', marginBottom: '6px' }}>
+            {extraLabel || 'Opmerkingen bij het oorspronkelijke punt'}
+          </div>
+          {extraNotities.map(n => (
+            <div key={n.id} style={{ marginBottom: '6px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>
+                <strong>{n.naam}</strong> · {new Date(n.datum).toLocaleDateString('nl-NL')}
+              </div>
+              <div style={{ fontSize: '13px', fontFamily: 'Arial', whiteSpace: 'pre-wrap' as const }}>{n.tekst}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {(notities?.length || 0) > 0 && (
         <div style={{ marginBottom: onToevoegen ? '10px' : 0 }}>
           {notities!.map(n => (
             <NotitieRegel key={n.id} notitie={n}
@@ -144,10 +160,12 @@ function NotitieRegel({ notitie: n, magAanpassen, onWijzig, onVerwijder }: {
 // Combineert een bestaande regel (badges/titel als children, laatste flex-item wordt de
 // notitie-badge) met het uitklappaneel eronder. Eén component per regel = eigen state,
 // dus de badge staat inline en het paneel neemt alleen ruimte in als hij open staat.
-export function RegelMetNotitie({ children, rowStyle, notities, naam, isAdmin, onToevoegen, onNotitieWijzig, onNotitieVerwijder, bijlagen, vergaderingId, onBijlageToevoegen, onBijlageVerwijderen }: {
+export function RegelMetNotitie({ children, rowStyle, notities, extraNotities, extraLabel, naam, isAdmin, onToevoegen, onNotitieWijzig, onNotitieVerwijder, bijlagen, vergaderingId, onBijlageToevoegen, onBijlageVerwijderen }: {
   children: React.ReactNode
   rowStyle: React.CSSProperties
   notities?: Notitie[]
+  extraNotities?: Notitie[]
+  extraLabel?: string
   naam: string
   isAdmin?: boolean
   onToevoegen?: (tekst: string) => void
@@ -161,7 +179,7 @@ export function RegelMetNotitie({ children, rowStyle, notities, naam, isAdmin, o
   const [open, setOpen] = useState(false)
   const [tekst, setTekst] = useState('')
   const [bezig, setBezig] = useState(false)
-  const aantal = notities?.length || 0
+  const aantal = (notities?.length || 0) + (extraNotities?.length || 0)
 
   const [bijlageOpen, setBijlageOpen] = useState(false)
   const aantalBijlagen = bijlagen?.length || 0
@@ -186,7 +204,7 @@ export function RegelMetNotitie({ children, rowStyle, notities, naam, isAdmin, o
         )}
       </div>
       {open && (
-        <NotitiePaneel notities={notities} naam={naam} isAdmin={isAdmin} onToevoegen={!!onToevoegen}
+        <NotitiePaneel notities={notities} extraNotities={extraNotities} extraLabel={extraLabel} naam={naam} isAdmin={isAdmin} onToevoegen={!!onToevoegen}
           onWijzig={onNotitieWijzig} onVerwijder={onNotitieVerwijder}
           tekst={tekst} setTekst={setTekst} bezig={bezig} onPlaats={plaats} />
       )}
