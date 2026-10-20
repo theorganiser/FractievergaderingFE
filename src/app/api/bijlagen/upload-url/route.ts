@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { vereis } from '@/lib/sessie'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 const TOEGESTANE_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif']
@@ -9,6 +10,7 @@ function sanitiseerBestandsnaam(naam: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  const s = await vereis(req); if (s instanceof NextResponse) return s
   const { vergaderingId, type, grootte, bestandsnaam } = await req.json()
 
   if (!vergaderingId || !bestandsnaam) {

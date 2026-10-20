@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { apiJson } from './dataApi'
 
 export interface Portefeuille {
   id: string
@@ -10,13 +10,8 @@ export interface Portefeuille {
   woordvoerder_3: string
 }
 
-// Alleen lezen — wijzigen kan uitsluitend via SQL in Supabase (zie supabase-portefeuilles.sql)
+// Alleen lezen — wijzigen kan uitsluitend via SQL in Supabase
 export async function haalPortefeuilles(): Promise<Portefeuille[]> {
-  const { data, error } = await supabase
-    .from('portefeuilles')
-    .select('*')
-    .order('volgorde', { ascending: true })
-
-  if (error) { console.error('Portefeuilles laden fout:', error); return [] }
-  return data || []
+  try { return await apiJson<Portefeuille[]>('/api/portefeuilles') }
+  catch (err) { console.error('Portefeuilles laden fout:', err); return [] }
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { maakLezerCookie, maakAdminCookie, maakModeratorCookie } from '@/lib/auth'
 import { checkRateLimit } from '@/lib/ratelimit'
-import { supabase } from '@/lib/supabase'
+import { db } from '@/lib/server/db'
 import { schrijfLoginLog } from '@/lib/loginlog'
 import { haalWachtwoordHash, controleerWachtwoord } from '@/lib/wachtwoord'
 
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const { naam, code } = await req.json()
   if (!naam?.trim()) return NextResponse.json({ fout: 'Vul je naam in.' }, { status: 400 })
 
-  const { data: gebruiker } = await supabase
+  const { data: gebruiker } = await db()
     .from('gebruikers')
     .select('naam, rol, actief')
     .ilike('naam', naam.trim())

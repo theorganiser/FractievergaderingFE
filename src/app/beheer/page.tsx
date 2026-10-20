@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useVergaderingen } from '@/hooks/useVergaderingen'
 import { testVerbinding, haalSyncLog } from '@/lib/api'
-import { supabase } from '@/lib/supabase'
+import { apiJson, stuur } from '@/lib/dataApi'
 import Melding from '@/components/Melding'
 import ExcelUpload from '@/components/ExcelUpload'
 
@@ -208,16 +208,11 @@ function LoginLogboek() {
   const [alleGeladen, setAlleGeladen] = useState(false)
   const [naamFilter, setNaamFilter] = useState('alle')
 
+  // De API levert pagina's van PAGINA_GROOTTE regels
   const laad = async (pagina: number) => {
-    const { supabase } = await import('@/lib/supabase')
-    const van = pagina * PAGINA_GROOTTE
-    const tot = van + PAGINA_GROOTTE - 1
-    const { data } = await supabase
-      .from('login_log')
-      .select('*')
-      .order('ingelogd_op', { ascending: false })
-      .range(van, tot)
-    return data || []
+    try {
+      return await apiJson<{ id: string; naam: string; rol: string; ingelogd_op: string }[]>(`/api/admin/login-log?pagina=${pagina}`)
+    } catch (err) { console.error(err); return [] }
   }
 
   useEffect(() => {
@@ -321,19 +316,23 @@ function GebruikersBeheer() {
 
   const laad = async () => {
     laadWachtwoorden()
-    const { supabase } = await import('@/lib/supabase')
-    const { data } = await supabase.from('gebruikers').select('*').order('naam')
-    setGebruikers(data || [])
+    try { setGebruikers(await apiJson('/api/admin/gebruikers')) }
+    catch (err) { console.error(err) }
     setLaden(false)
   }
 
   useEffect(() => { laad() }, [])
 
+  // Geeft false (en een melding) als de API weigert, zodat de lijst niet iets laat zien dat niet is opgeslagen
+  const probeer = async (actie: () => Promise<unknown>): Promise<boolean> => {
+    try { await actie(); return true }
+    catch (err) { alert(err instanceof Error ? err.message : 'Er ging iets mis.'); return false }
+  }
+
   const voegToe = async () => {
     if (!nieuwNaam.trim()) return
     setOpslaan(true)
-    const { supabase } = await import('@/lib/supabase')
-    await supabase.from('gebruikers').insert({ naam: nieuwNaam.trim(), rol: nieuwRol })
+    await probeer(() => apiJson('/api/admin/gebruikers', stuur('POST', { naam: nieuwNaam.trim(), rol: nieuwRol })))
     setNieuwNaam('')
     setNieuwRol('fractielid')
     await laad()
@@ -341,21 +340,18 @@ function GebruikersBeheer() {
   }
 
   const updateRol = async (id: string, rol: string) => {
-    const { supabase } = await import('@/lib/supabase')
-    await supabase.from('gebruikers').update({ rol }).eq('id', id)
+    if (!await probeer(() => apiJson(`/api/admin/gebruikers/${id}`, stuur('PATCH', { rol })))) return
     setGebruikers(prev => prev.map(g => g.id === id ? { ...g, rol } : g))
   }
 
   const toggleActief = async (id: string, actief: boolean) => {
-    const { supabase } = await import('@/lib/supabase')
-    await supabase.from('gebruikers').update({ actief: !actief }).eq('id', id)
+    if (!await probeer(() => apiJson(`/api/admin/gebruikers/${id}`, stuur('PATCH', { actief: !actief })))) return
     setGebruikers(prev => prev.map(g => g.id === id ? { ...g, actief: !actief } : g))
   }
 
   const verwijder = async (id: string) => {
     if (!confirm('Gebruiker verwijderen?')) return
-    const { supabase } = await import('@/lib/supabase')
-    await supabase.from('gebruikers').delete().eq('id', id)
+    if (!await probeer(() => apiJson(`/api/admin/gebruikers/${id}`, stuur('DELETE')))) return
     setGebruikers(prev => prev.filter(g => g.id !== id))
   }
 

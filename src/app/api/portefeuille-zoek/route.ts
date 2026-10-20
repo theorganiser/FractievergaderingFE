@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { haalPortefeuilles } from '@/lib/portefeuilles'
+import { vereis } from '@/lib/sessie'
+import { haalPortefeuillesServer } from '@/lib/server/portefeuilles'
 
 export async function POST(req: NextRequest) {
+  const s = await vereis(req); if (s instanceof NextResponse) return s
   const { vraag } = await req.json()
 
   if (!vraag?.trim()) {
@@ -14,7 +16,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Altijd vers uit de database — nooit vertrouwen op wat de client meestuurt
-  const portefeuilles = await haalPortefeuilles()
+  const portefeuilles = await haalPortefeuillesServer()
   if (portefeuilles.length === 0) {
     return NextResponse.json({ fout: 'Geen portefeuilleverdeling gevonden.' }, { status: 500 })
   }

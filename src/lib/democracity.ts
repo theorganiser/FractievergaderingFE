@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { apiJson } from './dataApi'
 
 export interface DemocracityAanmelding { id: string; naam: string; aangemaakt_op: string }
 
@@ -11,13 +11,8 @@ export interface DemocracityDag {
   democracity_aanmeldingen: DemocracityAanmelding[]
 }
 
-// Lezen mag via de browser; aanmelden en beheren gaat via /api/democracity.
+// Lezen, aanmelden en beheren gaat via /api/democracity.
 export async function haalDemocracityDagen(): Promise<DemocracityDag[]> {
-  const { data, error } = await supabase
-    .from('democracity_dagen')
-    .select('*, democracity_aanmeldingen(id, naam, aangemaakt_op)')
-    .order('datum', { ascending: true })
-    .order('tijd', { ascending: true })
-  if (error) { console.error('Democracity laden fout:', error); throw error }
-  return (data || []) as DemocracityDag[]
+  try { return await apiJson<DemocracityDag[]>('/api/democracity') }
+  catch (err) { console.error('Democracity laden fout:', err); throw err }
 }

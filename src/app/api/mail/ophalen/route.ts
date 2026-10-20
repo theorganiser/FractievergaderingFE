@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { vereis } from '@/lib/sessie'
 import { haalOngelezenMails, MailSoort } from '@/lib/mail'
 
 function foutDetail(err: unknown): string {
@@ -12,6 +13,7 @@ function foutDetail(err: unknown): string {
 }
 
 export async function POST(req: NextRequest) {
+  const s = await vereis(req); if (s instanceof NextResponse) return s
   const { soort } = await req.json() as { soort: MailSoort }
 
   if (soort !== 'events' && soort !== 'ingekomen') {

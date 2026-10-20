@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { verifieerToken, COOKIE_LEZER, COOKIE_ADMIN } from '@/lib/auth'
-import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
+import { vereis } from '@/lib/sessie'
+import { db } from '@/lib/server/db'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = () => getSupabaseAdmin() as unknown as SupabaseClient<any, 'public', any>
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: NextRequest) {
+  const s = await vereis(req); if (s instanceof NextResponse) return s
+  const { data, error } = await db().from('democracity_dagen')
+    .select('*, democracity_aanmeldingen(id, naam, aangemaakt_op)')
+    .order('datum', { ascending: true })
+    .order('tijd', { ascending: true })
+  if (error) { console.error('Democracity laden fout:', error); return NextResponse.json({ fout: 'Laden mislukt.' }, { status: 500 }) }
+  return NextResponse.json(data || [])
+}
 
 // Aanmelden / afmelden (met de naam uit je login) en — alleen beheerder — dagen toevoegen/verwijderen.
 export async function POST(req: NextRequest) {
-  const lezerToken = req.cookies.get(COOKIE_LEZER)?.value
-  const lezer = lezerToken ? await verifieerToken(lezerToken) : null
-  const naam = (lezer?.naam as string) || ''
+  const sessie = await vereis(req); if (sessie instanceof NextResponse) return sessie
+  const { naam, isAdmin } = sessie
   if (!naam) return NextResponse.json({ fout: 'Je bent niet ingelogd.' }, { status: 401 })
-
-  const adminToken = req.cookies.get(COOKIE_ADMIN)?.value
-  const isAdmin = !!adminToken && !!(await verifieerToken(adminToken))
 
   const body = await req.json()
   const actie = body.actie as string

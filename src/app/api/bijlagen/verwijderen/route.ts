@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { vereis } from '@/lib/sessie'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function POST(req: NextRequest) {
+  const s = await vereis(req); if (s instanceof NextResponse) return s
   const { pad } = await req.json()
   if (!pad) return NextResponse.json({ fout: 'Ontbrekend pad.' }, { status: 400 })
 

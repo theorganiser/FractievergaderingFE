@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifieerToken, COOKIE_ADMIN } from '@/lib/auth'
+import { leesSessie } from '@/lib/sessie'
 import { namenMetWachtwoord, verwijderWachtwoord } from '@/lib/wachtwoord'
 
 async function isAdmin(req: NextRequest): Promise<boolean> {
-  const token = req.cookies.get(COOKIE_ADMIN)?.value
-  return !!token && !!(await verifieerToken(token))
+  return !!(await leesSessie(req.cookies))?.isAdmin
 }
 
 // Welke gebruikers hebben een eigen wachtwoord? (alleen namen, nooit de hashes)

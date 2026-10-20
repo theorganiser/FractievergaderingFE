@@ -4,8 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { supabase } from '@/lib/supabase'
-import { getSprekerNaam } from '@/components/Toegangspoort'
+import { apiJson, stuur } from '@/lib/dataApi'
 
 type Stap = 1 | 2 | 3
 
@@ -34,17 +33,17 @@ export default function PersberichtenPagina() {
   }, [isAdmin])
 
   const laadSysteemPrompt = async () => {
-    const { data } = await supabase.from('persbericht_instructies').select('systeem_prompt').limit(1).single()
-    if (data) setSysteemPrompt(data.systeem_prompt)
+    try {
+      const data = await apiJson<{ systeemPrompt: string }>('/api/admin/persbericht-instructies')
+      setSysteemPrompt(data.systeemPrompt)
+    } catch (err) { console.error(err) }
   }
 
   const slaPromptOp = async () => {
     setPromptOpslaan(true)
-    await supabase.from('persbericht_instructies').update({
-      systeem_prompt: systeemPrompt,
-      bijgewerkt_op: new Date().toISOString(),
-      bijgewerkt_door: getSprekerNaam() || 'Beheerder',
-    }).neq('id', '00000000-0000-0000-0000-000000000000')
+    // "bijgewerkt door" vult de server in op basis van de login
+    try { await apiJson('/api/admin/persbericht-instructies', stuur('PUT', { systeemPrompt })) }
+    catch (err) { alert(err instanceof Error ? err.message : 'Opslaan mislukt.') }
     setPromptOpslaan(false)
     setToonInstellingen(false)
   }
