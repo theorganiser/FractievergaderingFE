@@ -78,10 +78,10 @@ function InloggenFormulier() {
         )}
 
         <div style={{ marginBottom: '24px' }}>
-          <label style={labelStijl}>{isAdmin ? 'Beheerderswachtwoord' : isModerator ? 'Moderatorwachtwoord' : 'Toegangscode'}</label>
+          <label style={labelStijl}>{isAdmin ? 'Beheerderswachtwoord' : isModerator ? 'Moderatorwachtwoord' : 'Toegangscode of eigen wachtwoord'}</label>
           <input type="password" value={code} onChange={e => { setCode(e.target.value); setFout(null) }}
             onKeyDown={e => e.key === 'Enter' && handleLogin()} autoFocus={!!naam && !isAdmin && !isModerator}
-            placeholder={isAdmin ? 'Beheerderswachtwoord...' : isModerator ? 'Moderatorwachtwoord...' : 'Toegangscode...'}
+            placeholder={isAdmin ? 'Beheerderswachtwoord...' : isModerator ? 'Moderatorwachtwoord...' : 'Toegangscode of eigen wachtwoord...'}
             style={{ ...invoerStijl, borderColor: fout ? '#c0392b' : '#dde3ed' }} />
         </div>
 
@@ -116,7 +116,7 @@ function InloggenFormulier() {
           )}
         </div>
         <p style={{ fontSize: '11px', color: '#bbb', fontFamily: 'Arial', textAlign: 'center', marginTop: '12px' }}>
-          Neem contact op met de fractie voor de toegangscode.
+          Neem contact op met de fractie voor de toegangscode. Eigen wachtwoord vergeten? Vraag de beheerder om een reset.
         </p>
       </div>
       <style>{`@keyframes schud { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-10px)} 40%{transform:translateX(10px)} 60%{transform:translateX(-8px)} 80%{transform:translateX(8px)} }`}</style>

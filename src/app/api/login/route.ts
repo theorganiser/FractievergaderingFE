@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { maakLezerCookie, maakAdminCookie, maakModeratorCookie } from '@/lib/auth'
 import { checkRateLimit } from '@/lib/ratelimit'
-import { supabase } from '@/lib/supabase'
+import { db } from '@/lib/server/db'
+import { schrijfLoginLog } from '@/lib/loginlog'
+import { haalWachtwoordHash, controleerWachtwoord } from '@/lib/wachtwoord'
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'onbekend'
@@ -17,11 +19,7 @@ export async function POST(req: NextRequest) {
   const { naam, code } = await req.json()
   if (!naam?.trim()) return NextResponse.json({ fout: 'Vul je naam in.' }, { status: 400 })
 
-  const juisteCode = process.env.READER_PASSWORD
-  if (!juisteCode) return NextResponse.json({ fout: 'Server configuratiefout.' }, { status: 500 })
-  if (code !== juisteCode) return NextResponse.json({ fout: `Onjuiste toegangscode. Nog ${resterend} poging(en).` }, { status: 401 })
-
-  const { data: gebruiker } = await supabase
+  const { data: gebruiker } = await db()
     .from('gebruikers')
     .select('naam, rol, actief')
     .ilike('naam', naam.trim())
@@ -34,14 +32,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ fout: 'Dit account is gedeactiveerd. Neem contact op met de beheerder.' }, { status: 401 })
   }
 
-  // Log de inlogpoging
-  await supabase.from('login_log').insert({
-    naam: gebruiker.naam,
-    rol: gebruiker.rol,
-    ingelogd_op: new Date().toISOString(),
-  })
+  // Heeft deze persoon een eigen wachtwoord ingesteld? Dan geldt alleen dat wachtwoord;
+  // de gedeelde toegangscode werkt voor die persoon niet meer.
+  let eigenHash: string | null
+  try {
+    eigenHash = await haalWachtwoordHash(gebruiker.naam)
+  } catch (err) {
+    console.error('Wachtwoordcontrole mislukt:', err)
+    return NextResponse.json({ fout: 'Inloggen is tijdelijk niet mogelijk. Probeer het zo opnieuw.' }, { status: 500 })
+  }
 
-  const lezerCookie = await maakLezerCookie(gebruiker.naam)
+  if (eigenHash) {
+    if (!code || !controleerWachtwoord(code, eigenHash)) {
+      return NextResponse.json({ fout: `Onjuist wachtwoord. Nog ${resterend} poging(en).` }, { status: 401 })
+    }
+  } else {
+    const juisteCode = process.env.READER_PASSWORD
+    if (!juisteCode) return NextResponse.json({ fout: 'Server configuratiefout.' }, { status: 500 })
+    if (code !== juisteCode) return NextResponse.json({ fout: `Onjuiste toegangscode. Nog ${resterend} poging(en).` }, { status: 401 })
+  }
+
+  // Log de inlogpoging — met foutcontrole en één retry, zodat een mislukte
+  // logregel niet stilletjes verdwijnt zonder dat iemand het ooit merkt.
+  await schrijfLoginLog({ naam: gebruiker.naam, rol: gebruiker.rol })
+
+  const lezerCookie = await maakLezerCookie(gebruiker.naam, !!eigenHash)
   const response = NextResponse.json({ ok: true, naam: gebruiker.naam, rol: gebruiker.rol })
   response.headers.append('Set-Cookie', lezerCookie)
 

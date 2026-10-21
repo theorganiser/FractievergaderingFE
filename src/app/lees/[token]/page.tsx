@@ -5,14 +5,15 @@ export const dynamic = 'force-dynamic'
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
 import { LeesweergaveVolledig } from '@/components/Leesweergave'
 import Notulen from '@/components/Notulen'
+import AanwezigheidVraag from '@/components/AanwezigheidVraag'
 import { useAuth } from '@/hooks/useAuth'
 
 interface Props { params: { token: string } }
 
 export default function LeesPagina({ params }: Props) {
   const { token } = params
-  const { vergadering, geladen, fout, herlaad, updateNotulen } = useVergaderingOpToken(token)
-  const { isAdmin, isModerator } = useAuth()
+  const { vergadering, geladen, fout, herlaad, updateNotulen, voegNotitieToe, wijzigNotitie, verwijderNotitie, zetBespreken, wijzigEigenPunt, verwijderEigenPunt, zetAanwezigheid, voegVrijPuntToe, voegBijlageToe, verwijderBijlage } = useVergaderingOpToken(token)
+  const { isAdmin, heeftToegang, naam } = useAuth()
 
   if (!geladen) return (
     <div style={{ textAlign: 'center', padding: '80px', fontFamily: 'Arial', color: 'var(--tekst-zacht)' }}>
@@ -43,8 +44,17 @@ export default function LeesPagina({ params }: Props) {
     p.puntType === 'raadsvergadering' && p.subpunten?.some(s => s.inStemlijst)
   )
 
+  const vandaag = new Date().toISOString().split('T')[0]
+  const isAankomend = !!vergadering.datum && vergadering.datum >= vandaag
+
+
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto' }} className="print-full">
+      {isAankomend && heeftToegang && (
+        <AanwezigheidVraag
+          aanwezig={vergadering.aanwezig || ''} online={vergadering.online || ''} afwezig={vergadering.afwezig || ''}
+          naam={naam} onKiezen={(status) => zetAanwezigheid(naam, status)} />
+      )}
       <div className="no-print" style={{ marginBottom: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
         {heeftStemlijst && (
           <a href={`/stemlijst/${token}`} target="_blank"
@@ -61,11 +71,20 @@ export default function LeesPagina({ params }: Props) {
           </button>
         )}
       </div>
-      <LeesweergaveVolledig vergadering={vergadering} toonPrintKnop />
+      <LeesweergaveVolledig vergadering={vergadering} toonPrintKnop naam={naam} isAdmin={isAdmin}
+        onNotitieToevoegen={(puntId, subIndex, tekst) => voegNotitieToe(puntId, subIndex, naam, tekst)}
+        onNotitieWijzig={(puntId, subIndex, notitieId, tekst) => wijzigNotitie(puntId, subIndex, notitieId, tekst, naam, isAdmin)}
+        onNotitieVerwijder={(puntId, subIndex, notitieId) => verwijderNotitie(puntId, subIndex, notitieId, naam, isAdmin)}
+        onVrijPuntToevoegen={(puntId, tekst) => voegVrijPuntToe(puntId, naam, tekst)}
+        onBespreekZet={(puntId, subIndex, aan) => zetBespreken(puntId, subIndex, naam, aan, isAdmin)}
+        onEigenPuntWijzig={(puntId, subIndex, titel) => wijzigEigenPunt(puntId, subIndex, titel, naam, isAdmin)}
+        onEigenPuntVerwijder={(puntId, subIndex) => verwijderEigenPunt(puntId, subIndex, naam, isAdmin)}
+        onBijlageToevoegen={(puntId, subIndex, bijlage) => voegBijlageToe(puntId, subIndex, bijlage)}
+        onBijlageVerwijderen={(puntId, subIndex, bijlageId) => verwijderBijlage(puntId, subIndex, bijlageId)} />
       <Notulen
         notulen={vergadering.notulen || ''}
-        onUpdate={(isAdmin || isModerator) ? updateNotulen : undefined}
-        magBewerken={isAdmin || isModerator}
+        onUpdate={heeftToegang ? updateNotulen : undefined}
+        magBewerken={heeftToegang}
       />
     </div>
   )

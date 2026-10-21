@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { maakModeratorCookie, maakLezerCookie } from '@/lib/auth'
 import { checkRateLimit } from '@/lib/ratelimit'
-import { supabase } from '@/lib/supabase'
+import { schrijfLoginLog } from '@/lib/loginlog'
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'onbekend'
@@ -21,11 +21,7 @@ export async function POST(req: NextRequest) {
 
   const gelogdeNaam = naam?.trim() || 'Moderator'
 
-  await supabase.from('login_log').insert({
-    naam: gelogdeNaam,
-    rol: 'moderator',
-    ingelogd_op: new Date().toISOString(),
-  })
+  await schrijfLoginLog({ naam: gelogdeNaam, rol: 'moderator' })
 
   const moderatorCookie = await maakModeratorCookie()
   const lezerCookie = await maakLezerCookie(gelogdeNaam)

@@ -7,6 +7,7 @@ import { useKalender } from '@/hooks/useKalender'
 import { useAuth } from '@/hooks/useAuth'
 import { CentraalKalenderItem, KalenderCategorie } from '@/lib/kalender'
 import { eersteVolgendeMaandag } from '@/lib/datum'
+import MailOphalenPaneel from '@/components/MailOphalenPaneel'
 
 const CATEGORIE_OPTIES: { waarde: KalenderCategorie; label: string; bg: string; kleur: string; rand: string }[] = [
   { waarde: 'belangrijk', label: '🔴 Belangrijk', bg: '#fdf0ef', kleur: '#c0392b', rand: '#e8a090' },
@@ -49,6 +50,9 @@ export default function KalenderPagina() {
     setFormulier({ datum: item.datum, starttijd: item.starttijd || '', omschrijving: item.omschrijving, locatie: item.locatie, personen: item.personen, categorie: (item.categorie || '') as import('@/lib/kalender').KalenderCategorie })
     setBewerkId(item.id)
     setToonFormulier(true)
+    // Formulier staat boven de lijst — zonder dit lijkt het alsof er niks gebeurt
+    // als je op Bewerken klikt bij een item onderin een lange, gescrollde lijst.
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleOpslaan = async () => {
@@ -95,12 +99,19 @@ export default function KalenderPagina() {
           </p>
         </div>
         {authGeladen && (
-          <button
-            onClick={() => { resetFormulier(); setToonFormulier(true) }}
-            style={{ background: 'var(--blauw)', color: 'white', border: 'none', padding: '9px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial', fontWeight: '600' }}
-          >
-            + Evenement toevoegen
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <MailOphalenPaneel soort="events"
+              onToevoegen={(velden) => voegToe({
+                datum: velden.datum || '', starttijd: velden.starttijd || '', omschrijving: velden.omschrijving || '',
+                locatie: velden.locatie || 'Gemeentehuis Bussum', personen: '', categorie: (velden.categorie as KalenderCategorie) || '',
+              })} />
+            <button
+              onClick={() => { resetFormulier(); setToonFormulier(true) }}
+              style={{ background: 'var(--blauw)', color: 'white', border: 'none', padding: '9px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial', fontWeight: '600' }}
+            >
+              + Evenement toevoegen
+            </button>
+          </div>
         )}
       </div>
 
@@ -192,7 +203,7 @@ export default function KalenderPagina() {
         <div style={{ textAlign: 'center', padding: '60px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>
           <div style={{ fontSize: '48px', marginBottom: '12px' }}>📅</div>
           <p>Geen aankomende evenementen.</p>
-          {isAdmin && <p style={{ marginTop: '8px', fontSize: '13px' }}>Gebruik de knop rechtsboven om er een toe te voegen.</p>}
+          {authGeladen && <p style={{ marginTop: '8px', fontSize: '13px' }}>Gebruik de knop rechtsboven om er een toe te voegen.</p>}
         </div>
       ) : (
         <div>
@@ -301,17 +312,17 @@ function KalenderRij({ item, isAdmin, isVandaag, isMorgen, historisch, formatDat
         </div>
       </div>
 
-      {/* Acties - alleen admin */}
-      {isAdmin && (
-        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-          <button onClick={onBewerk} style={{ background: 'none', border: '1px solid var(--rand)', color: 'var(--tekst-zacht)', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial' }}>
-            ✎ Bewerken
-          </button>
+      {/* Bewerken: iedereen. Verwijderen: alleen beheerder. */}
+      <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+        <button onClick={onBewerk} style={{ background: 'none', border: '1px solid var(--rand)', color: 'var(--tekst-zacht)', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial' }}>
+          ✎ Bewerken
+        </button>
+        {isAdmin && (
           <button onClick={onVerwijder} style={{ background: 'none', border: '1px solid #e8a090', color: 'var(--rood)', padding: '5px 8px', borderRadius: '5px', cursor: 'pointer', fontSize: '12px' }}>
             ✕
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

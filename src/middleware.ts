@@ -1,65 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-// Cookie namen
-const COOKIE_LEZER = 'gdp_toegang'
-const COOKIE_ADMIN = 'gdp_admin'
-const COOKIE_MODERATOR = 'gdp_moderator'
+import { leesSessie, heeftNiveau, Niveau } from '@/lib/sessie'
 
 const OPENBARE_PADEN = [
   '/inloggen',
   '/api/login',
   '/api/admin-login',
+  '/api/moderator-login',
   '/api/logout',
   '/api/check-auth',
-  '/stemlijst',
   '/_next',
   '/favicon',
 ]
 
-// Middleware doet alleen een simpele cookie aanwezigheidscheck
-// De echte JWT verificatie gebeurt in /api/check-auth
-export function middleware(req: NextRequest) {
+// Pagina's die meer dan een gewone login vereisen
+const PAGINA_NIVEAU: [string, Niveau][] = [
+  ['/beheer', 'admin'],
+  ['/nieuws', 'admin'],
+  ['/vergadering', 'moderator'],
+]
+
+function naarInloggen(req: NextRequest, admin: boolean) {
+  const url = req.nextUrl.clone()
+  url.pathname = '/inloggen'
+  url.searchParams.set('terug', req.nextUrl.pathname)
+  if (admin) url.searchParams.set('admin', '1')
+  return NextResponse.redirect(url)
+}
+
+// Controleert de JWT-cookies (handtekening, verloop én rol). API-routes controleren zelf
+// nog een keer hun eigen niveau; dit is de eerste poort.
+export async function middleware(req: NextRequest) {
   const pad = req.nextUrl.pathname
 
   if (OPENBARE_PADEN.some(p => pad.startsWith(p))) {
     return NextResponse.next()
   }
 
-  // Check of lezer cookie aanwezig is (niet geverifieerd - dat doet check-auth)
-  const heeftLezerCookie = !!req.cookies.get(COOKIE_LEZER)?.value
+  const sessie = await leesSessie(req.cookies)
 
-  if (!heeftLezerCookie) {
-    const url = req.nextUrl.clone()
-    url.pathname = '/inloggen'
-    url.searchParams.set('terug', pad)
-    return NextResponse.redirect(url)
+  if (!sessie) {
+    if (pad.startsWith('/api/')) return NextResponse.json({ fout: 'Je bent niet ingelogd.' }, { status: 401 })
+    return naarInloggen(req, false)
   }
 
-  // /beheer en /nieuws zijn alleen voor admin
-  if (pad.startsWith('/beheer') || pad.startsWith('/nieuws')) {
-    const heeftAdminCookie = !!req.cookies.get(COOKIE_ADMIN)?.value
-    if (!heeftAdminCookie) {
-      const url = req.nextUrl.clone()
-      url.pathname = '/inloggen'
-      url.searchParams.set('terug', pad)
-      url.searchParams.set('admin', '1')
-      return NextResponse.redirect(url)
-    }
-  }
-
-  // /vergadering editor mag door admin of moderator
-  if (pad.startsWith('/vergadering')) {
-    const heeftAdminCookie = !!req.cookies.get(COOKIE_ADMIN)?.value
-    const heeftModeratorCookie = !!req.cookies.get(COOKIE_MODERATOR)?.value
-
-    if (!heeftAdminCookie && !heeftModeratorCookie) {
-      const url = req.nextUrl.clone()
-      url.pathname = '/inloggen'
-      url.searchParams.set('terug', pad)
-      url.searchParams.set('admin', '1')
-      return NextResponse.redirect(url)
-    }
-  }
+  const eis = PAGINA_NIVEAU.find(([p]) => pad.startsWith(p))
+  if (eis && !heeftNiveau(sessie, eis[1])) return naarInloggen(req, true)
 
   return NextResponse.next()
 }

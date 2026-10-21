@@ -33,6 +33,20 @@ export async function haalAfgedaaneVragen(): Promise<ApiDocument[]> {
   )
 }
 
+// Vragen — ALLE vragen, open en afgedaan, beide types (nodig voor de "Openstaand GDP"-teller,
+// die zelf filtert op !afgedaan — dat werkt alleen als de dataset ook open vragen bevat)
+export async function haalAlleVragen(): Promise<ApiDocument[]> {
+  const [tq, sq] = await Promise.all([
+    fetch(`${API_URL}/documenten?type=technische_vragen`).then(r => r.json()).catch(() => []),
+    fetch(`${API_URL}/documenten?type=schriftelijke_vragen`).then(r => r.json()).catch(() => []),
+  ])
+  const tqDocs: ApiDocument[] = Array.isArray(tq) ? tq : (tq.documenten || [])
+  const sqDocs: ApiDocument[] = Array.isArray(sq) ? sq : (sq.documenten || [])
+  return [...tqDocs, ...sqDocs].sort((a, b) =>
+    (b.publicatiedatum || '').localeCompare(a.publicatiedatum || '')
+  )
+}
+
 // Sync starten + log ophalen
 export async function startSyncEnWacht(): Promise<SyncLogItem[]> {
   await fetch(`${API_URL}/sync/nu`, { method: 'POST' })

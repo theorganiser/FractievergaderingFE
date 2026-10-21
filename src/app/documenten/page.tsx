@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ApiDocument } from '@/lib/types'
-import { haalRaadsmededelingen, haalAfgedaaneVragen, startSyncEnWacht, SyncLogItem, DEMO_RM, DEMO_VRAGEN } from '@/lib/api'
+import { haalRaadsmededelingen, haalAlleVragen, startSyncEnWacht, SyncLogItem, DEMO_RM, DEMO_VRAGEN } from '@/lib/api'
 import { formatDatumNL, formatDatumKort } from '@/lib/datum'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -31,7 +31,7 @@ export default function DocumentenPagina() {
     try {
       const [rm, vragen] = await Promise.all([
         haalRaadsmededelingen().catch(() => [] as ApiDocument[]),
-        haalAfgedaaneVragen().catch(() => [] as ApiDocument[]),
+        haalAlleVragen().catch(() => [] as ApiDocument[]),
       ])
       setRmDocs(rm.length > 0 ? rm : DEMO_RM)
       setVragenDocs(vragen.length > 0 ? vragen : DEMO_VRAGEN)
@@ -87,12 +87,18 @@ export default function DocumentenPagina() {
 
   const alleDocs: ApiDocument[] = [...rmDocs, ...vragenDocs]
 
+  const isOpenGdp = (doc: ApiDocument) =>
+    (doc.type === 'technische_vragen' || doc.type === 'schriftelijke_vragen') &&
+    (!doc.afgedaan || doc.afgedaan === '') &&
+    (doc.fracties?.includes('Goois Democratisch Platform') || doc.indieners?.includes('Goois Democratisch Platform'))
+
   const gefilterd = alleDocs.filter(doc => {
     const matchFilter =
       filter === 'alle' ? true :
       filter === 'rm' ? doc.type === 'raadsmededelingen' :
       filter === 'tq' ? doc.type === 'technische_vragen' :
-      filter === 'sq' ? doc.type === 'schriftelijke_vragen' : true
+      filter === 'sq' ? doc.type === 'schriftelijke_vragen' :
+      filter === 'open_gdp' ? isOpenGdp(doc) : true
     const matchZoek = !zoek ||
       doc.titel.toLowerCase().includes(zoek.toLowerCase()) ||
       (doc.indieners || '').toLowerCase().includes(zoek.toLowerCase()) ||
@@ -110,11 +116,7 @@ export default function DocumentenPagina() {
     rm: rmDocs.length,
     tq: vragenDocs.filter(d => d.type === 'technische_vragen').length,
     sq: vragenDocs.filter(d => d.type === 'schriftelijke_vragen').length,
-    open_gdp: vragenDocs.filter(d =>
-      (d.type === 'technische_vragen' || d.type === 'schriftelijke_vragen') &&
-      (!d.afgedaan || d.afgedaan === '') &&
-      (d.fracties?.includes('Goois Democratisch Platform') || d.indieners?.includes('Goois Democratisch Platform'))
-    ).length,
+    open_gdp: vragenDocs.filter(isOpenGdp).length,
   }
 
   return (

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { vereis } from '@/lib/sessie'
+import { db } from '@/lib/server/db'
 
 export async function POST(req: NextRequest) {
+  const s = await vereis(req); if (s instanceof NextResponse) return s
   const { tekst, modus } = await req.json()
   // modus: 'genereer' | 'feedback' | 'sociaal'
 
@@ -14,7 +16,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ fout: 'ANTHROPIC_API_KEY ontbreekt.' }, { status: 500 })
   }
 
-  const { data: instructieData } = await supabase
+  const { data: instructieData } = await db()
     .from('persbericht_instructies')
     .select('systeem_prompt')
     .limit(1)

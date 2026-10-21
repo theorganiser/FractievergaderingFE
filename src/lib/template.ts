@@ -16,12 +16,13 @@ export const TEMPLATE_PUNTEN: Agendapunt[] = [
   { id: 6, titel: 'Poll', toelichting: '', subpunten: [] },
   { id: 7, titel: 'Terugkoppeling gesprekken', toelichting: '', subpunten: [] },
   { id: 8, titel: 'Te bespreken', toelichting: '', subpunten: [] },
-  { id: 9, titel: 'Actualiteiten', toelichting: '', subpunten: [] },
-  { id: 10, titel: 'Raadsmededelingen', toelichting: '', subpunten: [], apiType: 'raadsmededelingen' },
-  { id: 11, titel: 'Technische en schriftelijke vragen', toelichting: '', subpunten: [], apiType: 'vragen' },
-  { id: 12, titel: 'Ingekomen stukken / e-mails', toelichting: '', subpunten: [] },
-  { id: 13, titel: 'Rondvraag', toelichting: '(geen nieuwe onderwerpen)', subpunten: [] },
-  { id: 14, titel: 'Sluiting', toelichting: '', subpunten: [] },
+  { id: 9, titel: 'Rondvraag', toelichting: '(geen nieuwe onderwerpen)', subpunten: [] },
+  { id: 10, titel: 'Sluiting', toelichting: '', subpunten: [] },
+  // Ter informatie — staat onderaan de agenda, na Sluiting. Eigen punten eerst, daarna de automatische lijsten.
+  { id: 11, titel: 'Eigen punten', toelichting: '(zelf toe te voegen)', subpunten: [], soort: 'informeer' },
+  { id: 12, titel: 'Raadsmededelingen', toelichting: '', subpunten: [], apiType: 'raadsmededelingen', soort: 'informeer' },
+  { id: 13, titel: 'Technische en schriftelijke vragen', toelichting: '', subpunten: [], apiType: 'vragen', soort: 'informeer' },
+  { id: 14, titel: 'Ingekomen stukken / e-mails', toelichting: '', subpunten: [], soort: 'informeer' },
 ]
 
 export function bouwPuntenMetOpties(

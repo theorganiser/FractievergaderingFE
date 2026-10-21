@@ -1,3 +1,21 @@
+export interface Notitie {
+  id: string
+  naam: string
+  tekst: string
+  datum: string // ISO timestamp
+  bewerkt?: string // ISO timestamp van de laatste wijziging door de auteur
+}
+
+export interface Bijlage {
+  id: string
+  naam: string      // oorspronkelijke bestandsnaam
+  pad: string        // pad in Supabase Storage bucket "bijlagen"
+  type: string        // MIME-type
+  grootte: number     // bytes
+  uploader: string
+  datum: string        // ISO timestamp
+}
+
 export interface Subpunt {
   id: string
   titel: string
@@ -14,6 +32,13 @@ export interface Subpunt {
   subtype?: 'motie' | 'amendement' | 'normaal'
   gekoppeldAanRv?: string  // rvNummer van het gekoppelde raadsvoorstel (voor moties/amendementen)
   stemlijstKey?: string    // unieke key voor stemlijst opslag (UUID, nooit veranderend)
+  notities?: Notitie[]     // losse notities per fractielid, zichtbaar voor iedereen
+  bijlagen?: Bijlage[]     // bijlagen (PDF/afbeelding), toe te voegen en te verwijderen door iedereen
+  auteur?: string          // wie dit subpunt zelf heeft toegevoegd (bewerken/verwijderen alleen door de auteur)
+  // Informeerpunten: koppelt een te-bespreken-verzoek aan zijn kopie onder "Te bespreken"
+  bespreekKey?: string
+  bespreekDoor?: string    // wie wil dit bespreken (alleen op het origineel bij het informeerpunt)
+  bespreekKopie?: boolean  // true = dit is de kopie onder "Te bespreken"
 }
 
 export interface Agendapunt {
@@ -27,6 +52,11 @@ export interface Agendapunt {
   puntType?: 'algemeen' | 'politieke_avond' | 'raadsvergadering'
   // Raadsvergadering datum
   rvDatum?: string
+  // 'informeer' = ter informatie (staat onderaan de agenda); leeg/'bespreek' = bespreekpunt
+  soort?: 'bespreek' | 'informeer'
+  minuten?: number         // tijdsblok in minuten
+  notities?: Notitie[]    // losse notities per fractielid, zichtbaar voor iedereen
+  bijlagen?: Bijlage[]     // bijlagen (PDF/afbeelding), toe te voegen en te verwijderen door iedereen
 }
 
 export interface ActieItem {

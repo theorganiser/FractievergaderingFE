@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useVergaderingen } from '@/hooks/useVergaderingen'
 import { testVerbinding, haalSyncLog } from '@/lib/api'
-import { supabase } from '@/lib/supabase'
+import { apiJson, stuur } from '@/lib/dataApi'
 import Melding from '@/components/Melding'
 import ExcelUpload from '@/components/ExcelUpload'
 
@@ -208,16 +208,11 @@ function LoginLogboek() {
   const [alleGeladen, setAlleGeladen] = useState(false)
   const [naamFilter, setNaamFilter] = useState('alle')
 
+  // De API levert pagina's van PAGINA_GROOTTE regels
   const laad = async (pagina: number) => {
-    const { supabase } = await import('@/lib/supabase')
-    const van = pagina * PAGINA_GROOTTE
-    const tot = van + PAGINA_GROOTTE - 1
-    const { data } = await supabase
-      .from('login_log')
-      .select('*')
-      .order('ingelogd_op', { ascending: false })
-      .range(van, tot)
-    return data || []
+    try {
+      return await apiJson<{ id: string; naam: string; rol: string; ingelogd_op: string }[]>(`/api/admin/login-log?pagina=${pagina}`)
+    } catch (err) { console.error(err); return [] }
   }
 
   useEffect(() => {
@@ -303,21 +298,41 @@ function GebruikersBeheer() {
   const [nieuwNaam, setNieuwNaam] = useState('')
   const [nieuwRol, setNieuwRol] = useState('fractielid')
   const [opslaan, setOpslaan] = useState(false)
+  const [metWachtwoord, setMetWachtwoord] = useState<string[]>([])
+
+  const laadWachtwoorden = async () => {
+    try {
+      const r = await fetch('/api/admin/wachtwoorden')
+      if (r.ok) setMetWachtwoord((await r.json()).namen || [])
+    } catch { /* niet fataal: alleen de indicator ontbreekt */ }
+  }
+
+  const resetWachtwoord = async (naam: string) => {
+    if (!confirm(`Eigen wachtwoord van ${naam} resetten? ${naam} kan daarna weer inloggen met de gedeelde toegangscode.`)) return
+    const r = await fetch('/api/admin/wachtwoorden', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ naam }) })
+    if (r.ok) setMetWachtwoord(prev => prev.filter(n => n !== naam))
+    else alert('Resetten mislukt.')
+  }
 
   const laad = async () => {
-    const { supabase } = await import('@/lib/supabase')
-    const { data } = await supabase.from('gebruikers').select('*').order('naam')
-    setGebruikers(data || [])
+    laadWachtwoorden()
+    try { setGebruikers(await apiJson('/api/admin/gebruikers')) }
+    catch (err) { console.error(err) }
     setLaden(false)
   }
 
   useEffect(() => { laad() }, [])
 
+  // Geeft false (en een melding) als de API weigert, zodat de lijst niet iets laat zien dat niet is opgeslagen
+  const probeer = async (actie: () => Promise<unknown>): Promise<boolean> => {
+    try { await actie(); return true }
+    catch (err) { alert(err instanceof Error ? err.message : 'Er ging iets mis.'); return false }
+  }
+
   const voegToe = async () => {
     if (!nieuwNaam.trim()) return
     setOpslaan(true)
-    const { supabase } = await import('@/lib/supabase')
-    await supabase.from('gebruikers').insert({ naam: nieuwNaam.trim(), rol: nieuwRol })
+    await probeer(() => apiJson('/api/admin/gebruikers', stuur('POST', { naam: nieuwNaam.trim(), rol: nieuwRol })))
     setNieuwNaam('')
     setNieuwRol('fractielid')
     await laad()
@@ -325,21 +340,18 @@ function GebruikersBeheer() {
   }
 
   const updateRol = async (id: string, rol: string) => {
-    const { supabase } = await import('@/lib/supabase')
-    await supabase.from('gebruikers').update({ rol }).eq('id', id)
+    if (!await probeer(() => apiJson(`/api/admin/gebruikers/${id}`, stuur('PATCH', { rol })))) return
     setGebruikers(prev => prev.map(g => g.id === id ? { ...g, rol } : g))
   }
 
   const toggleActief = async (id: string, actief: boolean) => {
-    const { supabase } = await import('@/lib/supabase')
-    await supabase.from('gebruikers').update({ actief: !actief }).eq('id', id)
+    if (!await probeer(() => apiJson(`/api/admin/gebruikers/${id}`, stuur('PATCH', { actief: !actief })))) return
     setGebruikers(prev => prev.map(g => g.id === id ? { ...g, actief: !actief } : g))
   }
 
   const verwijder = async (id: string) => {
     if (!confirm('Gebruiker verwijderen?')) return
-    const { supabase } = await import('@/lib/supabase')
-    await supabase.from('gebruikers').delete().eq('id', id)
+    if (!await probeer(() => apiJson(`/api/admin/gebruikers/${id}`, stuur('DELETE')))) return
     setGebruikers(prev => prev.filter(g => g.id !== id))
   }
 
@@ -365,6 +377,14 @@ function GebruikersBeheer() {
               return (
                 <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderBottom: idx < gebruikers.length - 1 ? '1px solid #f0ede8' : 'none', background: g.actief ? 'white' : '#f5f5f5', opacity: g.actief ? 1 : 0.6 }}>
                   <span style={{ flex: 1, fontSize: '14px', fontFamily: 'Arial', fontWeight: '600', color: 'var(--blauw)' }}>{g.naam}</span>
+                  {metWachtwoord.includes(g.naam) ? (
+                    <button onClick={() => resetWachtwoord(g.naam)} title="Eigen wachtwoord staat ingesteld — klik om te resetten"
+                      style={{ background: '#fff8e0', color: '#8a6800', border: '1px solid #e8c860', padding: '4px 10px', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontFamily: 'Arial' }}>
+                      🔑 Eigen ww · reset
+                    </button>
+                  ) : (
+                    <span title="Logt in met de gedeelde toegangscode" style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>gedeelde code</span>
+                  )}
                   <select value={g.rol} onChange={e => updateRol(g.id, e.target.value)}
                     style={{ padding: '4px 8px', border: `1px solid ${rk.rand}`, borderRadius: '5px', fontSize: '12px', fontFamily: 'Arial', background: rk.bg, color: rk.kleur, cursor: 'pointer' }}>
                     <option value="fractielid">👤 Fractielid</option>
