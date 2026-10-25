@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useCallback } from 'react'
 import { haalNieuws, syncNieuws, NieuwsArtikel, BRON_LABELS } from '@/lib/api'
+import { TIJDZONE } from '@/lib/tijd'
 
 type BronFilter = 'alle' | 'gooisemerennieuws' | 'nhgooi' | 'gooieneemlander' | 'gemeente_gooisemeren'
 
@@ -17,7 +18,7 @@ const BRON_KLEUREN: Record<string, { bg: string; kleur: string; rand: string }> 
 function formatDatum(dt: string): string {
   try {
     return new Date(dt).toLocaleDateString('nl-NL', {
-      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: TIJDZONE,
     })
   } catch { return dt }
 }

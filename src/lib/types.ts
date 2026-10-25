@@ -18,6 +18,7 @@ export interface Bijlage {
 
 export interface Subpunt {
   id: string
+  uid?: string             // vaste sleutel (verandert niet bij hernummeren), zie samenvoegen.ts
   titel: string
   url?: string
   afgedaan?: boolean
@@ -43,6 +44,7 @@ export interface Subpunt {
 
 export interface Agendapunt {
   id: number
+  uid?: string             // vaste sleutel (verandert niet bij hernummeren), zie samenvoegen.ts
   titel: string
   toelichting?: string
   url?: string

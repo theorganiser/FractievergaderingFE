@@ -1,4 +1,5 @@
 import { apiJson, stuur } from './dataApi'
+import { vandaagNL, plusDagen } from './tijd'
 
 export type KalenderCategorie = 'belangrijk' | 'uitnodiging_regio' | 'overige_uitnodigingen' | ''
 
@@ -19,12 +20,9 @@ export interface CentraalKalenderItem {
 export async function haalKalenderItems(alleenToekomst = false, maxDagenVooruit?: number): Promise<CentraalKalenderItem[]> {
   const params = new URLSearchParams()
   if (alleenToekomst) {
-    params.set('vanaf', new Date().toISOString().split('T')[0])
-    if (maxDagenVooruit !== undefined) {
-      const eind = new Date()
-      eind.setDate(eind.getDate() + maxDagenVooruit)
-      params.set('tot', eind.toISOString().split('T')[0])
-    }
+    const vandaag = vandaagNL()
+    params.set('vanaf', vandaag)
+    if (maxDagenVooruit !== undefined) params.set('tot', plusDagen(vandaag, maxDagenVooruit))
   }
   try { return await apiJson<CentraalKalenderItem[]>(`/api/kalender?${params}`) }
   catch (err) { console.error('Kalender laden fout:', err); return [] }

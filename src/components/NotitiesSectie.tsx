@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Notitie, Bijlage } from '@/lib/types'
 import { BijlageKnop, BijlagePaneel } from './BijlagenSectie'
+import { formatTijdstipDatum, formatTijdstipTijd } from '@/lib/tijd'
 
 // Compact inline trigger — bedoeld om als badge in dezelfde regel te staan
 // als woordvoerder/stemlijst-badges, niet als aparte blokknop eronder.
@@ -51,7 +52,7 @@ export function NotitiePaneel({ notities, extraNotities, extraLabel, naam, isAdm
           {extraNotities.map(n => (
             <div key={n.id} style={{ marginBottom: '6px' }}>
               <div style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial' }}>
-                <strong>{n.naam}</strong> · {new Date(n.datum).toLocaleDateString('nl-NL')}
+                <strong>{n.naam}</strong> · {formatTijdstipDatum(n.datum, {})}
               </div>
               <div style={{ fontSize: '13px', fontFamily: 'Arial', whiteSpace: 'pre-wrap' as const }}>{n.tekst}</div>
             </div>
@@ -125,7 +126,7 @@ function NotitieRegel({ notitie: n, magAanpassen, onWijzig, onVerwijder }: {
     <div style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #ece7e0' }}>
       <div style={{ fontSize: '11px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', display: 'flex', gap: '8px', alignItems: 'baseline', flexWrap: 'wrap' }}>
         <span>
-          <strong>{n.naam}</strong> · {new Date(n.datum).toLocaleDateString('nl-NL')} {new Date(n.datum).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+          <strong>{n.naam}</strong> · {formatTijdstipDatum(n.datum, {})} {formatTijdstipTijd(n.datum)}
           {n.bewerkt && <em> · aangepast</em>}
         </span>
         {magAanpassen && !bewerken && (

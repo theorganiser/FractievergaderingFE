@@ -11,6 +11,7 @@ import { getSprekerNaam } from '@/components/Toegangspoort'
 import Melding from '@/components/Melding'
 import SupabaseFout, { OpslaanFoutBanner } from '@/components/SupabaseFout'
 import { Vergadering } from '@/lib/types'
+import { plusMaanden } from '@/lib/tijd'
 
 const MAX_WOORDEN = 15
 
@@ -22,7 +23,7 @@ interface NieuweOpties {
 
 export default function OverzichtPagina() {
   const router = useRouter()
-  const { vergaderingen, geladen, maakNieuwe, kopieer, verwijder, update, vernieuwToken, supabaseFout, opslaanFout, herlaad, sluitOpslaanFout } = useVergaderingen()
+  const { vergaderingen, geladen, maakNieuwe, kopieer, verwijder, update, vernieuwToken, supabaseFout, opslaanFout, opslaanMelding, herlaad, sluitOpslaanFout } = useVergaderingen()
   const { isAdmin, isModerator } = useAuth()
   const [melding, setMelding] = useState<{ type: 'succes' | 'info'; tekst: string } | null>(null)
   const [bezig, setBezig] = useState(false)
@@ -65,9 +66,7 @@ export default function OverzichtPagina() {
 
   // Archief grens: 1 maand na de vergaderdatum, zodat recente notulen makkelijk vindbaar blijven
   const getArchiefGrens = (): string => {
-    const grens = new Date()
-    grens.setMonth(grens.getMonth() - 1)
-    return grens.toISOString().split('T')[0]
+    return plusMaanden(vandaag(), -1)
   }
   const archiefGrens = getArchiefGrens()
   const isArchief = (datum: string) => datum < archiefGrens
@@ -361,7 +360,7 @@ export default function OverzichtPagina() {
           </>
         )
       })()}
-      {opslaanFout && <OpslaanFoutBanner onSluit={sluitOpslaanFout} />}
+      {opslaanFout && <OpslaanFoutBanner melding={opslaanMelding} onSluit={sluitOpslaanFout} />}
     </div>
   )
 }

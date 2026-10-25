@@ -5,9 +5,10 @@ import { rijNaarVergadering } from '@/lib/vergaderingRij'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest, { params }: { params: { token: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params
   const s = await vereis(req); if (s instanceof NextResponse) return s
-  const { data, error } = await db().from('vergaderingen').select('*').eq('deeltoken', params.token).maybeSingle()
+  const { data, error } = await db().from('vergaderingen').select('*').eq('deeltoken', token).maybeSingle()
   if (error) { console.error(error); return NextResponse.json({ fout: 'Laden mislukt.' }, { status: 500 }) }
   if (!data) return NextResponse.json({ fout: 'Niet gevonden.' }, { status: 404 })
   return NextResponse.json(rijNaarVergadering(data))

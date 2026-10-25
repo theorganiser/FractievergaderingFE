@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { haalDemocracityDagen, DemocracityDag } from '@/lib/democracity'
+import { vandaagNL } from '@/lib/tijd'
 
 const WEEKDAGEN = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za']
 
@@ -78,7 +79,7 @@ export default function DemocracityPagina() {
     return <div style={{ textAlign: 'center', padding: '80px', fontFamily: 'Arial', color: 'var(--tekst-zacht)' }}>⏳ Laden...</div>
   }
 
-  const vandaag = new Date().toISOString().split('T')[0]
+  const vandaag = vandaagNL()
   const komend = dagen.filter(d => d.datum >= vandaag)
   const zonderRaadslid = komend.filter(d => d.democracity_aanmeldingen.length === 0).length
   const mijnDagen = komend.filter(d => d.democracity_aanmeldingen.some(a => a.naam === naam)).length

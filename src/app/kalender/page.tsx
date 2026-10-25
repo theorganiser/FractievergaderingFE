@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { CentraalKalenderItem, KalenderCategorie } from '@/lib/kalender'
 import { eersteVolgendeMaandag } from '@/lib/datum'
 import MailOphalenPaneel from '@/components/MailOphalenPaneel'
+import { vandaagNL, plusDagen } from '@/lib/tijd'
 
 const CATEGORIE_OPTIES: { waarde: KalenderCategorie; label: string; bg: string; kleur: string; rand: string }[] = [
   { waarde: 'belangrijk', label: '🔴 Belangrijk', bg: '#fdf0ef', kleur: '#c0392b', rand: '#e8a090' },
@@ -35,7 +36,7 @@ export default function KalenderPagina() {
     categorie: '' as import('@/lib/kalender').KalenderCategorie,
   })
 
-  const vandaag = new Date().toISOString().split('T')[0]
+  const vandaag = vandaagNL()
 
   const verledenItems = items.filter(i => i.datum < vandaag).filter(i => !categorieFilter || i.categorie === categorieFilter)
   const toekomstItems = items.filter(i => i.datum >= vandaag).filter(i => !categorieFilter || i.categorie === categorieFilter)
@@ -75,9 +76,7 @@ export default function KalenderPagina() {
 
   const isVandaag = (datum: string) => datum === vandaag
   const isMorgen = (datum: string) => {
-    const morgen = new Date()
-    morgen.setDate(morgen.getDate() + 1)
-    return datum === morgen.toISOString().split('T')[0]
+    return datum === plusDagen(vandaag, 1)
   }
 
   if (!geladen) return (

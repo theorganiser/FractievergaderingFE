@@ -1,5 +1,7 @@
 'use client'
 
+import { use } from 'react'
+
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
@@ -8,10 +10,10 @@ import Notulen from '@/components/Notulen'
 import { useAuth } from '@/hooks/useAuth'
 import { formatDatum } from '@/lib/datum'
 
-interface Props { params: { token: string } }
+interface Props { params: Promise<{ token: string }> }
 
 export default function NotulenPagina({ params }: Props) {
-  const { token } = params
+  const { token } = use(params)
   const { vergadering, geladen, fout, herlaad, updateNotulen } = useVergaderingOpToken(token)
   const { heeftToegang } = useAuth()
 

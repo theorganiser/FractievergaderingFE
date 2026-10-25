@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ActieItem } from '@/lib/types'
 import { formatDatumNL, eersteVolgendeMaandag } from '@/lib/datum'
+import { vandaagNL, plusDagen } from '@/lib/tijd'
 
 interface ActielijstProps {
   acties: ActieItem[]
@@ -142,11 +143,9 @@ function ActieRij({ actie: a, onToggle, onVerwijder, onUpdate, isLeesweergave }:
   const [bewerkDeadline, setBewerkDeadline] = useState(a.deadline || '')
 
   const heeftDeadline = !!a.deadline
-  const vandaag = new Date().toISOString().split('T')[0]
+  const vandaag = vandaagNL()
   const isOverDue = heeftDeadline && !a.afgedaan && a.deadline! < vandaag
-  const isBinnenkort = heeftDeadline && !a.afgedaan && !isOverDue && a.deadline! <= (() => {
-    const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]
-  })()
+  const isBinnenkort = heeftDeadline && !a.afgedaan && !isOverDue && a.deadline! <= plusDagen(vandaag, 7)
 
   const slaOp = () => {
     if (onUpdate) onUpdate({ naam: bewerkNaam.trim(), actie: bewerkActie.trim(), deadline: bewerkDeadline })

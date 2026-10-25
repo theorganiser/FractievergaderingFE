@@ -9,7 +9,7 @@ import { startSyncEnWacht, SyncLogItem } from '@/lib/api'
 export default function Topbalk() {
   const pathname = usePathname()
   const router = useRouter()
-  const { isAdmin, logout, naam: sprekerNaam, geladen: authGeladen, heeftToegang, heeftEigenWachtwoord, wachtwoordVerplicht } = useAuth()
+  const { isAdmin, logout, naam: sprekerNaam, geladen: authGeladen, heeftToegang, heeftEigenWachtwoord, wachtwoordVerplicht, rolWacht } = useAuth()
   const [syncBezig, setSyncBezig] = useState(false)
   const [syncResultaat, setSyncResultaat] = useState<SyncLogItem | null>(null)
   const [toonResultaat, setToonResultaat] = useState(false)
@@ -20,12 +20,14 @@ export default function Topbalk() {
   // Sluit menu bij navigeren
   useEffect(() => { setMenuOpen(false) }, [pathname])
 
-  // Is een eigen wachtwoord verplicht gesteld (WACHTWOORD_VERPLICHT=true)? Dan eerst naar de accountpagina.
+  // Eigen wachtwoord verplicht (WACHTWOORD_VERPLICHT=true, of beheerder/moderator zonder eigen
+  // wachtwoord)? Dan eerst naar de accountpagina.
+  const moetWachtwoord = (wachtwoordVerplicht || !!rolWacht) && !heeftEigenWachtwoord
   useEffect(() => {
-    if (authGeladen && heeftToegang && wachtwoordVerplicht && !heeftEigenWachtwoord && pathname !== '/account' && !pathname.startsWith('/inloggen')) {
+    if (authGeladen && heeftToegang && moetWachtwoord && pathname !== '/account' && !pathname.startsWith('/inloggen')) {
       router.replace('/account')
     }
-  }, [authGeladen, heeftToegang, wachtwoordVerplicht, heeftEigenWachtwoord, pathname, router])
+  }, [authGeladen, heeftToegang, moetWachtwoord, pathname, router])
 
   if (pathname.startsWith('/presentatie/') || pathname.startsWith('/inloggen') || pathname.startsWith('/stemlijst/')) return null
 
@@ -118,11 +120,6 @@ export default function Topbalk() {
           <button onClick={logout} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', borderRadius: '6px', marginLeft: '4px', fontFamily: 'Arial' }}>
             Uitloggen
           </button>
-          {!isAdmin && (
-            <Link href="/inloggen?admin=1" style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', fontFamily: 'Arial', marginLeft: '2px', textDecoration: 'none', padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              Beheerder →
-            </Link>
-          )}
         </nav>
 
         {/* Naam op desktop voor niet-admin */}
@@ -189,13 +186,6 @@ export default function Topbalk() {
             </button>
           )}
 
-          {!isAdmin && (
-            <Link href="/inloggen?admin=1"
-              onClick={() => setMenuOpen(false)}
-              style={{ display: 'block', textAlign: 'center', color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '14px', borderRadius: '10px', textDecoration: 'none', fontSize: '14px', fontFamily: 'Arial', marginBottom: '8px' }}>
-              🔐 Beheerder inloggen
-            </Link>
-          )}
 
           {heeftToegang && (
             <Link href="/account" onClick={() => setMenuOpen(false)}

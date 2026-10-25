@@ -1,5 +1,7 @@
 'use client'
 
+import { use } from 'react'
+
 export const dynamic = 'force-dynamic'
 
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
@@ -7,12 +9,15 @@ import { LeesweergaveVolledig } from '@/components/Leesweergave'
 import Notulen from '@/components/Notulen'
 import AanwezigheidVraag from '@/components/AanwezigheidVraag'
 import { useAuth } from '@/hooks/useAuth'
+import { vandaagNL } from '@/lib/tijd'
+import Melding from '@/components/Melding'
+import { SESSIE_VERLOPEN } from '@/lib/dataApi'
 
-interface Props { params: { token: string } }
+interface Props { params: Promise<{ token: string }> }
 
 export default function LeesPagina({ params }: Props) {
-  const { token } = params
-  const { vergadering, geladen, fout, herlaad, updateNotulen, voegNotitieToe, wijzigNotitie, verwijderNotitie, zetBespreken, wijzigEigenPunt, verwijderEigenPunt, zetAanwezigheid, voegVrijPuntToe, voegBijlageToe, verwijderBijlage } = useVergaderingOpToken(token)
+  const { token } = use(params)
+  const { vergadering, geladen, fout, herlaad, actieFout, sluitActieFout, updateNotulen, voegNotitieToe, wijzigNotitie, verwijderNotitie, zetBespreken, wijzigEigenPunt, verwijderEigenPunt, zetAanwezigheid, voegVrijPuntToe, voegBijlageToe, verwijderBijlage } = useVergaderingOpToken(token)
   const { isAdmin, heeftToegang, naam } = useAuth()
 
   if (!geladen) return (
@@ -44,7 +49,7 @@ export default function LeesPagina({ params }: Props) {
     p.puntType === 'raadsvergadering' && p.subpunten?.some(s => s.inStemlijst)
   )
 
-  const vandaag = new Date().toISOString().split('T')[0]
+  const vandaag = vandaagNL()
   const isAankomend = !!vergadering.datum && vergadering.datum >= vandaag
 
 
@@ -53,7 +58,17 @@ export default function LeesPagina({ params }: Props) {
       {isAankomend && heeftToegang && (
         <AanwezigheidVraag
           aanwezig={vergadering.aanwezig || ''} online={vergadering.online || ''} afwezig={vergadering.afwezig || ''}
-          naam={naam} onKiezen={(status) => zetAanwezigheid(naam, status)} />
+          naam={naam} onKiezen={(status) => zetAanwezigheid(naam, status)} foutmelding={actieFout} />
+      )}
+      {actieFout && (
+        <div className="no-print">
+          <Melding type="fout" tekst={actieFout} onSluit={sluitActieFout} />
+          {actieFout === SESSIE_VERLOPEN && (
+            <p style={{ margin: '-8px 0 16px', fontSize: '13px', fontFamily: 'Arial' }}>
+              <a href={`/inloggen?terug=${encodeURIComponent(`/lees/${token}`)}`} style={{ color: 'var(--blauw)', fontWeight: 'bold' }}>Opnieuw inloggen →</a>
+            </p>
+          )}
+        </div>
       )}
       <div className="no-print" style={{ marginBottom: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
         {heeftStemlijst && (

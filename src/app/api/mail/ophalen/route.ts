@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { vereis } from '@/lib/sessie'
 import { haalOngelezenMails, MailSoort } from '@/lib/mail'
+import { jaarNL, vandaagNL } from '@/lib/tijd'
 
 function foutDetail(err: unknown): string {
   if (err instanceof Error) {
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
   }
 
   const systeemPrompt = soort === 'events'
-    ? `Je haalt agenda-gegevens voor evenementen uit e-mails voor een gemeenteraadsfractie (GDP, Gooise Meren). Voor elke e-mail hieronder, geef terug: datum (YYYY-MM-DD, gok 2026 als het jaar niet genoemd wordt), starttijd (HH:MM, leeg als onduidelijk), locatie, omschrijving (korte titel, max 10 woorden) en categorie (exact een van: "belangrijk", "uitnodiging_regio", "overige_uitnodigingen" — of leeg als echt onduidelijk). Antwoord ALLEEN met geldige JSON: een array met exact ${mails.length} objecten, in dezelfde volgorde als de e-mails, elk in het formaat {"datum": "...", "starttijd": "...", "locatie": "...", "omschrijving": "...", "categorie": "..."}. Geen andere tekst, geen markdown-codeblokken.`
+    ? `Je haalt agenda-gegevens voor evenementen uit e-mails voor een gemeenteraadsfractie (GDP, Gooise Meren). Voor elke e-mail hieronder, geef terug: datum (YYYY-MM-DD, gok ${jaarNL()} als het jaar niet genoemd wordt, of ${jaarNL() + 1} als de datum dan al voorbij zou zijn; vandaag is ${vandaagNL()} (Nederlandse tijd)), starttijd (HH:MM, leeg als onduidelijk), locatie, omschrijving (korte titel, max 10 woorden) en categorie (exact een van: "belangrijk", "uitnodiging_regio", "overige_uitnodigingen" — of leeg als echt onduidelijk). Antwoord ALLEEN met geldige JSON: een array met exact ${mails.length} objecten, in dezelfde volgorde als de e-mails, elk in het formaat {"datum": "...", "starttijd": "...", "locatie": "...", "omschrijving": "...", "categorie": "..."}. Geen andere tekst, geen markdown-codeblokken.`
     : `Je vat inkomende e-mails samen voor de "Ingekomen stukken"-lijst van een gemeenteraadsfractie (GDP, Gooise Meren). Voor elke e-mail hieronder, geef terug: afzender (naam van persoon/organisatie, geen e-mailadres) en onderwerp (korte samenvatting waar het stuk over gaat, max 12 woorden). Antwoord ALLEEN met geldige JSON: een array met exact ${mails.length} objecten, in dezelfde volgorde als de e-mails, elk in het formaat {"afzender": "...", "onderwerp": "..."}. Geen andere tekst, geen markdown-codeblokken.`
 
   const gebruikersPrompt = mails.map((m, i) =>

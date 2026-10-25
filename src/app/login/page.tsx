@@ -10,7 +10,7 @@ export default function OudLoginPagina() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace('/inloggen?admin=1')
+    router.replace('/inloggen')
   }, [router])
 
   return (
