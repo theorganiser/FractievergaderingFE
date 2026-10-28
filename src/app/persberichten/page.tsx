@@ -86,6 +86,12 @@ export default function PersberichtenPagina() {
     setResultaat(null)
   }
 
+  // Tekst is al geschreven: sla het genereren over en neem de ingevoerde tekst mee
+  const directNaarStap2 = () => {
+    if (!nieuwsArtikel.trim()) setNieuwsArtikel(rawTekst)
+    gaNaarStap2()
+  }
+
   const gaNaarStap3 = () => {
     setStap(3)
     setResultaat(null)
@@ -135,7 +141,7 @@ export default function PersberichtenPagina() {
           { nr: 2, label: '2. Artikel bewerken + tips' },
           { nr: 3, label: '3. Sociale media posts' },
         ] as { nr: Stap; label: string }[]).map(s => (
-          <button key={s.nr} onClick={() => { if (s.nr <= stap || (s.nr === 2 && nieuwsArtikel) || (s.nr === 3 && nieuwsArtikel)) setStap(s.nr) }}
+          <button key={s.nr} onClick={() => { if (s.nr <= 2 || nieuwsArtikel.trim()) setStap(s.nr) }}
             style={{ flex: 1, padding: '10px 8px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial', fontWeight: stap === s.nr ? '700' : '400', background: stap === s.nr ? '#4a1a5c' : 'transparent', color: stap === s.nr ? 'white' : stap > s.nr ? '#2d7a4f' : 'var(--tekst-zacht)', transition: 'all 0.15s', textAlign: 'center' as const }}>
             {stap > s.nr ? '✓ ' : ''}{s.label}
           </button>
@@ -157,6 +163,10 @@ export default function PersberichtenPagina() {
               <button onClick={() => roepAIAan('genereer', rawTekst)} disabled={laden || !rawTekst.trim()}
                 style={{ background: laden ? '#9a7aac' : 'var(--blauw)', color: 'white', border: 'none', padding: '11px 24px', borderRadius: '8px', cursor: (laden || !rawTekst.trim()) ? 'not-allowed' : 'pointer', fontSize: '14px', fontFamily: 'Arial', fontWeight: '600', opacity: !rawTekst.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {laden ? '⏳ Genereren...' : '✨ Genereer nieuwsartikel'}
+              </button>
+              <button onClick={directNaarStap2} disabled={laden}
+                style={{ background: 'white', color: '#4a1a5c', border: '2px solid #4a1a5c', padding: '10px 20px', borderRadius: '8px', cursor: laden ? 'not-allowed' : 'pointer', fontSize: '13px', fontFamily: 'Arial', fontWeight: '600' }}>
+                Ik heb al een tekst → direct naar stap 2
               </button>
             </div>
           </div>
