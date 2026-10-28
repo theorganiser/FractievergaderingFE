@@ -4,16 +4,17 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ApiDocument } from '@/lib/types'
-import { haalRaadsmededelingen, haalAlleVragen, startSyncEnWacht, SyncLogItem, DEMO_RM, DEMO_VRAGEN } from '@/lib/api'
+import { haalRaadsmededelingen, haalAlleVragen, haalMoties, startSyncEnWacht, SyncLogItem, DEMO_RM, DEMO_VRAGEN } from '@/lib/api'
 import { formatDatumNL, formatDatumKort } from '@/lib/datum'
 import { useAuth } from '@/hooks/useAuth'
 
-type Filter = 'alle' | 'rm' | 'tq' | 'sq' | 'open_gdp'
+type Filter = 'alle' | 'rm' | 'tq' | 'sq' | 'mo' | 'open_gdp'
 
 export default function DocumentenPagina() {
   const { isAdmin } = useAuth()
   const [rmDocs, setRmDocs] = useState<ApiDocument[]>([])
   const [vragenDocs, setVragenDocs] = useState<ApiDocument[]>([])
+  const [motieDocs, setMotieDocs] = useState<ApiDocument[]>([])
   const [laden, setLaden] = useState(true)
   const [verversBezig, setVerversBezig] = useState(false)
   const [syncBezig, setSyncBezig] = useState(false)
@@ -29,12 +30,14 @@ export default function DocumentenPagina() {
     else setVerversBezig(true)
     setFout(false)
     try {
-      const [rm, vragen] = await Promise.all([
+      const [rm, vragen, moties] = await Promise.all([
         haalRaadsmededelingen().catch(() => [] as ApiDocument[]),
         haalAlleVragen().catch(() => [] as ApiDocument[]),
+        haalMoties().catch(() => [] as ApiDocument[]),
       ])
       setRmDocs(rm.length > 0 ? rm : DEMO_RM)
       setVragenDocs(vragen.length > 0 ? vragen : DEMO_VRAGEN)
+      setMotieDocs(moties)
       if (rm.length === 0 && vragen.length === 0) setFout(true)
     } catch {
       setRmDocs(DEMO_RM)
@@ -85,7 +88,7 @@ export default function DocumentenPagina() {
     laadAlles(true)
   }
 
-  const alleDocs: ApiDocument[] = [...rmDocs, ...vragenDocs]
+  const alleDocs: ApiDocument[] = [...rmDocs, ...vragenDocs, ...motieDocs]
 
   const isOpenGdp = (doc: ApiDocument) =>
     (doc.type === 'technische_vragen' || doc.type === 'schriftelijke_vragen') &&
@@ -98,6 +101,7 @@ export default function DocumentenPagina() {
       filter === 'rm' ? doc.type === 'raadsmededelingen' :
       filter === 'tq' ? doc.type === 'technische_vragen' :
       filter === 'sq' ? doc.type === 'schriftelijke_vragen' :
+      filter === 'mo' ? doc.type === 'moties' :
       filter === 'open_gdp' ? isOpenGdp(doc) : true
     const matchZoek = !zoek ||
       doc.titel.toLowerCase().includes(zoek.toLowerCase()) ||
@@ -110,12 +114,14 @@ export default function DocumentenPagina() {
     raadsmededelingen: { label: 'RM', bg: '#f0eeff', kleur: '#4a1a5c', rand: '#c0a0d8' },
     technische_vragen: { label: 'TQ', bg: '#e8f0f8', kleur: '#1a4a7a', rand: '#a0c0e0' },
     schriftelijke_vragen: { label: 'SQ', bg: '#f0e8f8', kleur: '#5a1a8a', rand: '#c0a0e0' },
+    moties: { label: 'M', bg: '#fff0e8', kleur: '#8a4000', rand: '#e8a060' },
   }
 
   const counts = {
     rm: rmDocs.length,
     tq: vragenDocs.filter(d => d.type === 'technische_vragen').length,
     sq: vragenDocs.filter(d => d.type === 'schriftelijke_vragen').length,
+    mo: motieDocs.length,
     open_gdp: vragenDocs.filter(isOpenGdp).length,
   }
 
@@ -126,7 +132,7 @@ export default function DocumentenPagina() {
         <div>
           <h1 style={{ fontSize: '22px', color: 'var(--blauw)', fontWeight: '600', margin: 0 }}>Raadsdocumenten</h1>
           <p style={{ fontSize: '12px', color: 'var(--tekst-zacht)', margin: '2px 0 0', fontFamily: 'Arial' }}>
-            Raadsmededelingen en beantwoorde vragen — gemeente Gooise Meren
+            Raadsmededelingen, beantwoorde vragen en moties — gemeente Gooise Meren
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -188,6 +194,7 @@ export default function DocumentenPagina() {
         <StatKaart label="Raadsmededelingen" count={counts.rm} kleur="#4a1a5c" actief={filter === 'rm'} onClick={() => setFilter(filter === 'rm' ? 'alle' : 'rm')} />
         <StatKaart label="Technische vragen" count={counts.tq} kleur="#1a4a7a" actief={filter === 'tq'} onClick={() => setFilter(filter === 'tq' ? 'alle' : 'tq')} />
         <StatKaart label="Schriftelijke vragen" count={counts.sq} kleur="#5a1a8a" actief={filter === 'sq'} onClick={() => setFilter(filter === 'sq' ? 'alle' : 'sq')} />
+        <StatKaart label="Moties" count={counts.mo} kleur="#8a4000" actief={filter === 'mo'} onClick={() => setFilter(filter === 'mo' ? 'alle' : 'mo')} />
         <StatKaart label="⚡ Openstaand GDP" count={counts.open_gdp} kleur="#c04000" actief={filter === 'open_gdp'} onClick={() => setFilter(filter === 'open_gdp' ? 'alle' : 'open_gdp')} />
         <StatKaart label="Totaal" count={alleDocs.length} kleur="#a89060" actief={filter === 'alle'} onClick={() => setFilter('alle')} />
       </div>
@@ -235,6 +242,9 @@ export default function DocumentenPagina() {
                 )}
                 {isVraag && doc.indieners && <span>👤 {doc.indieners}</span>}
                 {isVraag && doc.fracties && <span>🏛 {doc.fracties}</span>}
+                {doc.type === 'moties' && doc.status === 'Concept' && (
+                  <span style={{ color: cfg.kleur, fontWeight: '600' }}>✎ Concept</span>
+                )}
                 {isVraag && doc.afgedaan && (
                   <span style={{ color: '#2d7a4f', fontWeight: '600' }}>
                     ✓ Afgedaan: {formatDatumNL(doc.afgedaan)}

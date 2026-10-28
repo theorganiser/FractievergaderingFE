@@ -104,7 +104,7 @@ export interface Vergadering {
 
 export interface ApiDocument {
   id: string
-  type: 'raadsmededelingen' | 'technische_vragen' | 'schriftelijke_vragen'
+  type: 'raadsmededelingen' | 'technische_vragen' | 'schriftelijke_vragen' | 'moties'
   titel: string
   doc_nummer: string
   publicatiedatum: string
