@@ -24,14 +24,11 @@ Open [http://localhost:3000](http://localhost:3000)
 
 1. Push naar GitHub
 2. Importeer op [vercel.com](https://vercel.com)
-3. Voeg deze omgevingsvariabelen toe in Vercel:
+3. Voeg de omgevingsvariabelen uit `.env.local.example` toe in Vercel (minimaal `JWT_SECRET`,
+   `READER_PASSWORD`, `ADMIN_PASSWORD`, `MODERATOR_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY`,
+   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `ANTHROPIC_API_KEY`).
 
-| Variabele | Waarde |
-|-----------|--------|
-| `NEXT_PUBLIC_ADMIN_PASSWORD` | jouw wachtwoord |
-| `NEXT_PUBLIC_SUPABASE_URL` | https://bchzfcnxtgiqplwqouhy.supabase.co |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | jouw anon key |
-| `NEXT_PUBLIC_API_URL` | https://datascraperraad.onrender.com |
+Vereist Node.js 20.9 of nieuwer (Next.js 16).
 
 ## 📁 Projectstructuur
 
@@ -39,7 +36,7 @@ Open [http://localhost:3000](http://localhost:3000)
 src/
 ├── app/
 │   ├── page.tsx                  # Overzicht vergaderingen
-│   ├── login/page.tsx            # Beheerder inloggen
+│   ├── inloggen/page.tsx         # Inloggen (iedereen)
 │   ├── lees/[token]/page.tsx     # Openbare leesweergave
 │   ├── vergadering/[id]/page.tsx # Editor
 │   └── beheer/page.tsx           # Beheer & API-status
@@ -63,9 +60,30 @@ src/
 
 ## 🔐 Authenticatie
 
-Beheerders loggen in met het wachtwoord uit `NEXT_PUBLIC_ADMIN_PASSWORD`.  
-De inlogstatus wordt bewaard in `sessionStorage` (verdwijnt bij sluiten browser).  
-Lezers hebben geen account nodig — zij openen de unieke deellink.
+Iedereen logt in op `/inloggen` met **naam + wachtwoord**. De rol (fractielid, moderator,
+beheerder) komt alleen uit de tabel `gebruikers`.
+
+- **Fractielid**: eigen wachtwoord, of zolang dat er niet is de gedeelde toegangscode (`READER_PASSWORD`).
+- **Beheerder / moderator**: altijd een eigen wachtwoord. Wie die rol heeft maar nog geen eigen
+  wachtwoord, logt eenmalig in met `ADMIN_PASSWORD` (beheerder) of `MODERATOR_PASSWORD`
+  (moderator), wordt naar `/account` gestuurd en krijgt de extra rechten pas na het instellen
+  van een eigen wachtwoord. De gedeelde toegangscode geeft nooit beheerders- of moderatorrechten.
+- Sessies zijn JWT-cookies van 24 uur; de rol-cookies zijn aan de naam gekoppeld.
+- Alle data loopt via de API-routes in `src/app/api`, die de login zelf controleren.
+
+## 🕐 Tijdzone
+
+Alle datums en tijden worden in Nederlandse tijd berekend (`Europe/Amsterdam`), ongeacht waar
+de server of het apparaat staat. Gebruik de helpers uit `src/lib/tijd.ts`
+(`vandaagNL`, `plusDagen`, `formatTijdstipTijd`, …) in plaats van `toISOString().split('T')[0]`.
+
+## 👥 Gelijktijdig bewerken
+
+- Opslaan gebeurt met versiecontrole op `bijgewerkt`: als iemand anders er net iets aan
+  veranderde, haalt de browser de verse versie op en probeert het opnieuw.
+- Aanwezigheid gaat via `/api/vergaderingen/[id]/aanwezigheid`, die per keer maar één naam verandert.
+- De editor voegt bij opslaan de agenda samen met wat fractieleden ondertussen toevoegden
+  (notities, bijlagen, eigen punten, bespreekverzoeken) — zie `src/lib/samenvoegen.ts`.
 
 ---
 

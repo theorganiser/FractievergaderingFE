@@ -10,6 +10,7 @@ import { testVerbinding, haalSyncLog } from '@/lib/api'
 import { apiJson, stuur } from '@/lib/dataApi'
 import Melding from '@/components/Melding'
 import ExcelUpload from '@/components/ExcelUpload'
+import { formatTijdstipDatum, formatTijdstipTijd } from '@/lib/tijd'
 
 type BeheerTab = 'algemeen' | 'excel' | 'gebruikers' | 'loginlog'
 
@@ -265,13 +266,12 @@ function LoginLogboek() {
           <div style={{ border: '1px solid var(--rand)', borderRadius: '8px', overflow: 'hidden' }}>
             {zichtbareRegels.map((r, idx) => {
               const rk = rolKleur(r.rol)
-              const datum = new Date(r.ingelogd_op)
               return (
                 <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderBottom: idx < zichtbareRegels.length - 1 ? '1px solid #f0ede8' : 'none' }}>
                   <span style={{ flex: 1, fontSize: '14px', fontFamily: 'Arial', fontWeight: '600', color: 'var(--blauw)' }}>{r.naam}</span>
                   <span style={{ fontSize: '11px', background: rk.bg, color: rk.kleur, border: `1px solid ${rk.rand}`, padding: '2px 8px', borderRadius: '5px', fontFamily: 'Arial' }}>{rk.label}</span>
                   <span style={{ fontSize: '12px', color: 'var(--tekst-zacht)', fontFamily: 'Arial', flexShrink: 0, minWidth: '140px', textAlign: 'right' }}>
-                    {datum.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })} · {datum.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+                    {formatTijdstipDatum(r.ingelogd_op)} · {formatTijdstipTijd(r.ingelogd_op)}
                   </span>
                 </div>
               )

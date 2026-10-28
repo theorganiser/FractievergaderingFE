@@ -4,11 +4,11 @@ export const dynamic = 'force-dynamic'
 
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
 import { useAuth } from '@/hooks/useAuth'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, use } from 'react'
 import { Agendapunt, Subpunt } from '@/lib/types'
 import { laadStemmen, slaaStemOp } from '@/lib/stemlijst'
 
-interface Props { params: { token: string } }
+interface Props { params: Promise<{ token: string }> }
 
 type GDPStem = 'voor' | 'tegen' | 'onthouding' | ''
 
@@ -72,7 +72,7 @@ function bouwStemlijstItems(punten: Agendapunt[]): StemItem[] {
 }
 
 export default function StemlijstPagina({ params }: Props) {
-  const { token } = params
+  const { token } = use(params)
   const { vergadering: v, geladen } = useVergaderingOpToken(token)
   const { isAdmin, isModerator } = useAuth()
   const [stemmen, setStemmen] = useState<Record<string, GDPStem>>({})

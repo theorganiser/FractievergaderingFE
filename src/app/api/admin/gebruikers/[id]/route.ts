@@ -4,7 +4,8 @@ import { db } from '@/lib/server/db'
 import { ROLLEN } from '../rollen'
 
 // Body: { rol } en/of { actief }
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const s = await vereis(req, 'admin'); if (s instanceof NextResponse) return s
   const body = await req.json()
   const wijziging: Record<string, unknown> = {}
@@ -14,14 +15,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
   if ('actief' in body) wijziging.actief = !!body.actief
   if (Object.keys(wijziging).length === 0) return NextResponse.json({ fout: 'Niets te wijzigen.' }, { status: 400 })
-  const { error } = await db().from('gebruikers').update(wijziging).eq('id', params.id)
+  const { error } = await db().from('gebruikers').update(wijziging).eq('id', id)
   if (error) { console.error(error); return NextResponse.json({ fout: 'Bijwerken mislukt.' }, { status: 500 }) }
   return NextResponse.json({ ok: true })
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const s = await vereis(req, 'admin'); if (s instanceof NextResponse) return s
-  const { error } = await db().from('gebruikers').delete().eq('id', params.id)
+  const { error } = await db().from('gebruikers').delete().eq('id', id)
   if (error) { console.error(error); return NextResponse.json({ fout: 'Verwijderen mislukt.' }, { status: 500 }) }
   return NextResponse.json({ ok: true })
 }

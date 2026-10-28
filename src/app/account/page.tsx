@@ -10,7 +10,8 @@ const MIN_LENGTE = 8
 
 export default function AccountPagina() {
   const router = useRouter()
-  const { naam, heeftEigenWachtwoord, wachtwoordVerplicht, geladen } = useAuth()
+  const { naam, heeftEigenWachtwoord, wachtwoordVerplicht, rolWacht, geladen } = useAuth()
+  const verplicht = (wachtwoordVerplicht || !!rolWacht) && !heeftEigenWachtwoord
   const [huidig, setHuidig] = useState('')
   const [nieuw, setNieuw] = useState('')
   const [herhaal, setHerhaal] = useState('')
@@ -46,10 +47,12 @@ export default function AccountPagina() {
         Ingelogd als <strong>{naam || 'onbekend'}</strong>.{' '}
         {heeftEigenWachtwoord
           ? 'Je hebt een eigen wachtwoord. Hieronder kun je het wijzigen.'
-          : 'Je logt nu in met de gedeelde toegangscode. Stel een eigen wachtwoord in; daarna werkt de gedeelde code voor jou niet meer.'}
+          : rolWacht
+            ? `Als ${rolWacht} heb je een eigen wachtwoord nodig. Zodra je dat hebt ingesteld, krijg je je ${rolWacht}srechten.`
+            : 'Je logt nu in met de gedeelde toegangscode. Stel een eigen wachtwoord in; daarna werkt de gedeelde code voor jou niet meer.'}
       </p>
 
-      {wachtwoordVerplicht && !heeftEigenWachtwoord && (
+      {verplicht && !rolWacht && (
         <div style={{ background: '#fff8e0', border: '1px solid #e8c860', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: '#8a6800', fontFamily: 'Arial' }}>
           Er is een eigen wachtwoord verplicht gesteld. Stel er eerst een in om verder te gaan.
         </div>
@@ -67,7 +70,7 @@ export default function AccountPagina() {
         </div>
       ) : (
         <div style={{ background: 'white', border: '1px solid var(--rand)', borderRadius: '12px', padding: '20px' }}>
-          <Veld label={heeftEigenWachtwoord ? 'Huidig wachtwoord' : 'Huidige toegangscode'}>
+          <Veld label={heeftEigenWachtwoord ? 'Huidig wachtwoord' : rolWacht === 'beheerder' ? 'Beheerderswachtwoord' : rolWacht === 'moderator' ? 'Moderatorwachtwoord' : 'Huidige toegangscode'}>
             <input type="password" value={huidig} onChange={e => setHuidig(e.target.value)} autoComplete="current-password" style={invoer} />
           </Veld>
           <Veld label={`Nieuw wachtwoord (minimaal ${MIN_LENGTE} tekens)`}>
@@ -85,7 +88,7 @@ export default function AccountPagina() {
               style={{ background: 'var(--blauw)', color: 'white', border: 'none', padding: '9px 20px', borderRadius: '7px', cursor: (bezig || !huidig || !nieuw) ? 'not-allowed' : 'pointer', opacity: (bezig || !huidig || !nieuw) ? 0.5 : 1, fontSize: '13px', fontFamily: 'Arial', fontWeight: '600' }}>
               {bezig ? '⏳ Bezig...' : 'Wachtwoord opslaan'}
             </button>
-            {!wachtwoordVerplicht && (
+            {!verplicht && (
               <button onClick={() => router.back()}
                 style={{ background: 'white', color: 'var(--tekst-zacht)', border: '1px solid var(--rand)', padding: '9px 16px', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontFamily: 'Arial' }}>
                 Annuleren

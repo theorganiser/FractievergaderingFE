@@ -4,8 +4,6 @@ import { leesSessie, heeftNiveau, Niveau } from '@/lib/sessie'
 const OPENBARE_PADEN = [
   '/inloggen',
   '/api/login',
-  '/api/admin-login',
-  '/api/moderator-login',
   '/api/logout',
   '/api/check-auth',
   '/_next',
@@ -29,7 +27,7 @@ function naarInloggen(req: NextRequest, admin: boolean) {
 
 // Controleert de JWT-cookies (handtekening, verloop én rol). API-routes controleren zelf
 // nog een keer hun eigen niveau; dit is de eerste poort.
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const pad = req.nextUrl.pathname
 
   if (OPENBARE_PADEN.some(p => pad.startsWith(p))) {

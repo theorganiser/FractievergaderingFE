@@ -1,3 +1,5 @@
+import { vandaagNL, plusDagen, weekdag } from './tijd'
+
 const DAGEN = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag']
 const MAANDEN = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december']
 const MAANDEN_KORT: Record<string, number> = {
@@ -51,19 +53,19 @@ export function parseDatum(datum: string): Date | null {
   return isNaN(d.getTime()) ? null : d
 }
 
+// Vandaag in Nederlandse tijd (zie tijd.ts)
 export function vandaag(): string {
-  return new Date().toISOString().split('T')[0]
+  return vandaagNL()
 }
 
 export function sorteerOpDatum(a: { datum: string }, b: { datum: string }): number {
   return (b.datum || '').localeCompare(a.datum || '')
 }
 
+// De eerstvolgende maandag ná vandaag (op maandag zelf: volgende week), in Nederlandse tijd.
 export function eersteVolgendeMaandag(): string {
-  const nu = new Date()
-  const dag = nu.getDay()
+  const nu = vandaagNL()
+  const dag = weekdag(nu)
   const dagenTotMaandag = dag === 1 ? 7 : (8 - dag) % 7 || 7
-  const maandag = new Date(nu)
-  maandag.setDate(nu.getDate() + dagenTotMaandag)
-  return maandag.toISOString().split('T')[0]
+  return plusDagen(nu, dagenTotMaandag)
 }

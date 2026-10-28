@@ -46,9 +46,11 @@ describe('eersteVolgendeMaandag', () => {
   afterEach(() => { vi.useRealTimers() })
 
   it.each([
-    ['woensdag', '2026-10-21T10:00:00', '2026-10-26'],
-    ['zondag', '2026-10-25T10:00:00', '2026-10-26'],
-    ['maandag zelf → week later', '2026-10-19T10:00:00', '2026-10-26'],
+    ['woensdag', '2026-10-21T10:00:00+02:00', '2026-10-26'],
+    ['zondag', '2026-10-25T10:00:00+01:00', '2026-10-26'],
+    ['maandag zelf → week later', '2026-10-19T10:00:00+02:00', '2026-10-26'],
+    // Zondagnacht 00:30 Nederlandse tijd is het al maandag (in UTC nog zondag)
+    ['maandag 00:30 NL-tijd', '2026-10-25T23:30:00Z', '2026-11-02'],
   ])('%s', (_, nu, verwacht) => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(nu))

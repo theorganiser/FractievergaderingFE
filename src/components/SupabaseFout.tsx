@@ -94,7 +94,7 @@ export default function SupabaseFout({ opnieuw }: SupabaseFoutProps) {
 }
 
 // Kleine inline banner voor opslagfouten
-export function OpslaanFoutBanner({ onSluit }: { onSluit: () => void }) {
+export function OpslaanFoutBanner({ onSluit, melding }: { onSluit: () => void; melding?: string | null }) {
   return (
     <div style={{
       position: 'fixed', bottom: '20px', right: '20px',
@@ -111,7 +111,7 @@ export function OpslaanFoutBanner({ onSluit }: { onSluit: () => void }) {
           Opslaan mislukt
         </div>
         <div style={{ fontSize: '12px', color: '#888', fontFamily: 'Arial', marginTop: '2px' }}>
-          Wijziging niet opgeslagen. Controleer je verbinding.
+          {melding || 'Wijziging niet opgeslagen. Controleer je verbinding.'}
         </div>
       </div>
       <button

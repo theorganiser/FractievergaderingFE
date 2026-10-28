@@ -1,33 +1,35 @@
 'use client'
 
 import { useState } from 'react'
+import { statusVan, AanwezigheidStatus } from '@/lib/aanwezigheid'
+import { SESSIE_VERLOPEN } from '@/lib/dataApi'
 
-type Status = 'aanwezig' | 'online' | 'afwezig'
-
-function parseNamen(str: string) { return (str || '').split(',').map(n => n.trim()).filter(Boolean) }
-
-export default function AanwezigheidVraag({ aanwezig, online, afwezig, naam, onKiezen }: {
+export default function AanwezigheidVraag({ aanwezig, online, afwezig, naam, onKiezen, foutmelding }: {
   aanwezig: string; online: string; afwezig: string; naam: string
-  onKiezen: (status: Status) => void
+  // true = opgeslagen. Bij false blijft de pop-up open en tonen we de foutmelding.
+  onKiezen: (status: AanwezigheidStatus) => Promise<boolean>
+  foutmelding?: string | null
 }) {
-  const huidigeStatus: Status | null =
-    parseNamen(aanwezig).includes(naam) ? 'aanwezig' :
-    parseNamen(online).includes(naam) ? 'online' :
-    parseNamen(afwezig).includes(naam) ? 'afwezig' : null
+  const huidigeStatus = statusVan({ aanwezig, online, afwezig }, naam)
 
   const [toonWijzigen, setToonWijzigen] = useState(false)
-  const [bezig, setBezig] = useState<Status | null>(null)
+  const [bezig, setBezig] = useState<AanwezigheidStatus | null>(null)
+  const [mislukt, setMislukt] = useState(false)
 
   if (!naam) return null
 
   const moetVragen = huidigeStatus === null
 
-  const kies = async (status: Status) => {
+  const kies = async (status: AanwezigheidStatus) => {
     setBezig(status)
-    await onKiezen(status)
+    setMislukt(false)
+    const ok = await onKiezen(status)
     setBezig(null)
-    setToonWijzigen(false)
+    if (ok) setToonWijzigen(false)
+    else setMislukt(true)
   }
+
+  const sessieVerlopen = mislukt && foutmelding === SESSIE_VERLOPEN
 
   return (
     <>
@@ -36,7 +38,7 @@ export default function AanwezigheidVraag({ aanwezig, online, afwezig, naam, onK
           <span>
             Jouw status: {huidigeStatus === 'aanwezig' ? '✓ Aanwezig' : huidigeStatus === 'online' ? '💻 Online' : '✗ Niet aanwezig'}
           </span>
-          <button onClick={() => setToonWijzigen(true)}
+          <button onClick={() => { setMislukt(false); setToonWijzigen(true) }}
             style={{ background: 'none', border: 'none', color: 'var(--blauw)', textDecoration: 'underline', cursor: 'pointer', fontSize: '12px', fontFamily: 'Arial', padding: 0 }}>
             wijzigen
           </button>
@@ -51,12 +53,23 @@ export default function AanwezigheidVraag({ aanwezig, online, afwezig, naam, onK
               Geef aan of je bij deze vergadering aanwezig bent, zodat de aanwezigheidslijst klopt.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <KeuzeKnop label="✓ Ja, ik ben er fysiek bij" kleur="#2d7a4f" bg="#e8f5ed" bezig={bezig === 'aanwezig'} onClick={() => kies('aanwezig')} />
-              <KeuzeKnop label="💻 Ja, ik doe online mee" kleur="#1a5c8a" bg="#e8f0f8" bezig={bezig === 'online'} onClick={() => kies('online')} />
-              <KeuzeKnop label="✗ Nee, ik kan niet" kleur="#c0392b" bg="#fdf0ef" bezig={bezig === 'afwezig'} onClick={() => kies('afwezig')} />
+              <KeuzeKnop label="✓ Ja, ik ben er fysiek bij" kleur="#2d7a4f" bg="#e8f5ed" bezig={bezig === 'aanwezig'} uit={!!bezig} onClick={() => kies('aanwezig')} />
+              <KeuzeKnop label="💻 Ja, ik doe online mee" kleur="#1a5c8a" bg="#e8f0f8" bezig={bezig === 'online'} uit={!!bezig} onClick={() => kies('online')} />
+              <KeuzeKnop label="✗ Nee, ik kan niet" kleur="#c0392b" bg="#fdf0ef" bezig={bezig === 'afwezig'} uit={!!bezig} onClick={() => kies('afwezig')} />
             </div>
+            {mislukt && (
+              <div role="alert" style={{ marginTop: '14px', background: '#fdf0ef', border: '1px solid #e8a090', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', color: '#c0392b', fontFamily: 'Arial' }}>
+                {foutmelding || 'Je keuze is niet opgeslagen. Probeer het opnieuw.'}
+                {sessieVerlopen && (
+                  <div style={{ marginTop: '8px' }}>
+                    <a href={`/inloggen?terug=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '/')}`}
+                      style={{ color: '#c0392b', fontWeight: 'bold' }}>Opnieuw inloggen →</a>
+                  </div>
+                )}
+              </div>
+            )}
             {toonWijzigen && !moetVragen && (
-              <button onClick={() => setToonWijzigen(false)}
+              <button onClick={() => { setToonWijzigen(false); setMislukt(false) }}
                 style={{ marginTop: '14px', background: 'none', border: 'none', color: 'var(--tekst-zacht)', fontSize: '12px', fontFamily: 'Arial', cursor: 'pointer', textDecoration: 'underline' }}>
                 Annuleren
               </button>
@@ -68,11 +81,11 @@ export default function AanwezigheidVraag({ aanwezig, online, afwezig, naam, onK
   )
 }
 
-function KeuzeKnop({ label, kleur, bg, bezig, onClick }: { label: string; kleur: string; bg: string; bezig: boolean; onClick: () => void }) {
+function KeuzeKnop({ label, kleur, bg, bezig, uit, onClick }: { label: string; kleur: string; bg: string; bezig: boolean; uit: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} disabled={bezig}
-      style={{ background: bg, color: kleur, border: `1.5px solid ${kleur}`, padding: '11px 14px', borderRadius: '9px', fontSize: '14px', fontFamily: 'Arial', fontWeight: '600', cursor: bezig ? 'not-allowed' : 'pointer', textAlign: 'left' as const, opacity: bezig ? 0.6 : 1 }}>
-      {label}
+    <button onClick={onClick} disabled={uit}
+      style={{ background: bg, color: kleur, border: `1.5px solid ${kleur}`, padding: '11px 14px', borderRadius: '9px', fontSize: '14px', fontFamily: 'Arial', fontWeight: '600', cursor: uit ? 'not-allowed' : 'pointer', textAlign: 'left' as const, opacity: uit && !bezig ? 0.5 : 1 }}>
+      {bezig ? '⏳ Opslaan…' : label}
     </button>
   )
 }

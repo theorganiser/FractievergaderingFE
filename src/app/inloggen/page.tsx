@@ -3,16 +3,17 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 
 const NAAM_SLEUTEL = 'gdp_spreker_naam'
 
 function InloggenFormulier() {
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const isAdmin = searchParams.get('admin') === '1'
-  const isModerator = searchParams.get('moderator') === '1'
-  const terugPad = searchParams.get('terug') || '/'
+  // Doorgestuurd vanaf een pagina waarvoor beheerders-/moderatorrechten nodig zijn
+  const rechtenNodig = searchParams.get('admin') === '1' || searchParams.get('moderator') === '1'
+  // Alleen terug naar een pad binnen deze site (geen //andere-site.nl)
+  const terug = searchParams.get('terug') || '/'
+  const terugPad = terug.startsWith('/') && !terug.startsWith('//') ? terug : '/'
 
   const [naam, setNaam] = useState('')
   const [code, setCode] = useState('')
@@ -26,28 +27,25 @@ function InloggenFormulier() {
   }, [])
 
   const handleLogin = async () => {
-    if (!isAdmin && !isModerator && !naam.trim()) {
+    if (!naam.trim()) {
       setFout('Vul je naam in.')
       schud(); return
     }
     setLaden(true); setFout(null)
     try {
-      const endpoint = isAdmin ? '/api/admin-login' : isModerator ? '/api/moderator-login' : '/api/login'
-      const body = (isAdmin || isModerator)
-        ? { wachtwoord: code, naam: naam.trim() || (isAdmin ? 'Beheerder' : 'Moderator') }
-        : { naam: naam.trim(), code }
-      const resp = await fetch(endpoint, {
+      const resp = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ naam: naam.trim(), code }),
       })
       const data = await resp.json()
       if (!resp.ok) {
         setFout(data.fout || 'Inloggen mislukt.')
         schud(); setCode('')
       } else {
-        if (naam.trim()) localStorage.setItem(NAAM_SLEUTEL, naam.trim())
-        window.location.href = terugPad
+        localStorage.setItem(NAAM_SLEUTEL, naam.trim())
+        // Beheerder/moderator zonder eigen wachtwoord: eerst dat instellen
+        window.location.href = data.moetWachtwoordInstellen ? '/account' : terugPad
       }
     } catch {
       setFout('Verbindingsfout. Probeer opnieuw.')
@@ -67,21 +65,26 @@ function InloggenFormulier() {
           <p style={{ fontSize: '13px', color: '#888', margin: 0, fontFamily: 'Arial' }}>Goois Democratisch Platform</p>
         </div>
 
-        {!isAdmin && !isModerator && (
-          <div style={{ marginBottom: '16px' }}>
-            <label style={labelStijl}>Jouw naam</label>
-            <input type="text" value={naam} onChange={e => { setNaam(e.target.value); setFout(null) }}
-              onKeyDown={e => e.key === 'Enter' && handleLogin()} autoFocus={!naam}
-              placeholder="Voornaam of volledige naam..."
-              style={{ ...invoerStijl, borderColor: fout && !naam.trim() ? '#c0392b' : '#dde3ed' }} />
+        {rechtenNodig && (
+          <div style={{ background: '#fff8e0', border: '1px solid #e8c860', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: '#8a6800', fontFamily: 'Arial' }}>
+            Voor deze pagina zijn beheerders- of moderatorrechten nodig. Log in met je eigen naam en wachtwoord.
           </div>
         )}
 
+        <div style={{ marginBottom: '16px' }}>
+          <label style={labelStijl}>Jouw naam</label>
+          <input type="text" value={naam} onChange={e => { setNaam(e.target.value); setFout(null) }}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()} autoFocus={!naam} autoComplete="username"
+            placeholder="Voornaam of volledige naam..."
+            style={{ ...invoerStijl, borderColor: fout && !naam.trim() ? '#c0392b' : '#dde3ed' }} />
+        </div>
+
         <div style={{ marginBottom: '24px' }}>
-          <label style={labelStijl}>{isAdmin ? 'Beheerderswachtwoord' : isModerator ? 'Moderatorwachtwoord' : 'Toegangscode of eigen wachtwoord'}</label>
+          <label style={labelStijl}>Eigen wachtwoord of toegangscode</label>
           <input type="password" value={code} onChange={e => { setCode(e.target.value); setFout(null) }}
-            onKeyDown={e => e.key === 'Enter' && handleLogin()} autoFocus={!!naam && !isAdmin && !isModerator}
-            placeholder={isAdmin ? 'Beheerderswachtwoord...' : isModerator ? 'Moderatorwachtwoord...' : 'Toegangscode of eigen wachtwoord...'}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()} autoFocus={!!naam} autoComplete="current-password"
+            placeholder="Eigen wachtwoord of toegangscode..."
+
             style={{ ...invoerStijl, borderColor: fout ? '#c0392b' : '#dde3ed' }} />
         </div>
 
@@ -96,27 +99,8 @@ function InloggenFormulier() {
           {laden ? '⏳ Bezig...' : 'Toegang →'}
         </button>
 
-        <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {isAdmin || isModerator ? (
-            <button onClick={() => { setFout(null); setCode(''); router.push(`/inloggen?terug=${terugPad}`) }}
-              style={{ background: 'none', border: 'none', color: '#888', fontSize: '12px', fontFamily: 'Arial', cursor: 'pointer', textDecoration: 'underline' }}>
-              ← Terug naar fractie-inloggen
-            </button>
-          ) : (
-            <>
-              <button onClick={() => { setFout(null); setCode(''); router.push(`/inloggen?terug=${terugPad}&admin=1`) }}
-                style={{ background: 'none', border: 'none', color: '#888', fontSize: '12px', fontFamily: 'Arial', cursor: 'pointer', textDecoration: 'underline' }}>
-                Beheerder inloggen
-              </button>
-              <button onClick={() => { setFout(null); setCode(''); router.push(`/inloggen?terug=${terugPad}&moderator=1`) }}
-                style={{ background: 'none', border: 'none', color: '#888', fontSize: '12px', fontFamily: 'Arial', cursor: 'pointer', textDecoration: 'underline' }}>
-                Moderator inloggen
-              </button>
-            </>
-          )}
-        </div>
         <p style={{ fontSize: '11px', color: '#bbb', fontFamily: 'Arial', textAlign: 'center', marginTop: '12px' }}>
-          Neem contact op met de fractie voor de toegangscode. Eigen wachtwoord vergeten? Vraag de beheerder om een reset.
+          Neem contact op met de fractie voor de toegangscode. Beheerders en moderators loggen in met hun eigen wachtwoord. Wachtwoord vergeten? Vraag de beheerder om een reset.
         </p>
       </div>
       <style>{`@keyframes schud { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-10px)} 40%{transform:translateX(10px)} 60%{transform:translateX(-8px)} 80%{transform:translateX(8px)} }`}</style>

@@ -9,6 +9,8 @@ export interface Sessie {
   isAdmin: boolean
   isModerator: boolean   // admin heeft ook moderatorrechten
   eigenWachtwoord: boolean
+  // Beheerder/moderator die nog een eigen wachtwoord moet instellen (heeft tot dan alleen lezerrechten)
+  rolWacht: '' | 'beheerder' | 'moderator'
 }
 
 export type Niveau = 'lezer' | 'moderator' | 'admin'
@@ -26,16 +28,26 @@ async function payloadMetRol(cookies: CookieBron, cookie: string, rol: string) {
   return payload?.rol === rol ? payload : null
 }
 
+// Een rol-cookie hoort bij één persoon: de naam erin moet gelijk zijn aan die in de lezer-cookie.
+// Zo kun je een beheerders-cookie niet combineren met een login onder een andere naam.
+async function rolVoor(cookies: CookieBron, cookie: string, rol: string, naam: string): Promise<boolean> {
+  const payload = await payloadMetRol(cookies, cookie, rol)
+  return !!payload && !!naam && payload.naam === naam
+}
+
 export async function leesSessie(cookies: CookieBron): Promise<Sessie | null> {
   const lezer = await payloadMetRol(cookies, COOKIE_LEZER, 'lezer')
   if (!lezer) return null
-  const isAdmin = !!(await payloadMetRol(cookies, COOKIE_ADMIN, 'admin'))
-  const isModerator = isAdmin || !!(await payloadMetRol(cookies, COOKIE_MODERATOR, 'moderator'))
+  const naam = (lezer.naam as string) || ''
+  const isAdmin = await rolVoor(cookies, COOKIE_ADMIN, 'admin', naam)
+  const isModerator = isAdmin || await rolVoor(cookies, COOKIE_MODERATOR, 'moderator', naam)
+  const rolWacht = lezer.rolWacht === 'beheerder' || lezer.rolWacht === 'moderator' ? lezer.rolWacht : ''
   return {
-    naam: (lezer.naam as string) || '',
+    naam,
     isAdmin,
     isModerator,
     eigenWachtwoord: lezer.eigen === '1',
+    rolWacht,
   }
 }
 

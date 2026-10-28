@@ -69,3 +69,8 @@ export async function namenMetWachtwoord(): Promise<string[]> {
 export function wachtwoordVerplicht(): boolean {
   return process.env.WACHTWOORD_VERPLICHT === 'true'
 }
+
+// Het eenmalige startwachtwoord voor een beheerder/moderator die nog geen eigen wachtwoord heeft.
+export function rolWachtwoord(rol: 'beheerder' | 'moderator'): string | undefined {
+  return rol === 'beheerder' ? process.env.ADMIN_PASSWORD : process.env.MODERATOR_PASSWORD
+}

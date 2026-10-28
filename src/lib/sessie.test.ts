@@ -8,8 +8,8 @@ const koekjes = (waarden: Record<string, string>) => ({
 })
 
 const lezer = (naam = 'Anna') => maakToken({ rol: 'lezer', naam, eigen: '0' }, '1h')
-const admin = () => maakToken({ rol: 'admin' }, '1h')
-const moderator = () => maakToken({ rol: 'moderator' }, '1h')
+const admin = (naam = 'Anna') => maakToken({ rol: 'admin', naam }, '1h')
+const moderator = (naam = 'Anna') => maakToken({ rol: 'moderator', naam }, '1h')
 
 describe('leesSessie', () => {
   beforeEach(() => { vi.stubEnv('JWT_SECRET', 'test-geheim-van-minstens-32-tekens!!') })
@@ -21,7 +21,7 @@ describe('leesSessie', () => {
 
   it('geldige lezer-cookie → gewone sessie met naam', async () => {
     const s = await leesSessie(koekjes({ [COOKIE_LEZER]: await lezer('Bert') }))
-    expect(s).toEqual({ naam: 'Bert', isAdmin: false, isModerator: false, eigenWachtwoord: false })
+    expect(s).toEqual({ naam: 'Bert', isAdmin: false, isModerator: false, eigenWachtwoord: false, rolWacht: '' })
   })
 
   it('vervalste cookie-waarde → geen sessie', async () => {
@@ -47,6 +47,22 @@ describe('leesSessie', () => {
     const t = await lezer()
     const s = await leesSessie(koekjes({ [COOKIE_LEZER]: t, [COOKIE_ADMIN]: t, [COOKIE_MODERATOR]: t }))
     expect(s).toMatchObject({ isAdmin: false, isModerator: false })
+  })
+
+  // Rol-cookies horen bij één persoon: niet te combineren met een login onder een andere naam
+  it('admin-cookie van iemand anders → géén admin', async () => {
+    const s = await leesSessie(koekjes({ [COOKIE_LEZER]: await lezer('Vera'), [COOKIE_ADMIN]: await admin('Pieter') }))
+    expect(s).toMatchObject({ naam: 'Vera', isAdmin: false, isModerator: false })
+  })
+
+  it('oude admin-cookie zonder naam → géén admin', async () => {
+    const s = await leesSessie(koekjes({ [COOKIE_LEZER]: await lezer('Pieter'), [COOKIE_ADMIN]: await maakToken({ rol: 'admin' }, '1h') }))
+    expect(s).toMatchObject({ isAdmin: false })
+  })
+
+  it('beheerder die nog een eigen wachtwoord moet instellen', async () => {
+    const t = await maakToken({ rol: 'lezer', naam: 'Pieter', eigen: '0', rolWacht: 'beheerder' }, '1h')
+    expect(await leesSessie(koekjes({ [COOKIE_LEZER]: t }))).toMatchObject({ isAdmin: false, rolWacht: 'beheerder' })
   })
 
   it('admin-token in de lezer-cookie → geen sessie', async () => {
@@ -78,7 +94,7 @@ describe('vereis', () => {
   })
 
   it('geeft de sessie terug als het niveau klopt', async () => {
-    const r = await vereis(req({ [COOKIE_LEZER]: await lezer('Carla'), [COOKIE_ADMIN]: await admin() }), 'admin')
+    const r = await vereis(req({ [COOKIE_LEZER]: await lezer('Carla'), [COOKIE_ADMIN]: await admin('Carla') }), 'admin')
     expect(r).toMatchObject({ naam: 'Carla', isAdmin: true })
   })
 })

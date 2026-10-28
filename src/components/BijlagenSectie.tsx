@@ -87,7 +87,7 @@ export function BijlagePaneel({ bijlagen, vergaderingId, naam, onToegevoegd, onV
     setBezigVerwijderId(bijlage.id)
     try {
       await fetch('/api/bijlagen/verwijderen', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pad: bijlage.pad }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pad: bijlage.pad, vergaderingId }),
       })
     } catch { /* metadata alsnog verwijderen, ook als storage-delete mislukt */ }
     onVerwijderd(bijlage.id)

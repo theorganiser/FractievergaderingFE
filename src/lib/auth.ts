@@ -38,22 +38,25 @@ export async function verifieerToken(
 
 // eigenWachtwoord: de gebruiker heeft een persoonlijk wachtwoord (alleen voor de melding "stel een
 // eigen wachtwoord in"; de echte controle gebeurt bij het inloggen).
-export async function maakLezerCookie(naam: string, eigenWachtwoord = false): Promise<string> {
-  const token = await maakToken({ rol: 'lezer', naam, eigen: eigenWachtwoord ? '1' : '0' }, '24h')
+// rolWacht: beheerder/moderator zonder eigen wachtwoord. Die krijgt pas zijn extra rechten nadat
+// hij een eigen wachtwoord heeft ingesteld; tot die tijd alleen fractielid-rechten.
+export async function maakLezerCookie(naam: string, eigenWachtwoord = false, rolWacht: '' | 'beheerder' | 'moderator' = ''): Promise<string> {
+  const token = await maakToken({ rol: 'lezer', naam, eigen: eigenWachtwoord ? '1' : '0', rolWacht }, '24h')
   const maxAge = 24 * 60 * 60
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
   return `${COOKIE_LEZER}=${token}; Max-Age=${maxAge}; ${COOKIE_OPTIES}${secure}`
 }
 
-export async function maakAdminCookie(): Promise<string> {
-  const token = await maakToken({ rol: 'admin' }, '24h')
+// De rol-cookies dragen de naam: ze tellen alleen samen met de lezer-cookie van dezelfde persoon.
+export async function maakAdminCookie(naam: string): Promise<string> {
+  const token = await maakToken({ rol: 'admin', naam }, '24h')
   const maxAge = 24 * 60 * 60
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
   return `${COOKIE_ADMIN}=${token}; Max-Age=${maxAge}; ${COOKIE_OPTIES}${secure}`
 }
 
-export async function maakModeratorCookie(): Promise<string> {
-  const token = await maakToken({ rol: 'moderator' }, '24h')
+export async function maakModeratorCookie(naam: string): Promise<string> {
+  const token = await maakToken({ rol: 'moderator', naam }, '24h')
   const maxAge = 24 * 60 * 60
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
   return `${COOKIE_MODERATOR}=${token}; Max-Age=${maxAge}; ${COOKIE_OPTIES}${secure}`

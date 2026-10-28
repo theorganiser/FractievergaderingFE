@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState } from 'react'
+import { useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { useVergaderingen } from '@/hooks/useVergaderingen'
 import { useAuth } from '@/hooks/useAuth'
@@ -18,22 +18,24 @@ import Stemlijst from '@/components/Stemlijst'
 import KalenderTab from '@/components/KalenderTab'
 import AanwezigheidChecklist from '@/components/AanwezigheidChecklist'
 import Kalender from '@/components/Kalender'
+import { zonderVergaderingInhoud } from '@/lib/samenvoegen'
+import type { AanwezigheidStatus } from '@/lib/aanwezigheid'
 
-interface Props { params: { id: string } }
+interface Props { params: Promise<{ id: string }> }
 type Tabblad = 'details' | 'agenda' | 'acties' | 'kalender' | 'stemlijst' | 'documenten' | 'lees'
 
 export default function VergaderingEditorPagina({ params }: Props) {
-  const { id } = params
+  const { id } = use(params)
   const router = useRouter()
   const { isAdmin, isModerator, geladen: authGeladen } = useAuth()
   const {
-    vergaderingen, geladen, opslaan, supabaseFout, opslaanFout, herlaad, sluitOpslaanFout, update,
+    vergaderingen, geladen, opslaan, supabaseFout, opslaanFout, opslaanMelding, herlaad, sluitOpslaanFout, update, zetAanwezigheid,
     updatePunt, verwijderPunt, voegPuntToe,
     voegSubpuntToe, verwijderSubpunt, updateSubpunt,
     herorden,
     voegActieToe, toggleActie, verwijderActie, neemActiesOver, updateActie, publiceer,
     voegKalenderItemToe, verwijderKalenderItem, updateKalenderItem,
-  } = useVergaderingen()
+  } = useVergaderingen(id)
 
   const [tabblad, setTabblad] = useState<Tabblad>('details')
   const [melding, setMelding] = useState<{ type: 'succes' | 'info' | 'fout'; tekst: string } | null>(null)
@@ -114,7 +116,8 @@ export default function VergaderingEditorPagina({ params }: Props) {
 
   const neemPuntOver = async (puntIndex: number) => {
     if (!vorigeVergadering) return
-    const over = JSON.parse(JSON.stringify(vorigeVergadering.punten[puntIndex]))
+    // Notities, bijlagen en bespreekverzoeken horen bij de vorige vergadering en gaan niet mee
+    const over = zonderVergaderingInhoud(structuredClone(vorigeVergadering.punten[puntIndex]))
     const nieuweId = v.punten.length + 1
     over.id = nieuweId
     const nieuwePunten = [...v.punten, over]
@@ -177,7 +180,7 @@ export default function VergaderingEditorPagina({ params }: Props) {
       </div>
 
       {tabblad === 'details' && (
-        <DetailsTab vergadering={v} onUpdate={(w) => update(id, w)} onNaarAgenda={() => setTabblad('agenda')} />
+        <DetailsTab vergadering={v} onUpdate={(w) => update(id, w)} onZetAanwezigheid={(naam, status) => zetAanwezigheid(id, naam, status)} onNaarAgenda={() => setTabblad('agenda')} />
       )}
       {tabblad === 'agenda' && (
         <>
@@ -252,14 +255,15 @@ export default function VergaderingEditorPagina({ params }: Props) {
           <Leesweergave vergadering={v} toonPrintKnop />
         </div>
       )}
-      {opslaanFout && <OpslaanFoutBanner onSluit={sluitOpslaanFout} />}
+      {opslaanFout && <OpslaanFoutBanner melding={opslaanMelding} onSluit={sluitOpslaanFout} />}
     </div>
   )
 }
 
-function DetailsTab({ vergadering: v, onUpdate, onNaarAgenda }: {
+function DetailsTab({ vergadering: v, onUpdate, onZetAanwezigheid, onNaarAgenda }: {
   vergadering: { titel: string; datum: string; aanvang: string; locatie: string; aanwezig: string; online: string; afwezig: string }
   onUpdate: (w: object) => void
+  onZetAanwezigheid: (naam: string, status: AanwezigheidStatus | null) => Promise<boolean>
   onNaarAgenda: () => void
 }) {
   return (
@@ -285,7 +289,7 @@ function DetailsTab({ vergadering: v, onUpdate, onNaarAgenda }: {
           aanwezig={v.aanwezig || ''}
           afwezig={v.afwezig || ''}
           online={v.online || ''}
-          onUpdate={onUpdate}
+          onZet={onZetAanwezigheid}
         />
       </div>
       <button onClick={onNaarAgenda} style={btnOutline}>Naar agenda bewerken →</button>

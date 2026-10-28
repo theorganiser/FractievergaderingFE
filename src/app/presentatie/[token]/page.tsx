@@ -2,17 +2,17 @@
 
 export const dynamic = 'force-dynamic'
 
-import { Fragment, useState, useEffect } from 'react'
+import { Fragment, useState, useEffect, use } from 'react'
 import { useVergaderingOpToken } from '@/hooks/useVergaderingen'
 import { formatDatum, formatDatumNL } from '@/lib/datum'
 import { Vergadering, Notitie } from '@/lib/types'
 import { berekenTijden, isInformeer } from '@/lib/tijdsblok'
 import { KALENDER_VOORUIT_DAGEN } from '@/components/Leesweergave'
 
-interface Props { params: { token: string } }
+interface Props { params: Promise<{ token: string }> }
 
 export default function PresentatiePagina({ params }: Props) {
-  const { token } = params
+  const { token } = use(params)
   const { vergadering, geladen, stilleHerlaad } = useVergaderingOpToken(token)
 
   // Elke 20 seconden stil verversen, zodat nieuwe opmerkingen tijdens de vergadering verschijnen

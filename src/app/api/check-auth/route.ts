@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
     isModerator: !!sessie?.isModerator, // admin heeft ook moderator rechten
     naam: sessie?.naam || '',
     heeftEigenWachtwoord: !!sessie?.eigenWachtwoord,
+    // Beheerder/moderator zonder eigen wachtwoord: eerst instellen, dan pas de extra rechten
+    rolWacht: sessie?.rolWacht || '',
     wachtwoordVerplicht: wachtwoordVerplicht(),
   })
 }
