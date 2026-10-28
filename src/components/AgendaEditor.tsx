@@ -6,6 +6,7 @@ const nieuweKey = () => Math.random().toString(36).substring(2) + Date.now().toS
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Agendapunt, Subpunt } from '@/lib/types'
 import IngekomenStukkenInvoer from './IngekomentukkenInvoer'
+import AgendaImport from './AgendaImport'
 import { berekenTijden, isInformeer } from '@/lib/tijdsblok'
 
 interface AgendaEditorProps {
@@ -389,6 +390,7 @@ function RVEditor({ punt, onUpdate, onUpdateSub, onVerwijderSub }: {
         <input className="invoer-inline" style={{ fontSize: '12px', flex: 1 }}
           type="url" value={punt.url || ''} onChange={e => onUpdate({ url: e.target.value })}
           placeholder="🔗 Link agenda raadsvergadering (optioneel)" />
+        <AgendaImport punt={punt} onUpdate={onUpdate} nieuweKey={nieuweKey} />
       </div>
 
       {/* Punten */}
