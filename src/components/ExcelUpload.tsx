@@ -12,7 +12,7 @@ interface UploadResultaat {
 }
 
 interface Sectie {
-  type: 'raadsmededelingen' | 'technische_vragen' | 'schriftelijke_vragen'
+  type: 'raadsmededelingen' | 'technische_vragen' | 'schriftelijke_vragen' | 'moties'
   label: string
   beschrijving: string
   downloadUrl: string
@@ -47,6 +47,14 @@ const SECTIES: Sectie[] = [
     downloadUrl: 'https://bestuur.gooisemeren.nl/documenten/schriftelijke-vragen/?sorteren=ingediend_aflopend&pagina=1&format=excel',
     downloadNaam: 'Schriftelijke_vragen.xlsx',
     kleur: '#5a1a8a', bg: '#f0e8f8', rand: '#c0a0e0', emoji: '✉️',
+  },
+  {
+    type: 'moties',
+    label: 'Moties',
+    beschrijving: 'Moties en amendementen gesorteerd op ingediend (aflopend)',
+    downloadUrl: 'https://bestuur.gooisemeren.nl/Documenten/Moties?sorteren=ingediend_aflopend&pagina=1&format=excel',
+    downloadNaam: 'Moties.xlsx',
+    kleur: '#8a4000', bg: '#fff0e8', rand: '#e8a060', emoji: '🗳',
   },
 ]
 

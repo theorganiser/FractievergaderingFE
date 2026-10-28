@@ -47,6 +47,15 @@ export async function haalAlleVragen(): Promise<ApiDocument[]> {
   )
 }
 
+// Moties en amendementen — nieuwste eerst (de export bevat alles sinds 2016, dus ruime limit)
+export async function haalMoties(): Promise<ApiDocument[]> {
+  const resp = await fetch(`${API_URL}/documenten?type=moties&limit=1000`)
+  if (!resp.ok) throw new Error(`API fout: ${resp.status}`)
+  const data = await resp.json()
+  const docs: ApiDocument[] = Array.isArray(data) ? data : (data.documenten || [])
+  return docs.sort((a, b) => (b.publicatiedatum || '').localeCompare(a.publicatiedatum || ''))
+}
+
 // Sync starten + log ophalen
 export async function startSyncEnWacht(): Promise<SyncLogItem[]> {
   await fetch(`${API_URL}/sync/nu`, { method: 'POST' })
