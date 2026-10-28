@@ -12,6 +12,7 @@ import Melding from '@/components/Melding'
 import SupabaseFout, { OpslaanFoutBanner } from '@/components/SupabaseFout'
 import { Vergadering } from '@/lib/types'
 import { plusMaanden } from '@/lib/tijd'
+import { wijzigVergadering, laadVergaderingOpId } from '@/lib/storage'
 
 const MAX_WOORDEN = 15
 
@@ -23,9 +24,9 @@ interface NieuweOpties {
 
 export default function OverzichtPagina() {
   const router = useRouter()
-  const { vergaderingen, geladen, maakNieuwe, kopieer, verwijder, update, vernieuwToken, supabaseFout, opslaanFout, opslaanMelding, herlaad, sluitOpslaanFout } = useVergaderingen()
+  const { vergaderingen, geladen, maakNieuwe, kopieer, verwijder, vernieuwToken, supabaseFout, opslaanFout, opslaanMelding, herlaad, sluitOpslaanFout } = useVergaderingen()
   const { isAdmin, isModerator } = useAuth()
-  const [melding, setMelding] = useState<{ type: 'succes' | 'info'; tekst: string } | null>(null)
+  const [melding, setMelding] = useState<{ type: 'succes' | 'info' | 'fout'; tekst: string } | null>(null)
   const [bezig, setBezig] = useState(false)
   const [toonDialoog, setToonDialoog] = useState(false)
   const [zoek, setZoek] = useState('')
@@ -113,28 +114,36 @@ export default function OverzichtPagina() {
 
     setIndienBezig(true)
     const naam = sprekerNaam || 'Onbekend'
-    const nieuwePunten = JSON.parse(JSON.stringify(indienVergadering.punten))
+    let gevonden = false
 
-    // Zoek "Te bespreken" punt
-    const teBespreken = nieuwePunten.find((p: { titel: string }) =>
-      p.titel.toLowerCase().includes('te bespreken')
-    )
-
-    if (teBespreken) {
-      const letter = String.fromCharCode(97 + teBespreken.subpunten.length)
+    // Op de verse versie uit de database (met versiecontrole), zodat het indienen nooit een
+    // oudere agenda terugzet over wijzigingen van de editor heen.
+    const { resultaat } = await wijzigVergadering(() => laadVergaderingOpId(indienVergadering.id), vers => {
+      const teBespreken = vers.punten.find(p => p.titel.toLowerCase().includes('te bespreken'))
+      gevonden = !!teBespreken
+      if (!teBespreken) return null
       teBespreken.subpunten.push({
-        id: letter,
+        id: String.fromCharCode(97 + teBespreken.subpunten.length),
         titel: `${indienPunt.trim()} (${naam})`,
         url: '',
         afgedaan: false,
         auteur: naam,
       })
-    }
+      return vers
+    })
 
-    await update(indienVergadering.id, { punten: nieuwePunten })
+    setIndienBezig(false)
+    if (!resultaat.ok) {
+      setMelding({ type: 'fout', tekst: resultaat.melding || 'Indienen mislukt.' })
+      return
+    }
+    if (!gevonden) {
+      setMelding({ type: 'fout', tekst: `Deze agenda heeft geen punt "Te bespreken". Vraag de beheerder om het toe te voegen.` })
+      return
+    }
     setIndienVergadering(null)
     setIndienPunt('')
-    setIndienBezig(false)
+    herlaad()
     setMelding({ type: 'succes', tekst: `✓ Jouw agendapunt is ingediend bij "${indienVergadering.titel}"` })
     setTimeout(() => setMelding(null), 5000)
   }

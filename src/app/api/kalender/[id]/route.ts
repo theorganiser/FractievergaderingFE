@@ -11,9 +11,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return NextResponse.json({ ok: true })
 }
 
+// Bewerken mag iedereen, verwijderen alleen de beheerder
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const s = await vereis(req); if (s instanceof NextResponse) return s
+  const s = await vereis(req, 'admin'); if (s instanceof NextResponse) return s
   const { error } = await db().from('kalender_items').delete().eq('id', id)
   if (error) { console.error('Kalender verwijderen fout:', error); return NextResponse.json({ fout: 'Verwijderen mislukt.' }, { status: 500 }) }
   return NextResponse.json({ ok: true })
